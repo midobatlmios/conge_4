@@ -1,6 +1,7 @@
 import AppLayout from "@/layouts/app-layout";
 import { type BreadcrumbItem } from '@/types';
-import { Demande, columns } from "@/components/demandes/columns";
+import { columns } from "@/components/demandes/columns";
+import { Demande } from "@/types";
 import { DataTable } from "@/components/demandes/data-table";
 import { Head, router, usePage } from '@inertiajs/react';
 import EditDemandeModal from "@/components/EditDemandeModal";
@@ -20,20 +21,21 @@ interface DemandesProps {
 export default function Demandes({ demandes }: DemandesProps) {
   const [editModelOpen, setEditModelOpen] = useState(false);
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null);
-  const user = usePage().props.auth?.user || {};
+  const { auth } = usePage<{ auth: { user: { role: string } } }>().props;
+  const user = auth.user;
   const isAdmin = user.role === 'admin';
 
   const handleUpdate = () => {
     setEditModelOpen(false);
-    router.reload({ preserveScroll: true });
+    router.reload({ preserveUrl: true });
   };
 
   const handleDelete = (id: number) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette demande ?')) {
       router.delete(`/demandes/${id}`, {
-        preserveScroll: true,
+        preserveUrl: true,
         onSuccess: () => {
-          router.reload({ preserveScroll: true });
+          router.reload({ preserveUrl: true });
         }
       });
     }
@@ -44,7 +46,7 @@ export default function Demandes({ demandes }: DemandesProps) {
       <Head title="Demandes" />
       <div className="container mx-auto py-10">
         <DataTable 
-          columns={columns(handleDelete, setEditModelOpen, setSelectedDemande)} 
+          columns={columns(handleDelete, setEditModelOpen, setSelectedDemande, isAdmin)} 
           data={demandes} 
         />
       </div>

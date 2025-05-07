@@ -40,6 +40,7 @@ export interface Demande {
     user: {
         name: string;
         email: string;
+        role: string;
         remaining_days?: number;
     };
     date_demande: string;

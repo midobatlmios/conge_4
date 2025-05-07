@@ -9,7 +9,8 @@ import { Demande } from "@/types";
 export const columns = (
     onDelete: (id: number) => void,
     onEdit: (isOpen: boolean) => void,
-    setSelectedDemande: (demande: Demande) => void
+    setSelectedDemande: (demande: Demande) => void,
+    isAdmin: boolean
 ): ColumnDef<Demande>[] => [
     {
         id: "select",
@@ -131,8 +132,8 @@ export const columns = (
         id: "actions",
         cell: ({ row }) => {
             const demande = row.original;
-            // Hide edit button for certain types
-            const hideEdit = ["mariage", "naissance", "deces"].includes(demande.type_conge);
+            // Hide edit button for certain types unless user is admin
+            const hideEdit = !isAdmin && ["mariage", "naissance", "deces"].includes(demande.type_conge);
             return (
                 <div className="flex gap-2">
                     {!hideEdit && (

@@ -16,6 +16,7 @@ class DashboardController extends Controller
 
     public function index(): Response
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         
         // Log the user ID and authentication status
@@ -25,6 +26,9 @@ class DashboardController extends Controller
             'is_authenticated' => Auth::check(),
             'auth_user' => Auth::user()
         ]);
+
+        // Log the current user ID
+        Log::info('Current user ID:', ['user_id' => $user->id]);
 
         // Get all demandes for the user with detailed logging
         $demandes = Demande::where('user_id', $user->id)
@@ -57,7 +61,9 @@ class DashboardController extends Controller
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
-                'remaining_days' => $remainingDays,
+                'email' => $user->email,
+                'role' => $user->role,
+                'remaining_days' => $remainingDays
             ],
             'demandes_count' => $demandes->count(),
             'demandes' => $demandes->toArray()
@@ -69,20 +75,11 @@ class DashboardController extends Controller
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'remaining_days' => $remainingDays,
+                    'role' => $user->role,
+                    'remaining_days' => $remainingDays
                 ],
             ],
-            'demandes' => $demandes->map(function ($demande) {
-                return [
-                    'id' => $demande->id,
-                    'date_demande' => $demande->date_demande,
-                    'date_debut' => $demande->date_debut,
-                    'date_fin' => $demande->date_fin,
-                    'nbr_jours' => $demande->nbr_jours,
-                    'etat' => $demande->etat,
-                    'comment' => $demande->comment,
-                ];
-            })->toArray(),
+            'demandes' => $demandes,
         ]);
     }
 } 

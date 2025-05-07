@@ -1,8 +1,9 @@
 import { PageProps } from '@inertiajs/core';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AddDemandeModal } from '@/components/AddDemandeModal';
+import EditDemandeModal from '@/components/EditDemandeModal';
 import AppLayout from '@/layouts/app-layout';
 import {
     Table,
@@ -22,6 +23,7 @@ interface DashboardProps extends PageProps {
             name: string;
             email: string;
             remaining_days: number;
+            role: string;
         };
     };
     demandes: Array<{
@@ -32,11 +34,14 @@ interface DashboardProps extends PageProps {
         nbr_jours: number;
         etat: string;
         comment: string;
+        type_conge: string;
     }>;
 }
 
 export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedDemande, setSelectedDemande] = useState<any>(null);
 
     // Add detailed debugging
     useEffect(() => {
@@ -82,6 +87,17 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                 return 'text-red-500';
             default:
                 return 'text-gray-500';
+        }
+    };
+
+    const handleDelete = (id: number) => {
+        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette demande ?')) {
+            router.delete(`/demandes/${id}`, {
+                preserveUrl: true,
+                onSuccess: () => {
+                    router.reload({ preserveUrl: true });
+                }
+            });
         }
     };
 
@@ -154,17 +170,31 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                                         </TableCell>
                                         <TableCell>{demande.comment || '-'}</TableCell>
                                         <TableCell>
-                                            {demande.etat === 'en attente' && (
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() => {
-                                                        console.log('Update demande:', demande);
-                                                    }}
-                                                >
-                                                    Modifier
-                                                </Button>
-                                            )}
+                                            <div className="flex gap-2">
+                                                {demande.etat === 'en attente' && (
+                                                    (auth.user.role === 'admin' || !["mariage", "naissance", "deces"].includes(demande.type_conge)) && (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => {
+                                                                setSelectedDemande(demande);
+                                                                setIsEditModalOpen(true);
+                                                            }}
+                                                        >
+                                                            Modifier
+                                                        </Button>
+                                                    )
+                                                )}
+                                                {demande.etat === 'en attente' && (
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(demande.id)}
+                                                    >
+                                                        Supprimer
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -176,6 +206,20 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                 <AddDemandeModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
+                />
+
+                <EditDemandeModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => {
+                        setIsEditModalOpen(false);
+                        setSelectedDemande(null);
+                    }}
+                    demande={selectedDemande}
+                    onUpdate={() => {
+                        setIsEditModalOpen(false);
+                        setSelectedDemande(null);
+                        router.reload({ preserveUrl: true });
+                    }}
                 />
             </div>
         </AppLayout>

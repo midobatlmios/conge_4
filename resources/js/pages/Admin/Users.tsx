@@ -10,6 +10,9 @@ import ResetPasswordModal from "@/components/ResetPasswordModal";
 import AppLayout from "@/layouts/app-layout";
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import AddUtilisateurModal from "@/components/users/AddUtilisateurModal";
 
 interface UsersProps {
     users: User[];
@@ -30,6 +33,7 @@ const Users = ({ users: initialUsers }: UsersProps) => {
     const [users, setUsers] = useState<User[]>([]);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
+    const [addModalOpen, setAddModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
     useEffect(() => {
@@ -45,7 +49,11 @@ const Users = ({ users: initialUsers }: UsersProps) => {
     };
 
     const handleUpdateUser = (updatedUser: User) => {
-        setUsers(prevUsers => prevUsers.map(user => user.id === updatedUser.id ? updatedUser : user));
+        setUsers(prevUsers => prevUsers.map(user => 
+            user.id === updatedUser.id ? updatedUser : user
+        ));
+        setEditModalOpen(false);
+        setSelectedUser(null);
     };
 
     const handleResetPassword = (user: User) => {
@@ -61,11 +69,20 @@ const Users = ({ users: initialUsers }: UsersProps) => {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Gestion des Utilisateurs" />
             <div className="container mx-auto py-10">
-                <h1 className="text-2xl font-bold mb-6">Gestion des Utilisateurs</h1>
+                <div className="flex justify-between items-center mb-6">
+                    <h1 className="text-2xl font-bold">Gestion des Utilisateurs</h1>
+                    <Button 
+                        onClick={() => setAddModalOpen(true)}
+                        className="bg-green-600 hover:bg-green-700"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Ajouter un utilisateur
+                    </Button>
+                </div>
                 <DataTable 
                     columns={columns(
                         refreshData,
-                        setEditModalOpen,
+                        (open: boolean) => setEditModalOpen(open),
                         setSelectedUser,
                         handleResetPassword
                     )} 
@@ -98,6 +115,15 @@ const Users = ({ users: initialUsers }: UsersProps) => {
                         }}
                     />
                 )}
+
+                <AddUtilisateurModal
+                    isOpen={addModalOpen}
+                    onClose={() => setAddModalOpen(false)}
+                    onSuccess={() => {
+                        setAddModalOpen(false);
+                        refreshData();
+                    }}
+                />
             </div>
         </AppLayout>
     );
