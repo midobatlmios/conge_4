@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   FileText,
   Settings,
-  Folder,
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
@@ -40,9 +39,12 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
       <aside className="flex flex-col w-64 h-screen border-r bg-background justify-between">
         <div>
           {/* Logo/title */}
-          <div className="flex items-center h-16 px-6 font-bold text-lg gap-2 border-b">
-            <Folder className="w-6 h-6" />
-            gestion de conges
+          <div className="flex items-center h-20 px-6 font-extrabold text-xl gap-4 border-b bg-white dark:bg-[#181818] shadow-sm">
+            <img src="/images/logo-omnitrade-rvb.svg" alt="Logo" className="w-12 h-12" />
+            <span className="flex flex-col leading-tight">
+              <span className="tracking-wide uppercase text-[#C71618] text-lg">Gestion des</span>
+              <span className="tracking-wide uppercase text-[#C71618] text-lg">congés</span>
+            </span>
           </div>
           {/* Main navigation */}
           <nav className="mt-4 px-4">
@@ -53,17 +55,19 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                   <LayoutDashboard className="w-4 h-4" /> Dashboard
                 </Link>
               </li>
-              <li>
-                <Link href="/demandes" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
-                  <FileText className="w-4 h-4" /> Demandes
-                </Link>
-              </li>
-              {user.is_admin && (
-                <li>
-                  <Link href="/admin/users" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
-                    <Settings className="w-4 h-4" /> Manage Users
-                  </Link>
-                </li>
+              {user.role === 'admin' && (
+                <>
+                  <li>
+                    <Link href="/demandes" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+                      <FileText className="w-4 h-4" /> Demandes
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/admin/users" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+                      <Settings className="w-4 h-4" /> Manage Users
+                    </Link>
+                  </li>
+                </>
               )}
             </ul>
           </nav>

@@ -2,46 +2,14 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react" ;
-import { Checkbox } from "@/components/ui/checkbox"
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import {router} from "@inertiajs/react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
- 
-export type Demande = {
-  id: number;
-  user_id: number;
-  user: {
-    name: string;
-    email: string;
-    remaining_days?: number;
-  };
-  date_demande: string;
-  date_debut: string;
-  date_fin: string;
-  nbr_jours: number;
-  annee: number;
-  etat: "en attente" | "acceptée" | "refusée";
-  valide_par: number | null;
-  comment: string | null;
-};
+import { Demande } from "@/types";
 
-const handleDelete = (id: string) =>{
-    router.delete(`/demandes/${id}`, {
-        preserveScroll:true  , 
-    });
-};
-
-export const columns = (setIsModalOpen:(open:boolean)=>void,
-setEditModelOpen:(open:boolean)=>void,
-setSelectedDemande : (demande:Demande | null ) =>void
+export const columns = (
+    onDelete: (id: number) => void,
+    onEdit: (isOpen: boolean) => void,
+    setSelectedDemande: (demande: Demande) => void
 ): ColumnDef<Demande>[] => [
     {
         id: "select",
@@ -80,24 +48,68 @@ setSelectedDemande : (demande:Demande | null ) =>void
         }
     },
     {
-        accessorKey: "etat",
-        header: "État",
-    },
-    {
         accessorKey: "date_demande",
         header: "Date de demande",
+        cell: ({ row }) => {
+            const date = new Date(row.getValue("date_demande"));
+            return date.toLocaleDateString('fr-FR');
+        }
     },
     {
         accessorKey: "date_debut",
-        header: "Début",
+        header: "Date de début",
+        cell: ({ row }) => {
+            const date = new Date(row.getValue("date_debut"));
+            return date.toLocaleDateString('fr-FR');
+        }
     },
     {
         accessorKey: "date_fin",
-        header: "Fin",
+        header: "Date de fin",
+        cell: ({ row }) => {
+            const date = new Date(row.getValue("date_fin"));
+            return date.toLocaleDateString('fr-FR');
+        }
+    },
+    {
+        accessorKey: "type_conge",
+        header: "Type de congé",
+        cell: ({ row }) => {
+            const type = row.getValue("type_conge") as string;
+            return (
+                <div className="font-medium">
+                    {type === "mariage" && "Congé de Mariage"}
+                    {type === "naissance" && "Congé de Naissance"}
+                    {type === "deces" && "Congé de Décès"}
+                    {type === "sans_solde" && "Congé sans solde"}
+                    {type === "recuperation" && "Récupération"}
+                </div>
+            );
+        },
     },
     {
         accessorKey: "nbr_jours",
         header: "Nombre de jours",
+        cell: ({ row }) => {
+            const nbr_jours = parseFloat(row.getValue("nbr_jours"));
+            return <div className="text-right font-medium">{nbr_jours} jour{nbr_jours !== 1 ? 's' : ''}</div>;
+        }
+    },
+    {
+        accessorKey: "etat",
+        header: "État",
+        cell: ({ row }) => {
+            const etat = row.getValue("etat") as string;
+            return (
+                <div className={`font-medium ${
+                    etat === "en attente" ? "text-yellow-500" :
+                    etat === "acceptée" ? "text-green-500" :
+                    "text-red-500"
+                }`}>
+                    {etat}
+                </div>
+            );
+        },
     },
     {
         accessorKey: "annee",
@@ -116,44 +128,36 @@ setSelectedDemande : (demande:Demande | null ) =>void
         }
     },
     {
-        id: "formatted_nbr_jours",
-        header: () => <div className="text-right">nombre des jours</div>,
-        cell: ({ row }) => {
-            const nbr_jours = parseFloat(row.getValue("nbr_jours"))
-            const formatted = `${nbr_jours} day${nbr_jours !== 1 ? 's' : ''}`;
-            return <div className="text-right font-medium">{formatted}</div>
-        },
-    },
-    {
         id: "actions",
         cell: ({ row }) => {
-            const demande = row.original
+            const demande = row.original;
+            // Hide edit button for certain types
+            const hideEdit = ["mariage", "naissance", "deces"].includes(demande.type_conge);
             return (
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem
-                            onClick={() => handleDelete(demande.id.toString())}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                            Supprimer
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                            onClick={() =>{ setSelectedDemande(demande); setEditModelOpen(true);}}
+                <div className="flex gap-2">
+                    {!hideEdit && (
+                        <Button
+                            variant="outline"
+                            size="sm"
                             className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                            onClick={() => {
+                                setSelectedDemande(demande);
+                                onEdit(true);
+                            }}
                         >
                             Modifier
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            )
+                        </Button>
+                    )}
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => onDelete(demande.id)}
+                    >
+                        Supprimer
+                    </Button>
+                </div>
+            );
         },
     },
-] 
+]; 

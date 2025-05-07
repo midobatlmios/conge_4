@@ -17,6 +17,7 @@ interface Notification {
         date_fin: string;
         nbr_jours: number;
         comment: string;
+        type_conge: string;
     };
     read_at: string | null;
     created_at: string;
@@ -33,9 +34,15 @@ export default function Notifications() {
                 const response = await fetch('/notifications', {
                     headers: {
                         'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                     }
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 console.log('Received notifications data:', data); // Debug log
                 
@@ -58,7 +65,7 @@ export default function Notifications() {
 
     const markAsRead = async (id: string) => {
         try {
-            await fetch(`/notifications/${id}/mark-as-read`, {
+            const response = await fetch(`/notifications/${id}/mark-as-read`, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -67,6 +74,11 @@ export default function Notifications() {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
                 }
             });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
             setNotifications(notifications.map(n => 
                 n.id === id ? { ...n, read_at: new Date().toISOString() } : n
             ));
@@ -111,6 +123,9 @@ export default function Notifications() {
                                     {notification.data.comment}
                                 </p>
                             )}
+                            <p className="text-sm text-gray-500">
+                                Type: {notification.data.type_conge}
+                            </p>
                         </DropdownMenuItem>
                     ))
                 )}

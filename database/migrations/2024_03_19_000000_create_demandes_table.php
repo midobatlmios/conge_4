@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+class CreateDemandesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,19 +13,16 @@ return new class extends Migration
     {
         Schema::create('demandes', function (Blueprint $table) {
             $table->id();
-
-            // Clé étrangère vers users
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-
-            // Champs de la demande
-            $table->date('date_debut')->nullable(); // Peut être générée automatiquement
-            $table->date('date_fin')->nullable();   // Peut être générée automatiquement
+            $table->date('date_demande');
+            $table->date('date_debut');
+            $table->date('date_fin');
             $table->integer('nbr_jours');
-            $table->year('annee');
-            $table->date('date_demande')->default(now());
+            $table->integer('annee');
+            $table->enum('type_conge', ['mariage', 'naissance', 'deces', 'sans_solde', 'recuperation']);
             $table->enum('etat', ['en attente', 'acceptée', 'refusée'])->default('en attente');
-            $table->foreignId('valide_par')->nullable()->constrained('users')->onDelete('set null'); // Admin qui valide/refuse
-
+            $table->foreignId('valide_par')->nullable()->constrained('users')->onDelete('set null');
+            $table->text('comment')->nullable();
             $table->timestamps();
         });
     }
@@ -37,4 +34,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('demandes');
     }
-};
+} 

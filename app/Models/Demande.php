@@ -18,6 +18,7 @@ class Demande extends Model
         'date_fin',
         'nbr_jours',
         'annee',
+        'type_conge',
         'etat',
         'user_id',
         'valide_par',

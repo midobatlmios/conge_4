@@ -7,6 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\Demande;
+use Illuminate\Support\Facades\Log;
 
 class DemandeStatusChanged extends Notification implements ShouldQueue
 {
@@ -21,7 +22,7 @@ class DemandeStatusChanged extends Notification implements ShouldQueue
 
     public function via($notifiable)
     {
-        return ['database', 'mail'];
+        return ['database'];
     }
 
     public function toMail($notifiable)
@@ -44,6 +45,11 @@ class DemandeStatusChanged extends Notification implements ShouldQueue
 
     public function toArray($notifiable)
     {
+        Log::info('Creating notification data', [
+            'demande_id' => $this->demande->id,
+            'status' => $this->demande->etat
+        ]);
+
         return [
             'demande_id' => $this->demande->id,
             'status' => $this->demande->etat,
@@ -54,6 +60,7 @@ class DemandeStatusChanged extends Notification implements ShouldQueue
             'date_fin' => $this->demande->date_fin,
             'nbr_jours' => $this->demande->nbr_jours,
             'comment' => $this->demande->comment,
+            'type_conge' => $this->demande->type_conge
         ];
     }
 } 
