@@ -172,18 +172,16 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                                         <TableCell>
                                             <div className="flex gap-2">
                                                 {demande.etat === 'en attente' && (
-                                                    (auth.user.role === 'admin' || !["mariage", "naissance", "deces"].includes(demande.type_conge)) && (
-                                                        <Button
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => {
-                                                                setSelectedDemande(demande);
-                                                                setIsEditModalOpen(true);
-                                                            }}
-                                                        >
-                                                            Modifier
-                                                        </Button>
-                                                    )
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            setSelectedDemande(demande);
+                                                            setIsEditModalOpen(true);
+                                                        }}
+                                                    >
+                                                        Modifier
+                                                    </Button>
                                                 )}
                                                 {demande.etat === 'en attente' && (
                                                     <Button

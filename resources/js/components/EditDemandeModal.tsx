@@ -31,6 +31,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
         user: {
             name: "",
             email: "",
+            role: "user",
             remaining_days: 18
         }
     });

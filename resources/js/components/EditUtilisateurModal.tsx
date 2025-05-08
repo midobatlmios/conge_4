@@ -3,16 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { User } from "@/components/users/columns";
-import axios from "axios";
+import { router } from "@inertiajs/react";
 
 interface EditUtilisateurModalProps {
     isOpen: boolean;
     onClose: () => void;
     user: User | null;
-    onUpdate: (updatedUser: User) => void;
 }
 
-const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onClose, user, onUpdate }) => {
+const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onClose, user }) => {
     const [formData, setFormData] = useState<User & { password?: string; password_confirmation?: string }>({
         id: 0,
         name: "",
@@ -27,7 +26,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
     
     const [message, setMessage] = useState<{type: "success" | "error" | "default"; text: string} | null>(null);
     const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string[]>>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
     const [showPassword, setShowPassword] = useState(false);
 
     useEffect(() => {
@@ -61,54 +60,41 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
         // Vérifier que les mots de passe correspondent
         if (formData.password && formData.password !== formData.password_confirmation) {
             setErrors({
-                password_confirmation: ["Les mots de passe ne correspondent pas"]
+                password_confirmation: "Les mots de passe ne correspondent pas"
             });
             setLoading(false);
             return;
         }
 
         try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-            
-            // Ne pas envoyer le mot de passe s'il est vide
             const dataToSend = {
-                ...formData,
+                _method: 'PUT',
+                name: formData.name,
+                email: formData.email,
+                role: formData.role,
                 password: formData.password || undefined,
                 password_confirmation: formData.password_confirmation || undefined
             };
             
-            const response = await axios.put(`/users/${user?.id}`, dataToSend, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': csrfToken,
+            router.post(`/admin/users/${user?.id}`, dataToSend, {
+                preserveScroll: true,
+                onSuccess: () => {
+                    router.visit('/admin/users', {
+                        preserveState: false,
+                        preserveScroll: false
+                    });
                 },
-                withCredentials: true
-            });
-            
-            setMessage({type: "success", text: "Utilisateur mis à jour avec succès"});
-            onUpdate(response.data);
-            setTimeout(() => {
-                onClose();
-            }, 1500);
-            
-        } catch (error) {
-            console.error("Error updating user:", error);
-            
-            if (axios.isAxiosError(error) && error.response) {
-                if (error.response.status === 422 && error.response.data.errors) {
-                    setErrors(error.response.data.errors);
-                    const errorMessage = Object.values(error.response.data.errors).flat().join(', ');
-                    setMessage({type: "error", text: errorMessage});
-                } else {
+                onError: (errors) => {
+                    setErrors(errors);
                     setMessage({
-                        type: "error", 
-                        text: error.response.data.message || "Une erreur s'est produite lors de la mise à jour de l'utilisateur"
+                        type: "error",
+                        text: "Une erreur s'est produite lors de la mise à jour de l'utilisateur"
                     });
                 }
-            } else {
-                setMessage({type: "error", text: "Une erreur s'est produite lors de la mise à jour de l'utilisateur"});
-            }
+            });
+        } catch (error) {
+            console.error("Error updating user:", error);
+            setMessage({type: "error", text: "Une erreur s'est produite lors de la mise à jour de l'utilisateur"});
         } finally {
             setLoading(false);
         }
@@ -116,10 +102,13 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
+            <DialogContent aria-describedby="edit-user-description">
                 <DialogHeader>
                     <DialogTitle>Modifier l'utilisateur</DialogTitle>
                 </DialogHeader>
+                <div id="edit-user-description" className="sr-only">
+                    Formulaire de modification des informations de l'utilisateur
+                </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     {message && ( 
                         <div className={`p-2 rounded ${message.type === "success" ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}>
@@ -138,7 +127,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                             className={`w-full ${errors.name ? 'border-red-500' : ''}`}
                             required 
                         />
-                        {errors.name && <p className="text-red-500 text-sm">{errors.name[0]}</p>}
+                        {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
                     </div>
                     
                     <div className="flex flex-col space-y-1">
@@ -152,7 +141,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                             className={`w-full ${errors.email ? 'border-red-500' : ''}`}
                             required 
                         />
-                        {errors.email && <p className="text-red-500 text-sm">{errors.email[0]}</p>}
+                        {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
                     </div>
 
                     <div className="space-y-4 border-t pt-4">
@@ -179,7 +168,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                                     {showPassword ? "Masquer" : "Afficher"}
                                 </Button>
                             </div>
-                            {errors.password && <p className="text-red-500 text-sm">{errors.password[0]}</p>}
+                            {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
                         </div>
 
                         <div className="flex flex-col space-y-1">
@@ -193,7 +182,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                                 className={`w-full ${errors.password_confirmation ? 'border-red-500' : ''}`}
                                 minLength={8}
                             />
-                            {errors.password_confirmation && <p className="text-red-500 text-sm">{errors.password_confirmation[0]}</p>}
+                            {errors.password_confirmation && <p className="text-red-500 text-sm">{errors.password_confirmation}</p>}
                         </div>
                     </div>
                     
@@ -210,7 +199,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                             <option value="user">Utilisateur</option>
                             <option value="admin">Administrateur</option>
                         </select>
-                        {errors.role && <p className="text-red-500 text-sm">{errors.role[0]}</p>}
+                        {errors.role && <p className="text-red-500 text-sm">{errors.role}</p>}
                     </div>
                     
                     <DialogFooter>

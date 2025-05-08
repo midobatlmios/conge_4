@@ -109,13 +109,13 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
             // Set end date based on type_conge
             switch (type_conge) {
                 case "mariage":
-                    endDate.setDate(endDate.getDate() + 3); // 4 days total (including start date)
+                    endDate.setDate(endDate.getDate() + 2); // 4 days total (including start date)
                     break;
                 case "naissance":
-                    endDate.setDate(endDate.getDate() + 2); // 3 days total
+                    endDate.setDate(endDate.getDate() + 1); // 3 days total
                     break;
                 case "deces":
-                    endDate.setDate(endDate.getDate() + 2); // 3 days total
+                    endDate.setDate(endDate.getDate() + 1); // 3 days total
                     break;
                 default:
                     // For other types, don't automatically set end date
