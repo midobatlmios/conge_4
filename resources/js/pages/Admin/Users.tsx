@@ -70,13 +70,13 @@ const Users = ({ users: initialUsers }: UsersProps) => {
             <Head title="Gestion des Utilisateurs" />
             <div className="container mx-auto py-10">
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold">Gestion des Utilisateurs</h1>
+                    <h1 className="text-2xl font-bold">Gestion des employés</h1>
                     <Button 
                         onClick={() => setAddModalOpen(true)}
                         className="bg-green-600 hover:bg-green-700"
                     >
                         <Plus className="w-4 h-4 mr-2" />
-                        Ajouter un utilisateur
+                        Ajouter un employé
                     </Button>
                 </div>
                 <DataTable 

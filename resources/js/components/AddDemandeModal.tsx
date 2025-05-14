@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { router } from '@inertiajs/react';
+import axios from 'axios';
 
 export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }: { isOpen: boolean, onClose: () => void, isAdmin?: boolean, users?: { id: number; name: string }[] }) => {
     // Format today's date as YYYY-MM-DD for the default date_demande value
@@ -243,15 +245,8 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
         
         setLoading(true);
         
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute("content");
-        if (!csrfToken) {
-            setMessage({ type: "error", text: "CSRF token not found" });
-            setLoading(false);
-            return;
-        }
-        
         try {
-            console.log('Submitting demande:', {
+            const formData = {
                 date_demande,
                 date_debut,
                 date_fin,
@@ -259,60 +254,49 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                 annee,
                 type_conge,
                 etat,
-                comment
+                comment,
+                user_id: isAdmin ? selectedUserId : userId
+            };
+
+            // Use axios with proper CSRF token handling
+            const response = await axios.post('/demandes', formData, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                withCredentials: true
             });
 
-            const response = await fetch("/demandes", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
-                    "X-CSRF-Token": csrfToken,
-                },
-                body: JSON.stringify({
-                    date_demande,
-                    date_debut,
-                    date_fin,
-                    nbr_jours,
-                    annee,
-                    type_conge,
-                    etat,
-                    comment,
-                    user_id: isAdmin ? selectedUserId : userId
-                })
-            });
-            
-            const data = await response.json();
-            console.log('Response:', data);
-            
-            if (response.ok) {
-                setMessage({ type: "success", text: data.message || "Demande ajoutée avec succès" });
+            if (response.data) {
+                setMessage({ type: "success", text: "Demande ajoutée avec succès" });
                 setDateDemande(formattedToday);
                 setDateDebut("");
                 setDateFin("");
                 setNbJours(0);
                 setAnnee("");
-                setTypeConge("mariage"); // Reset to default value
+                setTypeConge("mariage");
                 setEtat("en attente");
                 setComment("");
                 
-                // Close modal and refresh page after a short delay
                 setTimeout(() => {
                     onClose();
-                    window.location.reload();
+                    router.reload();
                 }, 1500);
-            } else {
-                console.error('Error response:', data);
-                if (data.errors) {
-                    setErrors(data.errors);
-                    setMessage({ type: "error", text: "Veuillez corriger les erreurs dans le formulaire" });
-                } else {
-                    setMessage({ type: "error", text: data.message || "Échec de l'ajout de la demande" });
-                }
             }
         } catch (error) {
             console.error("Error adding demande:", error);
-            setMessage({ type: "error", text: "Une erreur inattendue s'est produite" });
+            if (axios.isAxiosError(error)) {
+                if (error.response?.status === 419) {
+                    setMessage({ type: "error", text: "Session expirée. Veuillez rafraîchir la page et réessayer." });
+                } else if (error.response?.data?.errors) {
+                    setErrors(error.response.data.errors);
+                    setMessage({ type: "error", text: "Veuillez corriger les erreurs dans le formulaire" });
+                } else {
+                    setMessage({ type: "error", text: error.response?.data?.message || "Une erreur s'est produite lors de l'ajout de la demande" });
+                }
+            } else {
+                setMessage({ type: "error", text: "Une erreur inattendue s'est produite" });
+            }
         } finally {
             setLoading(false);
         }
@@ -320,14 +304,16 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-h-[90vh] flex flex-col">
+            <DialogContent className="max-h-[90vh] flex flex-col w-[95vw] sm:w-[85vw] md:w-[75vw] lg:w-[60vw] xl:w-[50vw]">
                 <DialogHeader>
-                    <DialogTitle>Ajouter une demande</DialogTitle>
+                    <DialogTitle>Ajouter une demande de congé</DialogTitle>
+                    <DialogDescription>
+                        Remplissez le formulaire ci-dessous pour soumettre une nouvelle demande de congé.
+                    </DialogDescription>
                 </DialogHeader>
-                
                 <div className="flex-1 overflow-y-auto pr-4 -mr-4">
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {message && (
+                        {message && ( 
                             <div className={`p-2 rounded ${message.type === "success" ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}>
                                 {message.text}
                             </div>
@@ -357,168 +343,112 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                             </div>
                         )}
 
-                        <div className="space-y-1">
-                            <label htmlFor="type_conge" className="text-sm font-medium">Type de congé</label>
-                            <Select
-                                value={type_conge}
-                                onValueChange={(value: "mariage" | "naissance" | "deces" | "sans_solde" | "recuperation") => setTypeConge(value)}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Sélectionner un type de congé" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="mariage">Congé de Mariage (4 jours max)</SelectItem>
-                                    <SelectItem value="naissance">Congé de Naissance (3 jours)</SelectItem>
-                                    <SelectItem value="deces">Congé de Décès (3 jours max)</SelectItem>
-                                    <SelectItem value="sans_solde">Congé sans solde</SelectItem>
-                                    <SelectItem value="recuperation">Récupération</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            {type_conge === "mariage" && (
-                                <p className="text-sm text-gray-500">4 jours dont deux jours payés et deux jours déduits automatiquement du congé</p>
-                            )}
-                            {type_conge === "naissance" && (
-                                <p className="text-sm text-gray-500">3 jours - à prendre dans un délai de un mois à compter de la date de la naissance</p>
-                            )}
-                            {type_conge === "deces" && (
-                                <p className="text-sm text-gray-500">3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours déduits automatiquement du congé</p>
-                            )}
-                            {type_conge === "sans_solde" && (
-                                <p className="text-sm text-gray-500">Ce congé sera déduit automatiquement de votre salaire</p>
-                            )}
-                            {type_conge === "recuperation" && (
-                                <p className="text-sm text-gray-500">La journée à récupérer doit se faire dans un délai de 2 mois</p>
-                            )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label htmlFor="type_conge" className="text-sm font-medium">Type de congé</label>
+                                <Select
+                                    value={type_conge}
+                                    onValueChange={(value: "mariage" | "naissance" | "deces" | "sans_solde" | "recuperation") => {
+                                        setTypeConge(value);
+                                    }}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Sélectionner un type de congé" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="mariage">Congé de Mariage (4 jours max)</SelectItem>
+                                        <SelectItem value="naissance">Congé de Naissance (3 jours)</SelectItem>
+                                        <SelectItem value="deces">Congé de Décès (3 jours max)</SelectItem>
+                                        <SelectItem value="sans_solde">Congé sans solde</SelectItem>
+                                        <SelectItem value="recuperation">Récupération</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                {type_conge === "mariage" && (
+                                    <p className="text-sm text-gray-500">4 jours dont deux jours payés et deux jours déduits automatiquement du congé</p>
+                                )}
+                                {type_conge === "naissance" && (
+                                    <p className="text-sm text-gray-500">3 jours - à prendre dans un délai de un mois à compter de la date de la naissance</p>
+                                )}
+                                {type_conge === "deces" && (
+                                    <p className="text-sm text-gray-500">3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours déduits automatiquement du congé</p>
+                                )}
+                                {type_conge === "sans_solde" && (
+                                    <p className="text-sm text-gray-500">Ce congé sera déduit automatiquement de votre salaire</p>
+                                )}
+                                {type_conge === "recuperation" && (
+                                    <p className="text-sm text-gray-500">La journée à récupérer doit se faire dans un délai de 2 mois</p>
+                                )}
+                            </div>
+                            
+                            <div className="space-y-1">
+                                <label htmlFor="nbr_jours" className="text-sm font-medium">Nombre de jours</label>
+                                <Input 
+                                    id="nbr_jours"
+                                    type="number" 
+                                    name="nbr_jours" 
+                                    value={nbr_jours} 
+                                    className="w-full"
+                                    readOnly 
+                                />
+                                <p className="text-gray-500 text-xs">Calculé automatiquement à partir des dates</p>
+                            </div>
                         </div>
                         
-                        <div className="space-y-1">
-                            <label htmlFor="date_demande" className="text-sm font-medium">Date de demande</label>
-                            <Input 
-                                id="date_demande"
-                                type="date" 
-                                value={date_demande} 
-                                onChange={(e) => setDateDemande(e.target.value)} 
-                                className={errors.date_demande ? "border-red-500" : ""}
-                            />
-                            {errors.date_demande && (
-                                <p className="text-red-500 text-xs">{errors.date_demande}</p>
-                            )}
-                        </div>
-                        
-                        <div className="space-y-1">
-                            <label htmlFor="date_debut" className="text-sm font-medium">Date de début</label>
-                            <Input 
-                                id="date_debut"
-                                type="date" 
-                                value={date_debut} 
-                                onChange={handleDateDebutChange}
-                                className={errors.date_debut ? "border-red-500" : ""}
-                            />
-                            {errors.date_debut && (
-                                <p className="text-red-500 text-xs">{errors.date_debut}</p>
-                            )}
-                        </div>
-                        
-                        <div className="space-y-1">
-                            <label htmlFor="date_fin" className="text-sm font-medium">Date de fin</label>
-                            <Input 
-                                id="date_fin"
-                                type="date" 
-                                value={date_fin} 
-                                onChange={(e) => setDateFin(e.target.value)}
-                                className={errors.date_fin ? "border-red-500" : ""}
-                                readOnly={type_conge === "mariage" || type_conge === "naissance" || type_conge === "deces"}
-                            />
-                            {errors.date_fin && (
-                                <p className="text-red-500 text-xs">{errors.date_fin}</p>
-                            )}
-                            {(type_conge === "mariage" || type_conge === "naissance" || type_conge === "deces") && (
-                                <p className="text-sm text-gray-500">La date de fin est automatiquement calculée en fonction de la date de début</p>
-                            )}
-                        </div>
-                        
-                        <div className="space-y-1">
-                            <label htmlFor="nbr_jours" className="text-sm font-medium">Nombre de jours</label>
-                            <Input 
-                                id="nbr_jours"
-                                type="number" 
-                                value={nbr_jours} 
-                                onChange={(e) => setNbJours(parseInt(e.target.value) || 0)} 
-                                className={errors.nbr_jours ? "border-red-500" : ""}
-                                readOnly
-                            />
-                            {errors.nbr_jours && (
-                                <p className="text-red-500 text-xs">{errors.nbr_jours}</p>
-                            )}
-                            <p className="text-gray-500 text-xs">Calculated automatically from dates</p>
-                        </div>
-                        
-                        <div className="space-y-1">
-                            <label htmlFor="annee" className="text-sm font-medium">Année</label>
-                            <Input 
-                                id="annee"
-                                type="text" 
-                                value={annee} 
-                                onChange={(e) => setAnnee(e.target.value)} 
-                                className={errors.annee ? "border-red-500" : ""}
-                                readOnly
-                            />
-                            {errors.annee && (
-                                <p className="text-red-500 text-xs">{errors.annee}</p>
-                            )}
-                            <p className="text-gray-500 text-xs">Based on start date</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label htmlFor="date_debut" className="text-sm font-medium">Date de début</label>
+                                <Input 
+                                    id="date_debut"
+                                    type="date" 
+                                    name="date_debut" 
+                                    value={date_debut} 
+                                    onChange={handleDateDebutChange} 
+                                    className={errors.date_debut ? "border-red-500" : ""}
+                                    required 
+                                />
+                                {errors.date_debut && <p className="text-red-500 text-xs">{errors.date_debut[0]}</p>}
+                            </div>
+                            
+                            <div className="space-y-1">
+                                <label htmlFor="date_fin" className="text-sm font-medium">Date de fin</label>
+                                <Input 
+                                    id="date_fin"
+                                    type="date" 
+                                    name="date_fin" 
+                                    value={date_fin} 
+                                    onChange={(e) => setDateFin(e.target.value)} 
+                                    className={errors.date_fin ? "border-red-500" : ""}
+                                    required 
+                                    readOnly={type_conge === "mariage" || type_conge === "naissance" || type_conge === "deces"}
+                                />
+                                {errors.date_fin && <p className="text-red-500 text-xs">{errors.date_fin[0]}</p>}
+                                {(type_conge === "mariage" || type_conge === "naissance" || type_conge === "deces") && (
+                                    <p className="text-sm text-gray-500">La date de fin est automatiquement calculée en fonction de la date de début</p>
+                                )}
+                            </div>
                         </div>
                         
                         <div className="space-y-1">
                             <label htmlFor="comment" className="text-sm font-medium">Commentaire</label>
                             <Textarea 
                                 id="comment"
-                                value={comment}
+                                name="comment"
+                                value={comment || ''}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setComment(e.target.value)}
                                 placeholder="Entrez la raison de votre demande..."
-                                className="min-h-[100px]"
+                                className={`min-h-[100px] ${errors.comment ? 'border-red-500' : ''}`}
                             />
+                            {errors.comment && <p className="text-red-500 text-xs">{errors.comment[0]}</p>}
                         </div>
-                        
-                        {/* État field: only editable by admin */}
-                        {isAdmin ? (
-                        <div className="space-y-1">
-                            <label htmlFor="etat" className="text-sm font-medium">État</label>
-                            <select 
-                                id="etat"
-                                value={etat} 
-                                onChange={(e) => setEtat(e.target.value)} 
-                                className={`w-full p-2 border rounded ${errors.etat ? "border-red-500" : ""}`}
-                            >
-                                <option value="en attente">En attente</option>
-                                <option value="acceptée">Acceptée</option>
-                                <option value="refusée">Refusée</option>
-                            </select>
-                            {errors.etat && (
-                                <p className="text-red-500 text-xs">{errors.etat}</p>
-                            )}
-                        </div>
-                        ) : (
-                        <div className="space-y-1">
-                            <label htmlFor="etat" className="text-sm font-medium">État</label>
-                            <Input
-                                id="etat"
-                                type="text"
-                                value={etat}
-                                readOnly
-                                className="bg-gray-100 cursor-not-allowed"
-                            />
-                        </div>
-                        )}
                     </form>
                 </div>
 
-                <DialogFooter className="mt-4">
-                    <Button type="submit" disabled={loading} onClick={handleSubmit}>
-                        {loading ? "Ajout en cours..." : "Ajouter"}
-                    </Button>
-                    <Button variant="outline" type="button" onClick={onClose} disabled={loading}>
+                <DialogFooter className="mt-4 flex-col sm:flex-row gap-2">
+                    <Button variant="outline" type="button" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
                         Annuler
+                    </Button>
+                    <Button type="submit" disabled={loading} onClick={handleSubmit} className="w-full sm:w-auto">
+                        {loading ? "Envoi..." : "Soumettre la demande"}
                     </Button>
                 </DialogFooter>
             </DialogContent>
