@@ -1,5 +1,5 @@
-export default function AppLogoIcon() {
+export default function AppLogoIcon({ className }: { className?: string }) {
     return (
-        <img src="/images/logo-omnitrade-rvb.svg" alt="App Logo" style={{ width: '100%', height: '100%' }} />
+        <img src="/images/logo-omnitrade-rvb.svg" alt="App Logo" className={className} />
     );
 }

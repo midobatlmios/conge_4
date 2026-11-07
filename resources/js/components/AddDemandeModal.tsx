@@ -111,13 +111,13 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
             // Set end date based on type_conge
             switch (type_conge) {
                 case "mariage":
-                    endDate.setDate(endDate.getDate() + 2); // 4 days total (including start date)
+                    endDate.setDate(endDate.getDate() + 3);
                     break;
                 case "naissance":
-                    endDate.setDate(endDate.getDate() + 1); // 3 days total
+                    endDate.setDate(endDate.getDate() + 2);
                     break;
                 case "deces":
-                    endDate.setDate(endDate.getDate() + 1); // 3 days total
+                    endDate.setDate(endDate.getDate() + 2);
                     break;
                 default:
                     // For other types, don't automatically set end date
@@ -140,13 +140,13 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
             // Set end date based on type_conge
             switch (type_conge) {
                 case "mariage":
-                    endDate.setDate(endDate.getDate() + 2); // 4 days total
+                    endDate.setDate(endDate.getDate() + 3);
                     break;
                 case "naissance":
-                    endDate.setDate(endDate.getDate() + 1); // 3 days total
+                    endDate.setDate(endDate.getDate() + 2);
                     break;
                 case "deces":
-                    endDate.setDate(endDate.getDate() + 1); // 3 days total
+                    endDate.setDate(endDate.getDate() + 2);
                     break;
                 default:
                     // For other types, don't automatically set end date
@@ -193,11 +193,8 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                     }
                     break;
                 case "naissance": {
-                    const birthDate = new Date(date_debut);
-                    const oneMonthLater = new Date(birthDate);
-                    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
-                    if (endDate > oneMonthLater) {
-                        newErrors.date_fin = "Le congé de naissance doit être pris dans un délai d'un mois";
+                    if (nbr_jours > 3) {
+                        newErrors.nbr_jours = "Le congé de naissance ne peut pas dépasser 3 jours";
                     }
                     break;
                 }
@@ -356,7 +353,7 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                                         <SelectValue placeholder="Sélectionner un type de congé" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="mariage">Congé de Mariage (3 jours max)</SelectItem>
+                                        <SelectItem value="mariage">Congé de Mariage (4 jours max)</SelectItem>
                                         <SelectItem value="naissance">Congé de Naissance (3 jours)</SelectItem>
                                         <SelectItem value="deces">Congé de Décès (3 jours max)</SelectItem>
                                         <SelectItem value="sans_solde">Congé sans solde</SelectItem>

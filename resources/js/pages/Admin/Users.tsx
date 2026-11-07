@@ -48,14 +48,6 @@ const Users = ({ users: initialUsers }: UsersProps) => {
         }
     };
 
-    const handleUpdateUser = (updatedUser: User) => {
-        setUsers(prevUsers => prevUsers.map(user => 
-            user.id === updatedUser.id ? updatedUser : user
-        ));
-        setEditModalOpen(false);
-        setSelectedUser(null);
-    };
-
     const handleResetPassword = (user: User) => {
         setSelectedUser(user);
         setResetPasswordModalOpen(true);
@@ -97,7 +89,6 @@ const Users = ({ users: initialUsers }: UsersProps) => {
                             setSelectedUser(null);
                         }}
                         user={selectedUser}
-                        onUpdate={handleUpdateUser}
                     />
                 )}
 

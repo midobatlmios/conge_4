@@ -1,13 +1,6 @@
 import { SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
-import { ComponentType } from 'react';
+import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-
-// Define NavItem interface directly in this file to resolve the error
-interface NavItem {
-  title: string;
-  href: string;
-  icon?: ComponentType;
-}
 
 export function NavMain({ items = [] }: { items: NavItem[] }) {
     const page = usePage();

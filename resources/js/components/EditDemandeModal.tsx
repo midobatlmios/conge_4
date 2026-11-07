@@ -233,7 +233,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="mariage">Congé de Mariage (4 jours max)</SelectItem>
-                                        <SelectItem value="naissance">Congé de Naissance (3 jours)</SelectItem>
+                                        <SelectItem value="naissance">Congé de Naissance (3 jours max)</SelectItem>
                                         <SelectItem value="deces">Congé de Décès (3 jours max)</SelectItem>
                                         <SelectItem value="sans_solde">Congé sans solde</SelectItem>
                                         <SelectItem value="recuperation">Récupération</SelectItem>

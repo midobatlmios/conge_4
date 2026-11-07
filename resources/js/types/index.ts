@@ -1,11 +1,8 @@
+import type { LucideIcon } from 'lucide-react';
+
 export interface PageProps {
     auth: {
-        user: {
-            id: number;
-            name: string;
-            email: string;
-            role: string;
-        };
+        user: User;
     };
 }
 
@@ -15,23 +12,34 @@ export interface BreadcrumbItem {
 }
 
 export interface SharedData extends PageProps {
-    auth: {
-        user: {
-            id: number;
-            name: string;
-            email: string;
-            role: string;
-            is_admin?: boolean;
-            remaining_days?: number;
-            email_verified_at?: string | null;
-        };
-    };
+    name: string;
+    quote?: { message: string; author: string };
     flash?: {
         message?: string;
         type?: 'success' | 'error' | 'warning' | 'info';
     };
     sidebarOpen?: boolean;
     [key: string]: unknown;
+}
+
+export interface User {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+    avatar?: string;
+    is_admin?: boolean;
+    remaining_days?: number;
+    email_verified_at?: string | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface NavItem {
+    title: string;
+    href: string;
+    icon?: LucideIcon | null;
+    isActive?: boolean;
 }
 
 export interface Demande {

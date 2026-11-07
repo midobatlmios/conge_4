@@ -3,26 +3,38 @@
 namespace App\Http\Controllers;
 
 use App\Models\Demande;
+use App\Models\User;
+use App\Notifications\DemandeStatusChanged;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
-use App\Notifications\DemandeStatusChanged;
 
 class DemandesController extends Controller
 {
-    const MAX_DAYS_PER_YEAR = 18;
+    private const MAX_DAYS_PER_YEAR = 18;
 
     public function index(): Response
     {
-        $demandes = Demande::with('user')->get();
-        $currentYear = date('Y');
-        
-        // Add remaining days information to each user
-        $demandes->each(function ($demande) use ($currentYear) {
-            $totalDaysUsed = Demande::getTotalDaysForUser($demande->user_id, $currentYear);
-            $demande->user->remaining_days = self::MAX_DAYS_PER_YEAR - $totalDaysUsed;
+        $user = Auth::user();
+        $query = Demande::with('user')->latest();
+
+        if ($user->role !== 'admin') {
+            $query->where('user_id', $user->id);
+        }
+
+        $demandes = $query->get();
+        $remainingDaysByUser = [];
+
+        $demandes->each(function (Demande $demande) use (&$remainingDaysByUser) {
+            if (!array_key_exists($demande->user_id, $remainingDaysByUser)) {
+                $remainingDaysByUser[$demande->user_id] = self::MAX_DAYS_PER_YEAR
+                    - Demande::getTotalDaysForUser($demande->user_id, now()->year);
+            }
+
+            $demande->user->remaining_days = $remainingDaysByUser[$demande->user_id];
         });
 
         return Inertia::render('Demandes', [
@@ -30,206 +42,150 @@ class DemandesController extends Controller
         ]);
     }
 
-    public function destroy($id)
-    {     
+    public function destroy(int $id)
+    {
         $demande = Demande::findOrFail($id);
+        $user = Auth::user();
+
+        abort_unless(
+            $user->role === 'admin'
+                || ($demande->user_id === $user->id && $demande->etat === 'en attente'),
+            403
+        );
+
         $demande->delete();
+
         return redirect()->back()->with('success', 'Demande supprimée avec succès');
     }
 
-    public function update(Request $request, $id)
-    {     
-        Log::info('Update demande request:', [
-            'request_data' => $request->all(),
-            'demande_id' => $id
-        ]);
-
-        $request->validate([
-            'date_demande' => 'required|date',
-            'date_debut' => 'required|date',
-            'date_fin' => 'required|date',
-            'type_conge' => 'required|in:mariage,naissance,deces,sans_solde,recuperation',
-            'etat' => 'required|in:en attente,acceptée,refusée',
-            'comment' => 'nullable|string|max:1000',
-        ]);
-
+    public function update(Request $request, int $id)
+    {
         $demande = Demande::findOrFail($id);
-        $oldStatus = $demande->etat;
-        
-        Log::info('Current demande data:', [
-            'demande' => $demande->toArray(),
-            'old_status' => $oldStatus,
-            'new_status' => $request->etat,
-            'new_type_conge' => $request->type_conge
-        ]);
-        
-        if ($request->etat === 'acceptée' && $demande->etat !== 'acceptée') {
-            $totalDaysUsed = Demande::getTotalDaysForUser($demande->user_id, $demande->annee);
-            $newDays = $demande->getNbrJoursAttribute();
-            
-            if (($totalDaysUsed + $newDays) > self::MAX_DAYS_PER_YEAR) {
-                return response()->json([
-                    'message' => 'Impossible d\'accepter cette demande. L\'employé dépasserait la limite de ' . self::MAX_DAYS_PER_YEAR . ' jours.'
-                ], 422);
-            }
+        /** @var User $user */
+        $user = Auth::user();
+        $isAdmin = $user->role === 'admin';
+
+        abort_unless(
+            $isAdmin || ($demande->user_id === $user->id && $demande->etat === 'en attente'),
+            403
+        );
+
+        $validated = $this->validateLeaveData($request, $isAdmin);
+        $status = $isAdmin ? $validated['etat'] : $demande->etat;
+
+        if ($status === 'acceptée') {
+            $this->ensureAnnualLimit(
+                $demande->user_id,
+                $validated['date_debut'],
+                $validated['date_fin'],
+                $demande->id
+            );
         }
 
-        $updateData = [
-            'date_demande' => $request->date_demande,
-            'date_debut' => $request->date_debut,
-            'date_fin' => $request->date_fin,
-            'type_conge' => $request->type_conge,
-            'etat' => $request->etat,
-            'comment' => $request->comment
-        ];
-
-        Log::info('Updating demande with data:', $updateData);
-
-        $demande->update($updateData);
-
-        Log::info('Demande updated successfully:', [
-            'demande' => $demande->fresh()->toArray()
+        $oldStatus = $demande->etat;
+        $demande->update([
+            'date_demande' => $validated['date_demande'],
+            'date_debut' => $validated['date_debut'],
+            'date_fin' => $validated['date_fin'],
+            'type_conge' => $validated['type_conge'],
+            'etat' => $status,
+            'comment' => $validated['comment'] ?? null,
+            'valide_par' => $isAdmin && $status !== 'en attente' ? $user->id : null,
         ]);
 
-        // Send notification if status changed to accepted or rejected
-        if ($oldStatus !== $request->etat && ($request->etat === 'acceptée' || $request->etat === 'refusée')) {
-            try {
-                $demande->user->notify(new DemandeStatusChanged($demande));
-                Log::info('Notification sent successfully', [
-                    'demande_id' => $demande->id,
-                    'user_id' => $demande->user_id,
-                    'status' => $request->etat,
-                    'type_conge' => $request->type_conge
-                ]);
-            } catch (\Exception $e) {
-                Log::error('Failed to send notification', [
-                    'demande_id' => $demande->id,
-                    'user_id' => $demande->user_id,
-                    'error' => $e->getMessage()
-                ]);
-            }
+        if ($isAdmin && $oldStatus !== $status && in_array($status, ['acceptée', 'refusée'], true)) {
+            $demande->user->notify(new DemandeStatusChanged($demande));
         }
 
         return response()->json([
             'message' => 'Demande mise à jour avec succès',
-            'demande' => $demande->fresh()
+            'demande' => $demande->fresh(),
         ]);
     }
-     
+
     public function store(Request $request)
-    {    
-        // Log the incoming request data
-        Log::info('Store demande request:', [
-            'request_data' => $request->all(),
-            'user_id' => Auth::id(),
-            'is_authenticated' => Auth::check()
+    {
+        $validated = $this->validateLeaveData($request);
+        $user = Auth::user();
+
+        Demande::create([
+            'date_demande' => $validated['date_demande'],
+            'date_debut' => $validated['date_debut'],
+            'date_fin' => $validated['date_fin'],
+            'type_conge' => $validated['type_conge'],
+            'etat' => 'en attente',
+            'user_id' => $user->id,
+            'comment' => $validated['comment'] ?? null,
         ]);
 
-        $request->validate([
-            'date_demande' => 'required|date',
-            'date_debut' => 'required|date',
-            'date_fin' => 'required|date',
-            'type_conge' => 'required|in:mariage,naissance,deces,sans_solde,recuperation',
-            'etat' => 'required|in:en attente,acceptée,refusée',
-            'comment' => 'nullable|string|max:1000',
-        ]);
-        
-        if (!Auth::check()) {
-            Log::error('User not authenticated when trying to create demande');
-            return response()->json(['message' => 'Utilisateur non authentifié'], 401);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Demande ajoutée avec succès',
+            ], 201);
         }
-        
-        try {
-            // Validate type-specific rules
-            $nbr_jours = $request->nbr_jours;
-            switch ($request->type_conge) {
-                case 'mariage':
-                    if ($nbr_jours > 4) {
-                        return response()->json([
-                            'message' => 'Vous ne pouvez pas renseigner plus de 4 jours pour ce type de congé'
-                        ], 422);
-                    }
-                    break;
-                case 'naissance':
-                    $startDate = new \DateTime($request->date_debut);
-                    $oneMonthLater = (clone $startDate)->modify('+1 month');
-                    $endDate = new \DateTime($request->date_fin);
-                    if ($endDate > $oneMonthLater) {
-                        return response()->json([
-                            'message' => 'Le congé de naissance doit être pris dans un délai d\'un mois'
-                        ], 422);
-                    }
-                    break;
-                case 'deces':
-                    if ($nbr_jours > 3) {
-                        return response()->json([
-                            'message' => 'Vous ne pouvez pas renseigner plus de 3 jours pour ce type de congé'
-                        ], 422);
-                    }
-                    break;
-                case 'recuperation':
-                    if (empty($request->comment)) {
-                        return response()->json([
-                            'message' => 'Veuillez renseigner les dates sujet de récupération'
-                        ], 422);
-                    }
-                    break;
-            }
 
-            // Log the data before creation
-            Log::info('Creating demande with data:', [
-                'date_demande' => $request->date_demande,
-                'date_debut' => $request->date_debut,
-                'date_fin' => $request->date_fin,
-                'type_conge' => $request->type_conge,
-                'etat' => $request->etat,
-                'nbr_jours' => $nbr_jours,
-                'annee' => $request->annee,
-                'user_id' => Auth::id(),
-                'comment' => $request->comment
-            ]);
+        return redirect()->back()->with('success', 'Demande ajoutée avec succès');
+    }
 
-            $demande = Demande::create([
-                'date_demande' => $request->date_demande,
-                'date_debut' => $request->date_debut,
-                'date_fin' => $request->date_fin,
-                'type_conge' => $request->type_conge,
-                'etat' => $request->etat,
-                'nbr_jours' => $nbr_jours,
-                'annee' => $request->annee,
-                'user_id' => Auth::id(),
-                'comment' => $request->comment
-            ]);
-            
-            // Log the created demande
-            Log::info('Demande created successfully:', [
-                'demande' => $demande->toArray(),
-                'user_id' => Auth::id()
-            ]);
-            
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'message' => 'Demande ajoutée avec succès',
-                    'demande' => $demande
-                ], 200);
+    private function validateLeaveData(Request $request, bool $isAdmin = false): array
+    {
+        $rules = [
+            'date_demande' => ['required', 'date'],
+            'date_debut' => ['required', 'date'],
+            'date_fin' => ['required', 'date', 'after_or_equal:date_debut'],
+            'type_conge' => ['required', 'in:mariage,naissance,deces,sans_solde,recuperation'],
+            'comment' => ['required_if:type_conge,recuperation', 'nullable', 'string', 'max:1000'],
+        ];
+
+        if ($isAdmin) {
+            $rules['etat'] = ['required', 'in:en attente,acceptée,refusée'];
+        }
+
+        return Validator::make($request->all(), $rules)
+            ->after(function ($validator) use ($request) {
+                if ($validator->errors()->isNotEmpty()) {
+                    return;
+                }
+
+                $days = Carbon::parse($request->date_debut)
+                    ->diffInDays(Carbon::parse($request->date_fin)) + 1;
+                $maximum = match ($request->type_conge) {
+                    'mariage' => 4,
+                    'naissance', 'deces' => 3,
+                    default => null,
+                };
+
+                if ($maximum !== null && $days > $maximum) {
+                    $validator->errors()->add(
+                        'date_fin',
+                        "Cette demande ne peut pas dépasser {$maximum} jours."
+                    );
+                }
+            })
+            ->validate();
+    }
+
+    private function ensureAnnualLimit(
+        int $userId,
+        string $startDate,
+        string $endDate,
+        ?int $excludeDemandeId = null
+    ): void {
+        $start = Carbon::parse($startDate);
+        $end = Carbon::parse($endDate);
+
+        for ($year = $start->year; $year <= $end->year; $year++) {
+            $yearStart = $start->copy()->max(Carbon::create($year, 1, 1));
+            $yearEnd = $end->copy()->min(Carbon::create($year, 12, 31));
+            $requestedDays = (int) $yearStart->diffInDays($yearEnd) + 1;
+            $usedDays = Demande::getTotalDaysForUser($userId, $year, $excludeDemandeId);
+
+            if ($usedDays + $requestedDays > self::MAX_DAYS_PER_YEAR) {
+                abort(response()->json([
+                    'message' => "Impossible d'accepter cette demande. L'employé dépasserait la limite de "
+                        . self::MAX_DAYS_PER_YEAR . " jours pour {$year}.",
+                ], 422));
             }
-            
-            return redirect()->back()->with('success', 'Demande ajoutée avec succès');
-        } catch (\Exception $e) {
-            Log::error('Error creating demande:', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'request_data' => $request->all()
-            ]);
-            
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'message' => 'Erreur lors de la création de la demande: ' . $e->getMessage()
-                ], 500);
-            }
-            
-            return redirect()->back()->with('error', 'Erreur lors de la création de la demande');
         }
     }
 }
-

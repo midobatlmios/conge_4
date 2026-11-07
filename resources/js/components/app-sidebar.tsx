@@ -10,7 +10,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
-import { type NavItem } from '@/lib/types';
+import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import { BookOpen, Folder, Settings, BookCheck, LayoutGrid } from 'lucide-react';
 import AppLogo from './app-logo';
@@ -50,7 +50,7 @@ export function AppSidebar() {
     },
     {
       title: 'Manage Users',
-      href: '/Admin/Users',
+      href: '/admin/users',
       icon: Settings,
     },
   ];

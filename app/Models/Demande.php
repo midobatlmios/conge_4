@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Facades\Log;
 
 class Demande extends Model
 {
@@ -37,49 +36,38 @@ class Demande extends Model
         if ($this->date_debut && $this->date_fin) {
             $debut = Carbon::parse($this->date_debut);
             $fin = Carbon::parse($this->date_fin);
-            return $debut->diffInDays($fin) + 1; // Add 1 to include both start and end dates
+            return (int) $debut->diffInDays($fin) + 1;
         }
         return 0;
     }
 
-    public static function getTotalDaysForUser($userId, $year = null)
+    public static function getTotalDaysForUser($userId, $year = null, $excludeDemandeId = null): int
     {
-        // Log the parameters
-        Log::info('Calculating total days for user:', [
-            'user_id' => $userId,
-            'year' => $year
-        ]);
-
         $query = self::where('user_id', $userId)
             ->where('etat', 'acceptée');
 
-        if ($year) {
-            $query->where('annee', $year);
+        if ($excludeDemandeId !== null) {
+            $query->whereKeyNot($excludeDemandeId);
         }
 
-        $demandes = $query->get();
-        
-        // Log the found demandes
-        Log::info('Found demandes:', [
-            'count' => $demandes->count(),
-            'demandes' => $demandes->toArray()
-        ]);
+        if ($year) {
+            $yearStart = Carbon::create((int) $year, 1, 1)->startOfDay();
+            $yearEnd = Carbon::create((int) $year, 12, 31)->endOfDay();
+            $query->whereDate('date_debut', '<=', $yearEnd)
+                ->whereDate('date_fin', '>=', $yearStart);
+        }
 
-        $totalDays = $demandes->sum(function ($demande) {
-            $days = $demande->nbr_jours;
-            Log::info('Adding days from demande:', [
-                'demande_id' => $demande->id,
-                'nbr_jours' => $days,
-                'date_debut' => $demande->date_debut,
-                'date_fin' => $demande->date_fin
-            ]);
-            return $days;
+        return (int) $query->get()->sum(function (self $demande) use ($year) {
+            $start = Carbon::parse($demande->date_debut);
+            $end = Carbon::parse($demande->date_fin);
+
+            if ($year) {
+                $start = $start->max(Carbon::create((int) $year, 1, 1)->startOfDay());
+                $end = $end->min(Carbon::create((int) $year, 12, 31)->endOfDay());
+            }
+
+            return max(0, (int) $start->diffInDays($end) + 1);
         });
-
-        // Log the total days
-        Log::info('Total days calculated:', ['total_days' => $totalDays]);
-
-        return $totalDays;
     }
 
     protected static function boot()
@@ -87,16 +75,17 @@ class Demande extends Model
         parent::boot();
 
         static::creating(function ($demande) {
-            $demande->annee = now()->year;
-            // Calculate and store nbr_jours when creating
             if ($demande->date_debut && $demande->date_fin) {
+                $demande->annee = Carbon::parse($demande->date_debut)->year;
                 $demande->nbr_jours = $demande->getNbrJoursAttribute();
             }
         });
 
         static::updating(function ($demande) {
-            // Recalculate nbr_jours when dates are updated
             if ($demande->isDirty(['date_debut', 'date_fin'])) {
+                if ($demande->date_debut) {
+                    $demande->annee = Carbon::parse($demande->date_debut)->year;
+                }
                 $demande->nbr_jours = $demande->getNbrJoursAttribute();
             }
         });
