@@ -66,7 +66,7 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
 
         switch (type_conge) {
             case "mariage":
-                // Set default dates for mariage (4 days)
+                // Set default dates for mariage (3 days)
                 startDate = new Date();
                 startDate.setDate(startDate.getDate() + 1); // Start tomorrow
                 endDate = new Date(startDate);
@@ -356,7 +356,7 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                                         <SelectValue placeholder="Sélectionner un type de congé" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="mariage">Congé de Mariage (4 jours max)</SelectItem>
+                                        <SelectItem value="mariage">Congé de Mariage (3 jours max)</SelectItem>
                                         <SelectItem value="naissance">Congé de Naissance (3 jours)</SelectItem>
                                         <SelectItem value="deces">Congé de Décès (3 jours max)</SelectItem>
                                         <SelectItem value="sans_solde">Congé sans solde</SelectItem>
