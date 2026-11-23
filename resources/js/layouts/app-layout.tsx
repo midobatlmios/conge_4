@@ -61,7 +61,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
           </div>
           {/* Main navigation */}
           <nav className="mt-4 px-4">
-            <div className="text-xs text-muted-foreground mb-2 pl-2">Platform</div>
+            <div className="text-xs text-muted-foreground mb-2 pl-2">Menu</div>
             <ul className="space-y-1">
               <li>
                 <Link 
@@ -80,7 +80,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                       className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <FileText className="w-4 h-4" /> Gérer les demandes xerus media
+                      <FileText className="w-4 h-4" /> Gérer les demandes
                     </Link>
                   </li>
                   <li>
@@ -106,7 +106,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                 <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center font-bold text-lg">
                   {initials}
                 </div>
-                <span className="font-medium text-sm">{user.name?.toLowerCase() || 'user'}</span>
+                <span className="font-medium text-sm truncate">{user.name || 'Utilisateur'}</span>
                 <ChevronDown className="w-4 h-4 ml-auto text-muted-foreground" />
               </div>
             </DropdownMenuTrigger>
@@ -131,7 +131,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
       {/* Main content */}
       <main className="flex-1 flex flex-col w-full">
         {/* Header */}
-        <header className="flex h-16 items-center justify-between border-b px-4">
+        <header className="flex h-16 items-center justify-between border-b pr-4 pl-16 lg:pl-4">
           <div className="flex items-center gap-2">
             {breadcrumbs && breadcrumbs.length > 0 && (
               <nav className="flex items-center space-x-1 text-sm overflow-x-auto">

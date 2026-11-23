@@ -2,9 +2,9 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Demande } from "@/types";
+import { TYPE_CONGE_LABELS, TypeConge } from "@/lib/leave";
 
 export const columns = (
     onDelete: (id: number) => void,
@@ -12,26 +12,6 @@ export const columns = (
     setSelectedDemande: (demande: Demande) => void,
     isAdmin: boolean
 ): ColumnDef<Demande>[] => [
-    {
-        id: "select",
-        header: ({ table }) => (
-          <Checkbox
-            checked={
-              table.getIsAllPageRowsSelected() ||
-              (table.getIsSomePageRowsSelected() && "indeterminate")
-            }
-            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-            aria-label="Select all"
-          />
-        ),
-        cell: ({ row }) => (
-          <Checkbox
-            checked={row.getIsSelected()}
-            onCheckedChange={(value) => row.toggleSelected(!!value)}
-            aria-label="Select row"
-          />
-        )
-    },
     {
         accessorKey: "user.name",
         header: "Employé",
@@ -76,16 +56,8 @@ export const columns = (
         accessorKey: "type_conge",
         header: "Type de congé",
         cell: ({ row }) => {
-            const type = row.getValue("type_conge") as string;
-            return (
-                <div className="font-medium">
-                    {type === "mariage" && "Congé de Mariage"}
-                    {type === "naissance" && "Congé de Naissance"}
-                    {type === "deces" && "Congé de Décès"}
-                    {type === "sans_solde" && "Congé sans solde"}
-                    {type === "recuperation" && "Récupération"}
-                </div>
-            );
+            const type = row.getValue("type_conge") as TypeConge;
+            return <div className="font-medium">{TYPE_CONGE_LABELS[type] ?? type}</div>;
         },
     },
     {
@@ -99,6 +71,7 @@ export const columns = (
     {
         accessorKey: "etat",
         header: "État",
+        filterFn: "equals",
         cell: ({ row }) => {
             const etat = row.getValue("etat") as string;
             return (
@@ -107,7 +80,7 @@ export const columns = (
                     etat === "acceptée" ? "text-green-500" :
                     "text-red-500"
                 }`}>
-                    {etat}
+                    {etat.charAt(0).toUpperCase() + etat.slice(1)}
                 </div>
             );
         },

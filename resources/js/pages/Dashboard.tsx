@@ -1,6 +1,6 @@
 import { PageProps } from '@inertiajs/core';
 import { Head, router } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AddDemandeModal } from '@/components/AddDemandeModal';
 import EditDemandeModal from '@/components/EditDemandeModal';
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/table";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { TYPE_CONGE_LABELS, useLeaveRules } from '@/lib/leave';
+import type { Demande } from '@/types';
 
 interface DashboardProps extends PageProps {
     auth: {
@@ -26,40 +28,14 @@ interface DashboardProps extends PageProps {
             role: string;
         };
     };
-    demandes: Array<{
-        id: number;
-        date_demande: string;
-        date_debut: string;
-        date_fin: string;
-        nbr_jours: number;
-        etat: string;
-        comment: string;
-        type_conge: string;
-    }>;
+    demandes: Demande[];
 }
 
 export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
+    const rules = useLeaveRules();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [selectedDemande, setSelectedDemande] = useState<any>(null);
-
-    // Add detailed debugging
-    useEffect(() => {
-        console.log('Dashboard mounted with props:', {
-            auth,
-            demandes,
-            demandesLength: demandes.length,
-            demandesTypes: demandes.map(d => ({
-                id: typeof d.id,
-                date_demande: typeof d.date_demande,
-                date_debut: typeof d.date_debut,
-                date_fin: typeof d.date_fin,
-                nbr_jours: typeof d.nbr_jours,
-                etat: typeof d.etat,
-                comment: typeof d.comment
-            }))
-        });
-    }, [auth, demandes]);
+    const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null);
 
     // Calculate status counts
     const statusCounts = {
@@ -103,16 +79,17 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
 
     return (
         <AppLayout>
-            <Head title="Dashboard" />
+            <Head title="Tableau de bord" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative aspect-video overflow-hidden rounded-xl border p-4">
+                    <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-4">
                         <h2 className="text-xl font-bold mb-2">Bienvenue, {auth.user.name}</h2>
-                        <p className="text-lg">
-                            Jours de congé restants: <span className="font-bold">{auth.user.remaining_days}</span>
+                        <p className="text-4xl font-bold">{auth.user.remaining_days}</p>
+                        <p className="text-sm text-muted-foreground">
+                            jours de congé annuel restants sur {rules.maxDaysPerYear} en {new Date().getFullYear()}
                         </p>
                     </div>
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative aspect-video overflow-hidden rounded-xl border p-4">
+                    <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-4">
                         <h2 className="text-xl font-bold mb-2">Statut des demandes</h2>
                         <div className="space-y-2">
                             <p className={`text-lg ${statusCounts['en attente'] > 0 ? 'text-yellow-500' : 'text-gray-500'}`}>
@@ -126,12 +103,18 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                             </p>
                         </div>
                     </div>
-                    <div className="border-sidebar-border/70 dark:border-sidebar-border relative aspect-video overflow-hidden rounded-xl border p-4">
-                        <Button 
-                            className="w-full h-full bg-green-600 hover:bg-green-700 text-white font-medium" 
+                    <div className="border-sidebar-border/70 dark:border-sidebar-border flex flex-col justify-between gap-4 rounded-xl border p-4">
+                        <div>
+                            <h2 className="text-xl font-bold mb-2">Besoin d'un congé ?</h2>
+                            <p className="text-sm text-muted-foreground">
+                                Soumettez une demande ; vous serez notifié dès qu'elle sera traitée.
+                            </p>
+                        </div>
+                        <Button
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-medium"
                             onClick={() => setIsModalOpen(true)}
                         >
-                            Ajouter
+                            Nouvelle demande
                         </Button>
                     </div>
                 </div>
@@ -148,6 +131,7 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Date de demande</TableHead>
+                                    <TableHead>Type de congé</TableHead>
                                     <TableHead>Date de début</TableHead>
                                     <TableHead>Date de fin</TableHead>
                                     <TableHead>Nombre de jours</TableHead>
@@ -160,12 +144,13 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                                 {demandes.map((demande) => (
                                     <TableRow key={demande.id}>
                                         <TableCell>{formatDate(demande.date_demande)}</TableCell>
+                                        <TableCell>{TYPE_CONGE_LABELS[demande.type_conge] ?? demande.type_conge}</TableCell>
                                         <TableCell>{formatDate(demande.date_debut)}</TableCell>
                                         <TableCell>{formatDate(demande.date_fin)}</TableCell>
                                         <TableCell>{demande.nbr_jours}</TableCell>
                                         <TableCell>
                                             <span className={getStatusColor(demande.etat)}>
-                                                {demande.etat}
+                                                {demande.etat.charAt(0).toUpperCase() + demande.etat.slice(1)}
                                             </span>
                                         </TableCell>
                                         <TableCell>{demande.comment || '-'}</TableCell>

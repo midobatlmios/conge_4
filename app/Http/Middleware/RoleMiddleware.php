@@ -18,7 +18,7 @@ class RoleMiddleware
     {
         if (!Auth::check() || !in_array(Auth::user()->role, $roles)) 
         {
-            return response() ->view('errors.unauthorized');
+            return response()->view('errors.unauthorized', [], Response::HTTP_FORBIDDEN);
         }
         return $next($request);
     }

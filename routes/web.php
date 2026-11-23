@@ -3,17 +3,16 @@
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\AdminController;
-use App\Http\Middleware\RoleMiddleware;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DemandesController;
-use App\Http\Controllers\UserController;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\NotificationController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/home', function () {
         return redirect()->route('dashboard');
     });
@@ -36,8 +35,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
 // Notification routes
 Route::middleware(['auth'])->group(function () {
-    Route::get('/notifications', [App\Http\Controllers\NotificationController::class, 'index']);
-    Route::post('/notifications/{notification}/mark-as-read', [App\Http\Controllers\NotificationController::class, 'markAsRead']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{notification}/mark-as-read', [NotificationController::class, 'markAsRead']);
 });
 
 require __DIR__.'/settings.php';

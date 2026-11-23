@@ -20,11 +20,11 @@ interface UsersProps {
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Tableau de bord',
         href: '/dashboard'
     },
     {
-        title: 'Gestion des Utilisateurs',
+        title: 'Gestion des employés',
         href: '/admin/users'
     }
 ];
@@ -59,7 +59,7 @@ const Users = ({ users: initialUsers }: UsersProps) => {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Gestion des Utilisateurs" />
+            <Head title="Gestion des employés" />
             <div className="container mx-auto py-10">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold">Gestion des employés</h1>

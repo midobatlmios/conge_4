@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Demande;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -54,6 +55,18 @@ class HandleInertiaRequests extends Middleware
             'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
+            ],
+            'leaveRules' => fn (): array => [
+                'maxDaysPerYear' => config('conge.max_days_per_year'),
+                'countedTypes' => config('conge.counted_types'),
+                'fixedDeductions' => config('conge.fixed_deductions'),
+                // The signed-in user's remaining annual days for the current year.
+                'remainingDays' => $request->user()
+                    ? Demande::maxDaysPerYear() - Demande::getTotalDaysForUser($request->user()->id, now()->year)
+                    : null,
+                'typeLimits' => config('conge.type_limits'),
+                'workingDays' => config('conge.working_days'),
+                'holidays' => config('conge.holidays'),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

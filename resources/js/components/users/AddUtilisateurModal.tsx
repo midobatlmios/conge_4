@@ -47,7 +47,7 @@ export default function AddUtilisateurModal({ isOpen, onClose, onSuccess }: AddU
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">Adresse e-mail</Label>
                         <Input
                             id="email"
                             type="email"

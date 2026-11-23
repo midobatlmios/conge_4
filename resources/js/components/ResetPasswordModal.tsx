@@ -37,7 +37,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
             
-            const response = await axios.put(`/users/${user?.id}/reset-password`, {
+            await axios.put(`/admin/users/${user?.id}/reset-password`, {
                 password,
                 password_confirmation: passwordConfirmation
             }, {

@@ -65,10 +65,6 @@ export function DataTable<TData, TValue>({
 
   return (
     <div>
-      <div className="flex-1 text-sm text-muted-foreground">
-        {table.getFilteredSelectedRowModel().rows.length} of{" "}
-        {table.getFilteredRowModel().rows.length} row(s) selected.
-      </div>
 
       <div className="flex items-center py-4">
         <Input
@@ -99,7 +95,7 @@ export function DataTable<TData, TValue>({
                       column.toggleVisibility(!!value)
                     }
                   >
-                    {column.id}
+                    {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
                   </DropdownMenuCheckboxItem>
                 )
               })}
@@ -159,8 +155,8 @@ export function DataTable<TData, TValue>({
             Précédent
           </Button>
           <span className="mx-2">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount()}
+            Page {table.getState().pagination.pageIndex + 1} sur{" "}
+            {Math.max(table.getPageCount(), 1)}
           </span>
           <Button
             variant="outline"

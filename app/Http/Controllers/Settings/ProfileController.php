@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Models\User;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -50,6 +52,12 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        if ($user->role === 'admin' && User::where('role', 'admin')->count() <= 1) {
+            throw ValidationException::withMessages([
+                'password' => 'Vous êtes le dernier administrateur : nommez-en un autre avant de supprimer votre compte.',
+            ]);
+        }
 
         Auth::logout();
 

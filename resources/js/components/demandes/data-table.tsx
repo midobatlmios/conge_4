@@ -1,6 +1,4 @@
-"use client"
 import * as React from "react"
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { AddDemandeModal } from "@/components/AddDemandeModal"
 import {
@@ -16,12 +14,12 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-  } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -32,23 +30,24 @@ import {
 } from "@/components/ui/table"
 
 interface DataTableProps<TData, TValue> {
-    
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  isAdmin?: boolean
+  users?: { id: number; name: string }[]
 }
+
+const ALL_STATUSES = "all"
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  isAdmin = false,
+  users = [],
 }: DataTableProps<TData, TValue>) {
-    const [sorting, setSorting] = React.useState<SortingState>([])
-    const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-        []
-      )
-      const [rowSelection, setRowSelection] = React.useState({})
-      const [isModelOpen, setIsModalOpen] = useState(false) ;
-    const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [isAddOpen, setIsAddOpen] = React.useState(false)
 
   const table = useReactTable({
     data,
@@ -60,115 +59,104 @@ export function DataTable<TData, TValue>({
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
-      rowSelection,
-    }
+    },
   })
+
+  const statusFilter = (table.getColumn("etat")?.getFilterValue() as string) ?? ALL_STATUSES
 
   return (
     <div>
-        <div className="flex-1 text-sm text-muted-foreground">
-  {table.getFilteredSelectedRowModel().rows.length} of{" "}
-  {table.getFilteredRowModel().rows.length} row(s) selected.
-</div>
-
-      <div className="flex items-center py-4">
-        <Input
-          placeholder="Filter etat"
-          value={(table.getColumn("etat")?.getFilterValue() as string) ?? ""}
-          onChange={(event) =>
-            table.getColumn("etat")?.setFilterValue(event.target.value)
+      <div className="flex flex-wrap items-center gap-2 py-4">
+        <Select
+          value={statusFilter}
+          onValueChange={(value) =>
+            table.getColumn("etat")?.setFilterValue(value === ALL_STATUSES ? undefined : value)
           }
-          className="max-w-sm"
-        />
-        <Button variant="outline" className="ml-2" onClick={() => setIsModalOpen(true)}>Add</Button>
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Filtrer par état" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_STATUSES}>Tous les états</SelectItem>
+            <SelectItem value="en attente">En attente</SelectItem>
+            <SelectItem value="acceptée">Acceptées</SelectItem>
+            <SelectItem value="refusée">Refusées</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button onClick={() => setIsAddOpen(true)}>Nouvelle demande</Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="ml-auto">
-              Columns
+              Colonnes
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {table
               .getAllColumns()
-              .filter(
-                (column) => column.getCanHide()
-              )
-              .map((column) => {
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    className="capitalize"
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
-                  >
-                    {column.id}
-                  </DropdownMenuCheckboxItem>
-                )
-              })}
+              .filter((column) => column.getCanHide())
+              .map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.id}
+                  checked={column.getIsVisible()}
+                  onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                >
+                  {typeof column.columnDef.header === "string" ? column.columnDef.header : column.id}
+                </DropdownMenuCheckboxItem>
+              ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-                
-              {headerGroup.headers.map((header) => {
-
-                return (
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
                     {header.isPlaceholder
                       ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                      : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
-                )
-              })}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
-                
-              <TableRow
-                key={row.id}
-                data-state={row.getIsSelected() && "selected"}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
                 ))}
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={columns.length} className="h-24 text-center">
-                No results.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-      <div className="flex items-center justify-end space-x-2 py-4">
+            ))}
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows?.length ? (
+              table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={columns.length} className="h-24 text-center">
+                  Aucune demande.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-end gap-2 py-4">
+        <span className="mr-2 text-sm text-muted-foreground">
+          Page {table.getState().pagination.pageIndex + 1} sur {Math.max(table.getPageCount(), 1)}
+        </span>
         <Button
           variant="outline"
           size="sm"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
         >
-          Previous
+          Précédent
         </Button>
         <Button
           variant="outline"
@@ -176,11 +164,10 @@ export function DataTable<TData, TValue>({
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
-          Next
+          Suivant
         </Button>
-        <AddDemandeModal isOpen={isModelOpen} onClose={() => setIsModalOpen(false)} />      </div>
       </div>
-      </div>
-    
+      <AddDemandeModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} isAdmin={isAdmin} users={users} />
+    </div>
   )
 }

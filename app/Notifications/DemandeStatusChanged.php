@@ -3,13 +3,14 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use App\Models\Demande;
 use Illuminate\Support\Facades\Log;
 
-class DemandeStatusChanged extends Notification implements ShouldQueue
+// Sent immediately rather than queued: it is only written to the database, and a
+// queued notification never arrives unless a queue worker is running.
+class DemandeStatusChanged extends Notification
 {
     use Queueable;
 

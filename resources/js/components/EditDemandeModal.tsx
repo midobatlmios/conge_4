@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Demande } from "@/types";
 import axios from "axios";
+import { TypeConge, countWorkingDays, endAfterWorkingDays, todayISO, useLeaveRules } from "@/lib/leave";
 
 interface EditDemandeModalProps {
     isOpen: boolean;
@@ -19,12 +20,12 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
     const [formData, setFormData] = useState<Demande>({
         id: 0, 
         user_id: 0,
-        date_demande: new Date().toISOString().split('T')[0], 
+        date_demande: todayISO(),
         date_debut: "", 
         date_fin: "", 
         nbr_jours: 0,
         annee: new Date().getFullYear(),
-        type_conge: "mariage",
+        type_conge: "annuel",
         etat: "en attente", 
         valide_par: null,
         comment: "",
@@ -46,78 +47,45 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
         }
     }, [demande]);
 
-    // Handle type_conge changes
-    const handleTypeCongeChange = (value: "mariage" | "naissance" | "deces" | "sans_solde" | "recuperation") => {
-        console.log('Changing type_conge to:', value); // Debug log
-        
-        // Update type_conge first
-        setFormData(prev => {
-            console.log('Previous form data:', prev); // Debug log
-            const newData = {
-                ...prev,
-                type_conge: value
-            };
-            console.log('New form data:', newData); // Debug log
-            return newData;
-        });
+    const rules = useLeaveRules();
+    const fixedLength = rules.typeLimits[formData.type_conge];
+    const nbrJours = formData.date_debut && formData.date_fin
+        ? countWorkingDays(formData.date_debut, formData.date_fin, rules)
+        : 0;
 
-        // Reset dates when type changes
-        if (formData.date_debut) {
-            const startDate = new Date(formData.date_debut);
-            const endDate = new Date(startDate);
-
-            switch (value) {
-                case "mariage":
-                    endDate.setDate(endDate.getDate() + 3); // 4 days total
-                    break;
-                case "naissance":
-                    endDate.setDate(endDate.getDate() + 2); // 3 days total
-                    break;
-                case "deces":
-                    endDate.setDate(endDate.getDate() + 2); // 3 days total
-                    break;
-                default:
-                    return;
-            }
-
-            setFormData(prev => ({
-                ...prev,
-                date_fin: endDate.toISOString().split('T')[0]
-            }));
-        }
+    // Fixed-length leave types (mariage, naissance, décès) get their end date computed in working days.
+    const computeEndDate = (type: TypeConge, start: string, currentEnd: string) => {
+        const limit = rules.typeLimits[type];
+        return limit && start ? endAfterWorkingDays(start, limit, rules) : currentEnd;
     };
 
-    // Handle date_debut changes
+    const handleTypeCongeChange = (value: TypeConge) => {
+        setFormData(prev => ({
+            ...prev,
+            type_conge: value,
+            date_fin: computeEndDate(value, prev.date_debut, prev.date_fin),
+        }));
+        clearDateErrors();
+    };
+
+    // A changed date or type makes earlier date errors stale.
+    const clearDateErrors = () => {
+        setErrors(prev => {
+            const rest = { ...prev };
+            delete rest.date_debut;
+            delete rest.date_fin;
+            return rest;
+        });
+    };
+
     const handleDateDebutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newDateDebut = e.target.value;
         setFormData(prev => ({
             ...prev,
-            date_debut: newDateDebut
+            date_debut: newDateDebut,
+            date_fin: computeEndDate(prev.type_conge, newDateDebut, prev.date_fin),
         }));
-
-        if (newDateDebut) {
-            const startDate = new Date(newDateDebut);
-            const endDate = new Date(startDate);
-
-            switch (formData.type_conge) {
-                case "mariage":
-                    endDate.setDate(endDate.getDate() + 3); // 4 days total
-                    break;
-                case "naissance":
-                    endDate.setDate(endDate.getDate() + 2); // 3 days total
-                    break;
-                case "deces":
-                    endDate.setDate(endDate.getDate() + 2); // 3 days total
-                    break;
-                default:
-                    return;
-            }
-
-            setFormData(prev => ({
-                ...prev,
-                date_fin: endDate.toISOString().split('T')[0]
-            }));
-        }
+        clearDateErrors();
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -147,7 +115,6 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
         try {
             const dataToSend = {
                 _method: 'PUT',
-                date_demande: formData.date_demande,
                 date_debut: formData.date_debut,
                 date_fin: formData.date_fin,
                 type_conge: formData.type_conge,
@@ -224,7 +191,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                 <label htmlFor="type_conge" className="text-sm font-medium">Type de congé</label>
                                 <Select
                                     value={formData.type_conge}
-                                    onValueChange={(value: "mariage" | "naissance" | "deces" | "sans_solde" | "recuperation") => {
+                                    onValueChange={(value: TypeConge) => {
                                         handleTypeCongeChange(value);
                                     }}
                                 >
@@ -232,6 +199,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                         <SelectValue placeholder="Sélectionner un type de congé" />
                                     </SelectTrigger>
                                     <SelectContent>
+                                        <SelectItem value="annuel">Congé annuel</SelectItem>
                                         <SelectItem value="mariage">Congé de Mariage (4 jours max)</SelectItem>
                                         <SelectItem value="naissance">Congé de Naissance (3 jours max)</SelectItem>
                                         <SelectItem value="deces">Congé de Décès (3 jours max)</SelectItem>
@@ -239,6 +207,9 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                         <SelectItem value="recuperation">Récupération</SelectItem>
                                     </SelectContent>
                                 </Select>
+                                {formData.type_conge === "annuel" && (
+                                    <p className="text-sm text-gray-500">Déduit du solde de {rules.maxDaysPerYear} jours ouvrés par an</p>
+                                )}
                                 {formData.type_conge === "mariage" && (
                                     <p className="text-sm text-gray-500">4 jours dont deux jours payés et deux jours déduits automatiquement du congé</p>
                                 )}
@@ -262,11 +233,11 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     id="nbr_jours"
                                     type="number" 
                                     name="nbr_jours" 
-                                    value={formData.nbr_jours} 
+                                    value={nbrJours}
                                     className="w-full"
-                                    readOnly 
+                                    readOnly
                                 />
-                                <p className="text-gray-500 text-xs">Calculé automatiquement à partir des dates</p>
+                                <p className="text-gray-500 text-xs">Jours ouvrés, hors week-ends et jours fériés</p>
                             </div>
                         </div>
                         
@@ -295,10 +266,10 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     onChange={handleChange} 
                                     className={errors.date_fin ? "border-red-500" : ""}
                                     required 
-                                    readOnly={formData.type_conge === "mariage" || formData.type_conge === "naissance" || formData.type_conge === "deces"}
+                                    readOnly={Boolean(fixedLength)}
                                 />
                                 {errors.date_fin && <p className="text-red-500 text-xs">{errors.date_fin[0]}</p>}
-                                {(formData.type_conge === "mariage" || formData.type_conge === "naissance" || formData.type_conge === "deces") && (
+                                {fixedLength && (
                                     <p className="text-sm text-gray-500">La date de fin est automatiquement calculée en fonction de la date de début</p>
                                 )}
                             </div>

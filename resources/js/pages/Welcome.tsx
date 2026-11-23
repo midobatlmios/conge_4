@@ -6,7 +6,7 @@ export default function Welcome() {
 
     return (
         <>
-            <Head title="Welcome">
+            <Head title="Accueil">
                 <link rel="preconnect" href="https://fonts.bunny.net" />
                 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
             </Head>
@@ -27,20 +27,12 @@ export default function Welcome() {
                                 Dashboard
                             </Link>
                         ) : (
-                            <>
-                                <Link
-                                    href={route('login')}
-                                    className="inline-block rounded-sm border border-[#19140035] bg-white text-[#1b1b18] px-5 py-1.5 text-sm leading-normal hover:border-[#19140035] dark:border-transparent dark:bg-transparent dark:text-[#EDEDEC] dark:hover:border-[#3E3E3A]"
-                                >
-                                    Se connecter
-                                </Link>
-                                <Link
-                                    href={route('register')}
-                                    className="inline-block rounded-sm border border-[#19140035] bg-white text-[#1b1b18] px-5 py-1.5 text-sm leading-normal hover:border-[#1915014a] dark:border-[#3E3E3A] dark:bg-transparent dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
-                                >
-                                    S'inscrire
-                                </Link>
-                            </>
+                            <Link
+                                href={route('login')}
+                                className="inline-block rounded-sm border border-[#19140035] bg-white text-[#1b1b18] px-5 py-1.5 text-sm leading-normal hover:border-[#19140035] dark:border-transparent dark:bg-transparent dark:text-[#EDEDEC] dark:hover:border-[#3E3E3A]"
+                            >
+                                Se connecter
+                            </Link>
                         )}
                     </nav>
                 </header>

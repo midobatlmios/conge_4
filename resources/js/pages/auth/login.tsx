@@ -74,7 +74,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             autoComplete="current-password"
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Password"
+                            placeholder="Mot de passe"
                         />
                         <InputError message={errors.password} />
                     </div>
@@ -97,10 +97,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 </div>
 
                 <div className="text-muted-foreground text-center text-sm">
-                    Don't have an account?{' '}
-                    <TextLink href={route('register')} tabIndex={5}>
-                    S'inscrire
-                    </TextLink>
+                    Pas de compte ? Demandez-en un à votre administrateur.
                 </div>
             </form>
 

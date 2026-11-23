@@ -50,7 +50,7 @@ export default function Password() {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Paramètres du profil" />
+            <Head title="Paramètres du mot de passe" />
 
             <SettingsLayout>
                 <div className="space-y-6">

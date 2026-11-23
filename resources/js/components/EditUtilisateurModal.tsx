@@ -85,10 +85,11 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                     });
                 },
                 onError: (errors) => {
+                    // Each error is shown under its own field; the banner only points to them.
                     setErrors(errors);
                     setMessage({
                         type: "error",
-                        text: "Une erreur s'est produite lors de la mise à jour de l'utilisateur"
+                        text: "Veuillez corriger les champs indiqués ci-dessous."
                     });
                 }
             });
@@ -131,7 +132,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                     </div>
                     
                     <div className="flex flex-col space-y-1">
-                        <label htmlFor="email">Email</label>
+                        <label htmlFor="email">Adresse e-mail</label>
                         <Input 
                             id="email"
                             type="email" 

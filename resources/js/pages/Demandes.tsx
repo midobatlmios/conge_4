@@ -9,16 +9,17 @@ import React, { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
   {
-    title: 'Demandes',
+    title: 'Gestion des demandes',
     href: '/demandes'
   }
 ];
 
 interface DemandesProps {
   demandes: Demande[];
+  users: { id: number; name: string }[];
 }
 
-export default function Demandes({ demandes }: DemandesProps) {
+export default function Demandes({ demandes, users }: DemandesProps) {
   const [editModelOpen, setEditModelOpen] = useState(false);
   const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null);
   const { auth } = usePage<{ auth: { user: { role: string } } }>().props;
@@ -43,11 +44,13 @@ export default function Demandes({ demandes }: DemandesProps) {
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
-      <Head title="Demandes" />
+      <Head title="Gestion des demandes" />
       <div className="container mx-auto py-10">
         <DataTable 
           columns={columns(handleDelete, setEditModelOpen, setSelectedDemande, isAdmin)} 
-          data={demandes} 
+          data={demandes}
+          isAdmin={isAdmin}
+          users={users}
         />
       </div>
       <EditDemandeModal 

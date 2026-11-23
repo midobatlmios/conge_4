@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
+import { TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -116,7 +117,7 @@ export default function Notifications() {
                         >
                             <p className="font-medium">{notification.data.message}</p>
                             <p className="text-sm text-gray-500">
-                                {new Date(notification.created_at).toLocaleDateString()}
+                                {notification.created_at}
                             </p>
                             {notification.data.comment && (
                                 <p className="text-sm text-gray-600 mt-1">
@@ -124,7 +125,7 @@ export default function Notifications() {
                                 </p>
                             )}
                             <p className="text-sm text-gray-500">
-                                Type: {notification.data.type_conge}
+                                Type : {TYPE_CONGE_LABELS[notification.data.type_conge as TypeConge] ?? notification.data.type_conge}
                             </p>
                         </DropdownMenuItem>
                     ))
