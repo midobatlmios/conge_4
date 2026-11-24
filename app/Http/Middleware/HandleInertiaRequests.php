@@ -2,7 +2,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\Demande;
+use App\Models\Holiday;
+use App\Services\LeaveCalculator;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -62,11 +63,12 @@ class HandleInertiaRequests extends Middleware
                 'fixedDeductions' => config('conge.fixed_deductions'),
                 // The signed-in user's remaining annual days for the current year.
                 'remainingDays' => $request->user()
-                    ? Demande::maxDaysPerYear() - Demande::getTotalDaysForUser($request->user()->id, now()->year)
+                    ? app(LeaveCalculator::class)->remainingDays($request->user()->id, now()->year)
                     : null,
                 'typeLimits' => config('conge.type_limits'),
                 'workingDays' => config('conge.working_days'),
-                'holidays' => config('conge.holidays'),
+                // Only signed-in pages count leave days; skip the query for guests.
+                'holidays' => $request->user() ? Holiday::keys() : [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

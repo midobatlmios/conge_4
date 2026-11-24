@@ -1,6 +1,6 @@
 <?php
 
-use App\Models\Demande;
+use App\Services\LeaveCalculator;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -21,7 +21,7 @@ return new class extends Migration
 
         DB::table('demandes')->orderBy('id')->each(function ($row) {
             DB::table('demandes')->where('id', $row->id)->update([
-                'nbr_jours' => Demande::countWorkingDays($row->date_debut, $row->date_fin),
+                'nbr_jours' => app(LeaveCalculator::class)->workingDays($row->date_debut, $row->date_fin),
             ]);
         });
     }

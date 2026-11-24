@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
@@ -41,11 +42,25 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $deactivated = false;
+
+        // The callback runs only once the password is known to be right, so the
+        // "deactivated" message is never shown to someone guessing passwords.
+        $attempt = Auth::attemptWhen(
+            $this->only('email', 'password'),
+            function (User $user) use (&$deactivated) {
+                $deactivated = ! $user->isActive();
+
+                return ! $deactivated;
+            },
+            $this->boolean('remember'),
+        );
+
+        if (! $attempt) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
+                'email' => $deactivated ? __('auth.deactivated') : __('auth.failed'),
             ]);
         }
 

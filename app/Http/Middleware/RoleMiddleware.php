@@ -5,21 +5,24 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Auth;
 
+/**
+ * Restricts a route to the given roles, e.g. "role:admin".
+ * Other users get the 403 "access denied" page.
+ */
 class RoleMiddleware
 {
     /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next,...$roles): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (!Auth::check() || !in_array(Auth::user()->role, $roles)) 
-        {
+        $user = $request->user();
+
+        if (! $user || ! in_array($user->role->value, $roles, true)) {
             return response()->view('errors.unauthorized', [], Response::HTTP_FORBIDDEN);
         }
+
         return $next($request);
     }
 }

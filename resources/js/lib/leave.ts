@@ -11,7 +11,7 @@ export const TYPE_CONGE_LABELS: Record<TypeConge, string> = {
     recuperation: 'Récupération',
 };
 
-/** Leave rules shared by the server from config/conge.php. */
+/** Leave rules shared by the server from config/conge.php (holidays from the admin-managed holidays table). */
 export interface LeaveRules {
     maxDaysPerYear: number;
     countedTypes: TypeConge[];

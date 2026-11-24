@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\Role;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property Role $role
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
@@ -16,7 +20,7 @@ class User extends Authenticatable
     /**
      * The attributes that are mass assignable.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $fillable = [
         'name',
@@ -28,7 +32,7 @@ class User extends Authenticatable
     /**
      * The attributes that should be hidden for serialization.
      *
-     * @var array<int, string>
+     * @var list<string>
      */
     protected $hidden = [
         'password',
@@ -36,23 +40,42 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     * @var array<string, string>
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'role' => Role::class,
+        'deactivated_at' => 'datetime',
     ];
 
-    public function demandes()
+    public function demandes(): HasMany
     {
         return $this->hasMany(Demande::class);
     }
 
-    public function notifications(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    public function isAdmin(): bool
     {
-        return $this->morphMany(\Illuminate\Notifications\DatabaseNotification::class, 'notifiable')
-            ->orderBy('created_at', 'desc');
+        return $this->role === Role::Admin;
+    }
+
+    /** A deactivated account (employee who left) cannot sign in; its history is kept. */
+    public function isActive(): bool
+    {
+        return $this->deactivated_at === null;
+    }
+
+    /** @param Builder<User> $query */
+    public function scopeActive(Builder $query): void
+    {
+        $query->whereNull('deactivated_at');
+    }
+
+    /** Whether this user is the only active administrator left. */
+    public function isLastAdmin(): bool
+    {
+        return $this->isAdmin()
+            && $this->isActive()
+            && static::active()->where('role', Role::Admin)->count() <= 1;
     }
 }

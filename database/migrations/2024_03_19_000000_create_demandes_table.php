@@ -34,4 +34,4 @@ class CreateDemandesTable extends Migration
     {
         Schema::dropIfExists('demandes');
     }
-} 
+}

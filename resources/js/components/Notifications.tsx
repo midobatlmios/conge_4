@@ -1,13 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
-import { TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
+import { Bell } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface Notification {
     id: string;
@@ -34,19 +29,19 @@ export default function Notifications() {
             try {
                 const response = await fetch('/notifications', {
                     headers: {
-                        'Accept': 'application/json',
+                        Accept: 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    }
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
                 });
-                
+
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                
+
                 const data = await response.json();
                 console.log('Received notifications data:', data); // Debug log
-                
+
                 // Ensure data is an array
                 const notificationsArray = Array.isArray(data) ? data : [];
                 setNotifications(notificationsArray);
@@ -69,21 +64,19 @@ export default function Notifications() {
             const response = await fetch(`/notifications/${id}/mark-as-read`, {
                 method: 'POST',
                 headers: {
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                }
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
             });
 
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            setNotifications(notifications.map(n => 
-                n.id === id ? { ...n, read_at: new Date().toISOString() } : n
-            ));
-            setUnreadCount(prev => Math.max(0, prev - 1));
+            setNotifications(notifications.map((n) => (n.id === id ? { ...n, read_at: new Date().toISOString() } : n)));
+            setUnreadCount((prev) => Math.max(0, prev - 1));
         } catch (error) {
             console.error('Error marking notification as read:', error);
         }
@@ -103,27 +96,17 @@ export default function Notifications() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
                 {!Array.isArray(notifications) || notifications.length === 0 ? (
-                    <DropdownMenuItem className="text-sm text-gray-500">
-                        Aucune notification
-                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-sm text-gray-500">Aucune notification</DropdownMenuItem>
                 ) : (
                     notifications.map((notification) => (
                         <DropdownMenuItem
                             key={notification.id}
-                            className={`flex flex-col items-start gap-1 p-3 ${
-                                !notification.read_at ? 'bg-gray-50' : ''
-                            }`}
+                            className={`flex flex-col items-start gap-1 p-3 ${!notification.read_at ? 'bg-gray-50' : ''}`}
                             onClick={() => markAsRead(notification.id)}
                         >
                             <p className="font-medium">{notification.data.message}</p>
-                            <p className="text-sm text-gray-500">
-                                {notification.created_at}
-                            </p>
-                            {notification.data.comment && (
-                                <p className="text-sm text-gray-600 mt-1">
-                                    {notification.data.comment}
-                                </p>
-                            )}
+                            <p className="text-sm text-gray-500">{notification.created_at}</p>
+                            {notification.data.comment && <p className="mt-1 text-sm text-gray-600">{notification.data.comment}</p>}
                             <p className="text-sm text-gray-500">
                                 Type : {TYPE_CONGE_LABELS[notification.data.type_conge as TypeConge] ?? notification.data.type_conge}
                             </p>
@@ -133,4 +116,4 @@ export default function Notifications() {
             </DropdownMenuContent>
         </DropdownMenu>
     );
-} 
+}

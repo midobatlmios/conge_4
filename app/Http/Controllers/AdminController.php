@@ -2,65 +2,41 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Admin\ResetUserPasswordRequest;
+use App\Http\Requests\Admin\StoreUserRequest;
+use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
 
+/** Employee account management. Every route is behind the role:admin middleware. */
 class AdminController extends Controller
 {
     public function users(): Response
     {
         return Inertia::render('Admin/Users', [
-            'users' => User::all()
+            // Active employees first; deactivated ones stay listed so they can be reactivated.
+            'users' => User::orderByRaw('deactivated_at is not null')->orderBy('name')->get(),
         ]);
     }
 
-    public function getUsers()
+    public function store(StoreUserRequest $request): RedirectResponse
     {
-        return response()->json(User::all());
+        // The password is hashed by the model's "hashed" cast.
+        User::create($request->validated());
+
+        return redirect()->back()->with('success', 'Utilisateur créé avec succès');
     }
 
-    public function update(Request $request, $id)
+    public function update(UpdateUserRequest $request, User $user): JsonResponse|RedirectResponse
     {
-        $user = User::findOrFail($id);
-
-        $rules = [
-            'name' => 'required|string|max:255',
-            'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($user->id)],
-            'role' => 'required|in:admin,user',
-        ];
+        $user->fill($request->safe()->only(['name', 'email', 'role']));
 
         if ($request->filled('password')) {
-            $rules['password'] = 'required|min:8|confirmed';
-            $rules['password_confirmation'] = 'required';
-        }
-
-        $validated = $request->validate($rules);
-
-        // Never leave the app without an administrator.
-        if ($user->role === 'admin' && $validated['role'] !== 'admin') {
-            if ($user->is($request->user())) {
-                throw ValidationException::withMessages([
-                    'role' => "Vous ne pouvez pas retirer votre propre rôle d'administrateur.",
-                ]);
-            }
-            if (User::where('role', 'admin')->count() <= 1) {
-                throw ValidationException::withMessages([
-                    'role' => 'Impossible de retirer le dernier administrateur.',
-                ]);
-            }
-        }
-
-        $user->name = $validated['name'];
-        $user->email = $validated['email'];
-        $user->role = $validated['role'];
-
-        if ($request->filled('password')) {
-            $user->password = Hash::make($validated['password']);
+            $user->password = $request->validated('password');
         }
 
         $user->save();
@@ -72,37 +48,38 @@ class AdminController extends Controller
         return redirect()->back()->with('success', 'Utilisateur modifié avec succès');
     }
 
-    public function resetPassword(Request $request, $id)
+    /**
+     * An employee who leaves is deactivated, never deleted: they can no longer
+     * sign in, but their requests stay for payroll and audits.
+     */
+    public function deactivate(Request $request, User $user): RedirectResponse
     {
-        $user = User::findOrFail($id);
-        
-        $validated = $request->validate([
-            'password' => 'required|min:8|confirmed',
-            'password_confirmation' => 'required'
-        ]);
+        if ($user->is($request->user())) {
+            return back()->withErrors(['user' => 'Vous ne pouvez pas désactiver votre propre compte.']);
+        }
 
-        $user->password = Hash::make($validated['password']);
-        $user->save();
+        if ($user->isLastAdmin()) {
+            return back()->withErrors(['user' => 'Impossible de désactiver le dernier administrateur actif.']);
+        }
+
+        if ($user->isActive()) {
+            $user->forceFill(['deactivated_at' => now()])->save();
+        }
+
+        return back()->with('success', "{$user->name} a été désactivé.");
+    }
+
+    public function reactivate(User $user): RedirectResponse
+    {
+        $user->forceFill(['deactivated_at' => null])->save();
+
+        return back()->with('success', "{$user->name} a été réactivé.");
+    }
+
+    public function resetPassword(ResetUserPasswordRequest $request, User $user): JsonResponse
+    {
+        $user->update(['password' => $request->validated('password')]);
 
         return response()->json(['message' => 'Mot de passe réinitialisé avec succès']);
     }
-
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
-            'role' => 'required|in:user,admin'
-        ]);
-
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $validated['role']
-        ]);
-
-        return redirect()->back()->with('success', 'Utilisateur créé avec succès');
-    }
-} 
+}

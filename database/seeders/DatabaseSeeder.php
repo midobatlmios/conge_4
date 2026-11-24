@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -15,11 +16,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->createAccount('admin@example.com', 'Admin', 'admin');
-        $this->createAccount('test@example.com', 'Test User', 'user');
+        $this->createAccount('admin@example.com', 'Admin', Role::Admin);
+        $this->createAccount('test@example.com', 'Test User', Role::User);
     }
 
-    private function createAccount(string $email, string $name, string $role): void
+    private function createAccount(string $email, string $name, Role $role): void
     {
         if (User::where('email', $email)->exists()) {
             return;

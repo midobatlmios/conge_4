@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { router } from "@inertiajs/react";
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { router } from '@inertiajs/react';
+import { useState } from 'react';
 
 interface AddUtilisateurModalProps {
     isOpen: boolean;
@@ -17,7 +17,7 @@ export default function AddUtilisateurModal({ isOpen, onClose, onSuccess }: AddU
         name: '',
         email: '',
         password: '',
-        role: 'user'
+        role: 'user',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -26,7 +26,7 @@ export default function AddUtilisateurModal({ isOpen, onClose, onSuccess }: AddU
             onSuccess: () => {
                 onSuccess();
             },
-            preserveUrl: true
+            preserveUrl: true,
         });
     };
 
@@ -39,12 +39,7 @@ export default function AddUtilisateurModal({ isOpen, onClose, onSuccess }: AddU
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Nom</Label>
-                        <Input
-                            id="name"
-                            value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            required
-                        />
+                        <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Adresse e-mail</Label>
@@ -68,10 +63,7 @@ export default function AddUtilisateurModal({ isOpen, onClose, onSuccess }: AddU
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="role">Rôle</Label>
-                        <Select
-                            value={formData.role}
-                            onValueChange={(value) => setFormData({ ...formData, role: value })}
-                        >
+                        <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Sélectionner un rôle" />
                             </SelectTrigger>
@@ -93,4 +85,4 @@ export default function AddUtilisateurModal({ isOpen, onClose, onSuccess }: AddU
             </DialogContent>
         </Dialog>
     );
-} 
+}

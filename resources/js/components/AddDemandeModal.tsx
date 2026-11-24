@@ -1,36 +1,37 @@
-import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { TypeConge, allowanceDays, countWorkingDays, endAfterWorkingDays, nextWorkingDay, toISODate, todayISO, useLeaveRules } from '@/lib/leave';
 import { router } from '@inertiajs/react';
 import axios from 'axios';
-import {
-    TypeConge,
-    allowanceDays,
-    countWorkingDays,
-    endAfterWorkingDays,
-    nextWorkingDay,
-    toISODate,
-    todayISO,
-    useLeaveRules,
-} from "@/lib/leave";
+import { useEffect, useState } from 'react';
 
 type FormErrors = Record<string, string | string[]>;
 
 const firstError = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
-export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }: { isOpen: boolean, onClose: () => void, isAdmin?: boolean, users?: { id: number; name: string }[] }) => {
+export const AddDemandeModal = ({
+    isOpen,
+    onClose,
+    isAdmin = false,
+    users = [],
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    isAdmin?: boolean;
+    users?: { id: number; name: string }[];
+}) => {
     const rules = useLeaveRules();
 
-    const [selectedUserId, setSelectedUserId] = useState<string>("");
-    const [date_debut, setDateDebut] = useState("");
-    const [date_fin, setDateFin] = useState("");
-    const [type_conge, setTypeConge] = useState<TypeConge>("annuel");
-    const [comment, setComment] = useState("");
+    const [selectedUserId, setSelectedUserId] = useState<string>('');
+    const [date_debut, setDateDebut] = useState('');
+    const [date_fin, setDateFin] = useState('');
+    const [type_conge, setTypeConge] = useState<TypeConge>('annuel');
+    const [comment, setComment] = useState('');
     const [errors, setErrors] = useState<FormErrors>({});
-    const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+    const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const [loading, setLoading] = useState(false);
 
     // Fixed-length leave types (mariage, naissance, décès) get their end date computed.
@@ -40,14 +41,15 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
     // Warn (without blocking) when an employee's request would exceed their remaining days this year.
     // The admin still can't accept it; admins filing for someone else don't see their own balance here.
     const requestedFromAllowance = allowanceDays(type_conge, nbr_jours, rules);
-    const exceedsBalance = !isAdmin
-        && rules.remainingDays !== null
-        && date_debut.startsWith(String(new Date().getFullYear()))
-        && requestedFromAllowance > rules.remainingDays;
+    const exceedsBalance =
+        !isAdmin &&
+        rules.remainingDays !== null &&
+        date_debut.startsWith(String(new Date().getFullYear())) &&
+        requestedFromAllowance > rules.remainingDays;
 
     // A changed date or type makes earlier date errors stale.
     useEffect(() => {
-        setErrors(prev => {
+        setErrors((prev) => {
             if (!prev.date_debut && !prev.date_fin) return prev;
             const rest = { ...prev };
             delete rest.date_debut;
@@ -58,15 +60,15 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
 
     // Reset the form when the leave type changes; fixed-length types start on the next working day.
     useEffect(() => {
-        setComment(type_conge === "recuperation" ? "Veuillez préciser les dates à récupérer" : "");
+        setComment(type_conge === 'recuperation' ? 'Veuillez préciser les dates à récupérer' : '');
 
         if (fixedLength) {
             const tomorrow = new Date();
             tomorrow.setDate(tomorrow.getDate() + 1);
             setDateDebut(toISODate(nextWorkingDay(tomorrow, rules)));
         } else {
-            setDateDebut("");
-            setDateFin("");
+            setDateDebut('');
+            setDateFin('');
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [type_conge]);
@@ -82,24 +84,24 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
         const newErrors: FormErrors = {};
 
         if (isAdmin && !selectedUserId) {
-            newErrors.user_id = "Veuillez sélectionner un employé";
+            newErrors.user_id = 'Veuillez sélectionner un employé';
         }
         if (!date_debut) {
-            newErrors.date_debut = "La date de début est obligatoire";
+            newErrors.date_debut = 'La date de début est obligatoire';
         } else if (!isAdmin && date_debut < todayISO()) {
-            newErrors.date_debut = "La date de début ne peut pas être dans le passé";
+            newErrors.date_debut = 'La date de début ne peut pas être dans le passé';
         }
         if (!date_fin) {
-            newErrors.date_fin = "La date de fin est obligatoire";
+            newErrors.date_fin = 'La date de fin est obligatoire';
         } else if (date_debut && date_fin < date_debut) {
-            newErrors.date_fin = "La date de fin doit être après la date de début";
+            newErrors.date_fin = 'La date de fin doit être après la date de début';
         } else if (date_debut && nbr_jours === 0) {
-            newErrors.date_fin = "La période choisie ne contient aucun jour ouvré";
+            newErrors.date_fin = 'La période choisie ne contient aucun jour ouvré';
         } else if (fixedLength && nbr_jours > fixedLength) {
             newErrors.date_fin = `Ce type de congé ne peut pas dépasser ${fixedLength} jours ouvrés`;
         }
-        if (type_conge === "recuperation" && !comment) {
-            newErrors.comment = "Veuillez renseigner les dates sujet de récupération";
+        if (type_conge === 'recuperation' && !comment) {
+            newErrors.comment = 'Veuillez renseigner les dates sujet de récupération';
         }
 
         setErrors(newErrors);
@@ -107,11 +109,11 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
     };
 
     const resetForm = () => {
-        setSelectedUserId("");
-        setDateDebut("");
-        setDateFin("");
-        setTypeConge("annuel");
-        setComment("");
+        setSelectedUserId('');
+        setDateDebut('');
+        setDateFin('');
+        setTypeConge('annuel');
+        setComment('');
         setErrors({});
     };
 
@@ -138,13 +140,13 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
             const response = await axios.post('/demandes', formData, {
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                 },
-                withCredentials: true
+                withCredentials: true,
             });
 
             if (response.data) {
-                setMessage({ type: "success", text: "Demande ajoutée avec succès" });
+                setMessage({ type: 'success', text: 'Demande ajoutée avec succès' });
                 resetForm();
 
                 setTimeout(() => {
@@ -153,18 +155,18 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                 }, 1500);
             }
         } catch (error) {
-            console.error("Error adding demande:", error);
+            console.error('Error adding demande:', error);
             if (axios.isAxiosError(error)) {
                 if (error.response?.status === 419) {
-                    setMessage({ type: "error", text: "Session expirée. Veuillez rafraîchir la page et réessayer." });
+                    setMessage({ type: 'error', text: 'Session expirée. Veuillez rafraîchir la page et réessayer.' });
                 } else if (error.response?.data?.errors) {
                     setErrors(error.response.data.errors);
-                    setMessage({ type: "error", text: "Veuillez corriger les erreurs dans le formulaire" });
+                    setMessage({ type: 'error', text: 'Veuillez corriger les erreurs dans le formulaire' });
                 } else {
-                    setMessage({ type: "error", text: error.response?.data?.message || "Une erreur s'est produite lors de l'ajout de la demande" });
+                    setMessage({ type: 'error', text: error.response?.data?.message || "Une erreur s'est produite lors de l'ajout de la demande" });
                 }
             } else {
-                setMessage({ type: "error", text: "Une erreur inattendue s'est produite" });
+                setMessage({ type: 'error', text: "Une erreur inattendue s'est produite" });
             }
         } finally {
             setLoading(false);
@@ -173,29 +175,26 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-h-[90vh] flex flex-col w-[95vw] sm:w-[85vw] md:w-[75vw] lg:w-[60vw] xl:w-[50vw]">
+            <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col sm:w-[85vw] md:w-[75vw] lg:w-[60vw] xl:w-[50vw]">
                 <DialogHeader>
                     <DialogTitle>Ajouter une demande de congé</DialogTitle>
-                    <DialogDescription>
-                        Remplissez le formulaire ci-dessous pour soumettre une nouvelle demande de congé.
-                    </DialogDescription>
+                    <DialogDescription>Remplissez le formulaire ci-dessous pour soumettre une nouvelle demande de congé.</DialogDescription>
                 </DialogHeader>
-                <div className="flex-1 overflow-y-auto pr-4 -mr-4">
+                <div className="-mr-4 flex-1 overflow-y-auto pr-4">
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {message && (
-                            <div className={`p-2 rounded ${message.type === "success" ? "bg-green-200 text-green-800" : "bg-red-200 text-red-800"}`}>
+                            <div className={`rounded p-2 ${message.type === 'success' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
                                 {message.text}
                             </div>
                         )}
 
                         {isAdmin && (
                             <div className="space-y-1">
-                                <label htmlFor="user_id" className="text-sm font-medium">Employé</label>
-                                <Select
-                                    value={selectedUserId}
-                                    onValueChange={setSelectedUserId}
-                                >
-                                    <SelectTrigger className={errors.user_id ? "border-red-500" : ""}>
+                                <label htmlFor="user_id" className="text-sm font-medium">
+                                    Employé
+                                </label>
+                                <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                                    <SelectTrigger className={errors.user_id ? 'border-red-500' : ''}>
                                         <SelectValue placeholder="Sélectionner un employé" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -206,19 +205,16 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {errors.user_id && (
-                                    <p className="text-red-500 text-xs">{firstError(errors.user_id)}</p>
-                                )}
+                                {errors.user_id && <p className="text-xs text-red-500">{firstError(errors.user_id)}</p>}
                             </div>
                         )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-1">
-                                <label htmlFor="type_conge" className="text-sm font-medium">Type de congé</label>
-                                <Select
-                                    value={type_conge}
-                                    onValueChange={(value: TypeConge) => setTypeConge(value)}
-                                >
+                                <label htmlFor="type_conge" className="text-sm font-medium">
+                                    Type de congé
+                                </label>
+                                <Select value={type_conge} onValueChange={(value: TypeConge) => setTypeConge(value)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Sélectionner un type de congé" />
                                     </SelectTrigger>
@@ -231,48 +227,53 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                                         <SelectItem value="recuperation">Récupération</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                {type_conge === "annuel" && (
+                                {type_conge === 'annuel' && (
                                     <p className="text-sm text-gray-500">Déduit de votre solde de {rules.maxDaysPerYear} jours ouvrés par an</p>
                                 )}
-                                {type_conge === "mariage" && (
-                                    <p className="text-sm text-gray-500">4 jours dont deux jours payés et deux jours déduits automatiquement du congé</p>
+                                {type_conge === 'mariage' && (
+                                    <p className="text-sm text-gray-500">
+                                        4 jours dont deux jours payés et deux jours déduits automatiquement du congé
+                                    </p>
                                 )}
-                                {type_conge === "naissance" && (
-                                    <p className="text-sm text-gray-500">3 jours - à prendre dans un délai de un mois à compter de la date de la naissance</p>
+                                {type_conge === 'naissance' && (
+                                    <p className="text-sm text-gray-500">
+                                        3 jours - à prendre dans un délai de un mois à compter de la date de la naissance
+                                    </p>
                                 )}
-                                {type_conge === "deces" && (
-                                    <p className="text-sm text-gray-500">3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours déduits automatiquement du congé</p>
+                                {type_conge === 'deces' && (
+                                    <p className="text-sm text-gray-500">
+                                        3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours
+                                        déduits automatiquement du congé
+                                    </p>
                                 )}
-                                {type_conge === "sans_solde" && (
+                                {type_conge === 'sans_solde' && (
                                     <p className="text-sm text-gray-500">Ce congé sera déduit automatiquement de votre salaire</p>
                                 )}
-                                {type_conge === "recuperation" && (
+                                {type_conge === 'recuperation' && (
                                     <p className="text-sm text-gray-500">La journée à récupérer doit se faire dans un délai de 2 mois</p>
                                 )}
                             </div>
 
                             <div className="space-y-1">
-                                <label htmlFor="nbr_jours" className="text-sm font-medium">Nombre de jours</label>
-                                <Input
-                                    id="nbr_jours"
-                                    type="number"
-                                    name="nbr_jours"
-                                    value={nbr_jours}
-                                    className="w-full"
-                                    readOnly
-                                />
-                                <p className="text-gray-500 text-xs">Jours ouvrés, hors week-ends et jours fériés</p>
+                                <label htmlFor="nbr_jours" className="text-sm font-medium">
+                                    Nombre de jours
+                                </label>
+                                <Input id="nbr_jours" type="number" name="nbr_jours" value={nbr_jours} className="w-full" readOnly />
+                                <p className="text-xs text-gray-500">Jours ouvrés, hors week-ends et jours fériés</p>
                                 {exceedsBalance && (
-                                    <p className="text-amber-600 text-xs">
-                                        Cette demande utilise {requestedFromAllowance} jour(s) de votre solde, mais il ne vous en reste que {rules.remainingDays}. Elle ne pourra pas être acceptée en l'état.
+                                    <p className="text-xs text-amber-600">
+                                        Cette demande utilise {requestedFromAllowance} jour(s) de votre solde, mais il ne vous en reste que{' '}
+                                        {rules.remainingDays}. Elle ne pourra pas être acceptée en l'état.
                                     </p>
                                 )}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-1">
-                                <label htmlFor="date_debut" className="text-sm font-medium">Date de début</label>
+                                <label htmlFor="date_debut" className="text-sm font-medium">
+                                    Date de début
+                                </label>
                                 <Input
                                     id="date_debut"
                                     type="date"
@@ -280,14 +281,16 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                                     value={date_debut}
                                     min={isAdmin ? undefined : todayISO()}
                                     onChange={(e) => setDateDebut(e.target.value)}
-                                    className={errors.date_debut ? "border-red-500" : ""}
+                                    className={errors.date_debut ? 'border-red-500' : ''}
                                     required
                                 />
-                                {errors.date_debut && <p className="text-red-500 text-xs">{firstError(errors.date_debut)}</p>}
+                                {errors.date_debut && <p className="text-xs text-red-500">{firstError(errors.date_debut)}</p>}
                             </div>
 
                             <div className="space-y-1">
-                                <label htmlFor="date_fin" className="text-sm font-medium">Date de fin</label>
+                                <label htmlFor="date_fin" className="text-sm font-medium">
+                                    Date de fin
+                                </label>
                                 <Input
                                     id="date_fin"
                                     type="date"
@@ -295,19 +298,23 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                                     value={date_fin}
                                     min={date_debut || undefined}
                                     onChange={(e) => setDateFin(e.target.value)}
-                                    className={errors.date_fin ? "border-red-500" : ""}
+                                    className={errors.date_fin ? 'border-red-500' : ''}
                                     required
                                     readOnly={Boolean(fixedLength)}
                                 />
-                                {errors.date_fin && <p className="text-red-500 text-xs">{firstError(errors.date_fin)}</p>}
+                                {errors.date_fin && <p className="text-xs text-red-500">{firstError(errors.date_fin)}</p>}
                                 {fixedLength && (
-                                    <p className="text-sm text-gray-500">La date de fin est automatiquement calculée en fonction de la date de début</p>
+                                    <p className="text-sm text-gray-500">
+                                        La date de fin est automatiquement calculée en fonction de la date de début
+                                    </p>
                                 )}
                             </div>
                         </div>
 
                         <div className="space-y-1">
-                            <label htmlFor="comment" className="text-sm font-medium">Commentaire</label>
+                            <label htmlFor="comment" className="text-sm font-medium">
+                                Commentaire
+                            </label>
                             <Textarea
                                 id="comment"
                                 name="comment"
@@ -316,17 +323,17 @@ export const AddDemandeModal = ({ isOpen, onClose, isAdmin = false, users = [] }
                                 placeholder="Entrez la raison de votre demande..."
                                 className={`min-h-[100px] ${errors.comment ? 'border-red-500' : ''}`}
                             />
-                            {errors.comment && <p className="text-red-500 text-xs">{firstError(errors.comment)}</p>}
+                            {errors.comment && <p className="text-xs text-red-500">{firstError(errors.comment)}</p>}
                         </div>
                     </form>
                 </div>
 
-                <DialogFooter className="mt-4 flex-col sm:flex-row gap-2">
+                <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
                     <Button variant="outline" type="button" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
                         Annuler
                     </Button>
                     <Button type="submit" disabled={loading} onClick={handleSubmit} className="w-full sm:w-auto">
-                        {loading ? "Envoi..." : "Soumettre la demande"}
+                        {loading ? 'Envoi...' : 'Soumettre la demande'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

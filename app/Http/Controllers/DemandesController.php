@@ -2,101 +2,110 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\LeaveStatus;
+use App\Http\Requests\Demandes\StoreDemandeRequest;
+use App\Http\Requests\Demandes\UpdateDemandeRequest;
 use App\Models\Demande;
+use App\Models\DemandeEvent;
 use App\Models\User;
 use App\Notifications\DemandeStatusChanged;
-use Carbon\Carbon;
+use App\Services\LeaveCalculator;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class DemandesController extends Controller
 {
-    public function index(): Response
+    public function __construct(private readonly LeaveCalculator $calculator) {}
+
+    public function index(Request $request): Response
     {
-        $user = Auth::user();
-        $query = Demande::with('user')->latest();
+        $user = $request->user();
+        $canViewAll = $user->can('viewAll', Demande::class);
 
-        if ($user->role !== 'admin') {
-            $query->where('user_id', $user->id);
+        $demandes = Demande::with('user')
+            ->latest()
+            ->when(! $canViewAll, fn ($query) => $query->where('user_id', $user->id))
+            ->get();
+
+        $year = now()->year;
+        $remaining = [];
+
+        foreach ($demandes as $demande) {
+            $remaining[$demande->user_id] ??= $this->calculator->remainingDays($demande->user_id, $year);
+            $demande->user->remaining_days = $remaining[$demande->user_id];
         }
-
-        $demandes = $query->get();
-        $remainingDaysByUser = [];
-
-        $demandes->each(function (Demande $demande) use (&$remainingDaysByUser) {
-            if (!array_key_exists($demande->user_id, $remainingDaysByUser)) {
-                $remainingDaysByUser[$demande->user_id] = Demande::maxDaysPerYear()
-                    - Demande::getTotalDaysForUser($demande->user_id, now()->year);
-            }
-
-            $demande->user->remaining_days = $remainingDaysByUser[$demande->user_id];
-        });
 
         return Inertia::render('Demandes', [
             'demandes' => $demandes,
             // Employees an admin can file a request for.
-            'users' => $user->role === 'admin' ? User::orderBy('name')->get(['id', 'name']) : [],
+            'users' => $user->can('createForOthers', Demande::class)
+                ? User::active()->orderBy('name')->get(['id', 'name'])
+                : [],
         ]);
     }
 
-    public function destroy(int $id)
+    public function store(StoreDemandeRequest $request): JsonResponse|RedirectResponse
     {
-        $demande = Demande::findOrFail($id);
-        $user = Auth::user();
+        Demande::create([
+            ...$request->safe()->only(['date_debut', 'date_fin', 'type_conge', 'comment']),
+            'date_demande' => now()->toDateString(),
+            'etat' => LeaveStatus::Pending,
+            'user_id' => $request->ownerId(),
+        ]);
 
-        abort_unless(
-            $user->role === 'admin'
-                || ($demande->user_id === $user->id && $demande->etat === 'en attente'),
-            403
-        );
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Demande ajoutée avec succès'], 201);
+        }
 
-        $demande->delete();
-
-        return redirect()->back()->with('success', 'Demande supprimée avec succès');
+        return redirect()->back()->with('success', 'Demande ajoutée avec succès');
     }
 
-    public function update(Request $request, int $id)
+    public function update(UpdateDemandeRequest $request, Demande $demande): JsonResponse
     {
-        $demande = Demande::findOrFail($id);
-        /** @var User $user */
-        $user = Auth::user();
-        $isAdmin = $user->role === 'admin';
+        $status = $request->newStatus();
+        $type = $request->leaveType();
 
-        abort_unless(
-            $isAdmin || ($demande->user_id === $user->id && $demande->etat === 'en attente'),
-            403
-        );
-
-        $validated = $this->validateLeaveData($request, $isAdmin, $demande->user_id, $demande->id);
-        $status = $isAdmin ? $validated['etat'] : $demande->etat;
-
-        if ($status === 'acceptée' && Demande::countsTowardsAllowance($validated['type_conge'])) {
-            $this->ensureAnnualLimit(
+        if ($status === LeaveStatus::Accepted && $this->calculator->countsTowardsAllowance($type)) {
+            $year = $this->calculator->yearOverAllowance(
                 $demande->user_id,
-                $validated['type_conge'],
-                $validated['date_debut'],
-                $validated['date_fin'],
+                $type,
+                $request->validated('date_debut'),
+                $request->validated('date_fin'),
                 $demande->id
             );
+
+            if ($year !== null) {
+                return response()->json([
+                    'message' => "Impossible d'accepter cette demande. L'employé dépasserait la limite de "
+                        ."{$this->calculator->maxDaysPerYear()} jours de congé annuel pour {$year}.",
+                ], 422);
+            }
         }
 
         $oldStatus = $demande->etat;
-        // date_demande is the submission date: it is set once on creation and never edited.
+        $decidedByAdmin = $request->user()->can('decide', Demande::class) && $status->isDecided();
+
+        // date_demande is the submission date: set once on creation, never edited.
         $demande->update([
-            'date_debut' => $validated['date_debut'],
-            'date_fin' => $validated['date_fin'],
-            'type_conge' => $validated['type_conge'],
+            ...$request->safe()->only(['date_debut', 'date_fin', 'type_conge']),
+            'comment' => $request->validated('comment'),
             'etat' => $status,
-            'comment' => $validated['comment'] ?? null,
-            'valide_par' => $isAdmin && $status !== 'en attente' ? $user->id : null,
+            'valide_par' => $decidedByAdmin ? $request->user()->id : null,
         ]);
 
-        if ($isAdmin && $oldStatus !== $status && in_array($status, ['acceptée', 'refusée'], true)) {
-            $demande->user->notify(new DemandeStatusChanged($demande));
+        if ($decidedByAdmin && $oldStatus !== $status) {
+            try {
+                $demande->user->notify(new DemandeStatusChanged($demande));
+            } catch (TransportExceptionInterface $e) {
+                // The decision is saved and the in-app notification stored; a mail
+                // outage must not turn it into an error. Logged for the admin.
+                report($e);
+            }
         }
 
         return response()->json([
@@ -105,125 +114,39 @@ class DemandesController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    /** Audit trail of one request: who did what, and when. */
+    public function history(Demande $demande): JsonResponse
     {
-        /** @var User $user */
-        $user = Auth::user();
-        $isAdmin = $user->role === 'admin';
+        Gate::authorize('view', $demande);
 
-        // Admins may file a request on behalf of an employee; employees only for themselves.
-        $request->validate($isAdmin ? ['user_id' => ['nullable', 'integer', 'exists:users,id']] : []);
-        $ownerId = $isAdmin && $request->filled('user_id') ? (int) $request->input('user_id') : $user->id;
+        $events = $demande->events()->with('user:id,name')->get();
 
-        $validated = $this->validateLeaveData($request, $isAdmin, $ownerId, null, requireStatus: false);
+        // Names for "employee changed" entries (admin moved a request to someone else).
+        $employeeIds = $events->flatMap(fn (DemandeEvent $event) => [
+            $event->changes['user_id']['old'] ?? null,
+            $event->changes['user_id']['new'] ?? null,
+        ])->filter()->unique();
+        $names = User::whereIn('id', $employeeIds)->pluck('name', 'id');
 
-        Demande::create([
-            'date_demande' => now()->toDateString(),
-            'date_debut' => $validated['date_debut'],
-            'date_fin' => $validated['date_fin'],
-            'type_conge' => $validated['type_conge'],
-            'etat' => 'en attente',
-            'user_id' => $ownerId,
-            'comment' => $validated['comment'] ?? null,
-        ]);
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'message' => 'Demande ajoutée avec succès',
-            ], 201);
-        }
-
-        return redirect()->back()->with('success', 'Demande ajoutée avec succès');
+        return response()->json($events->map(fn (DemandeEvent $event) => [
+            'id' => $event->id,
+            'action' => $event->action,
+            'by' => $event->user?->name,
+            'at' => $event->created_at->toIso8601String(),
+            'changes' => $event->changes,
+            'employee_names' => $names->only(array_filter([
+                $event->changes['user_id']['old'] ?? null,
+                $event->changes['user_id']['new'] ?? null,
+            ])),
+        ]));
     }
 
-    private function validateLeaveData(
-        Request $request,
-        bool $isAdmin,
-        int $ownerId,
-        ?int $excludeDemandeId,
-        bool $requireStatus = true
-    ): array {
-        $rules = [
-            // Employees can't request leave in the past; admins may record it after the fact.
-            'date_debut' => $isAdmin ? ['required', 'date'] : ['required', 'date', 'after_or_equal:today'],
-            'date_fin' => ['required', 'date', 'after_or_equal:date_debut'],
-            'type_conge' => ['required', Rule::in(Demande::TYPES)],
-            'comment' => ['required_if:type_conge,recuperation', 'nullable', 'string', 'max:1000'],
-        ];
+    public function destroy(Demande $demande): RedirectResponse
+    {
+        Gate::authorize('delete', $demande);
 
-        if ($isAdmin && $requireStatus) {
-            $rules['etat'] = ['required', 'in:en attente,acceptée,refusée'];
-        }
+        $demande->delete();
 
-        $messages = [
-            'date_debut.after_or_equal' => 'La date de début ne peut pas être dans le passé.',
-        ];
-
-        return Validator::make($request->all(), $rules, $messages)
-            ->after(function ($validator) use ($request, $ownerId, $excludeDemandeId) {
-                if ($validator->errors()->isNotEmpty()) {
-                    return;
-                }
-
-                $days = Demande::countWorkingDays($request->date_debut, $request->date_fin);
-
-                if ($days === 0) {
-                    $validator->errors()->add(
-                        'date_fin',
-                        'La période choisie ne contient aucun jour ouvré.'
-                    );
-                    return;
-                }
-
-                $maximum = config('conge.type_limits')[$request->type_conge] ?? null;
-
-                if ($maximum !== null && $days > $maximum) {
-                    $validator->errors()->add(
-                        'date_fin',
-                        "Cette demande ne peut pas dépasser {$maximum} jours ouvrés."
-                    );
-                }
-
-                $overlap = Demande::overlapping(
-                    $ownerId,
-                    $request->date_debut,
-                    $request->date_fin,
-                    $excludeDemandeId
-                )->first();
-
-                if ($overlap) {
-                    $from = Carbon::parse($overlap->date_debut)->format('d/m/Y');
-                    $to = Carbon::parse($overlap->date_fin)->format('d/m/Y');
-                    $validator->errors()->add(
-                        'date_debut',
-                        "Cette période chevauche une autre demande (du {$from} au {$to})."
-                    );
-                }
-            })
-            ->validate();
-    }
-
-    private function ensureAnnualLimit(
-        int $userId,
-        string $type,
-        string $startDate,
-        string $endDate,
-        ?int $excludeDemandeId = null
-    ): void {
-        $start = Carbon::parse($startDate);
-        $end = Carbon::parse($endDate);
-        $maxDays = Demande::maxDaysPerYear();
-
-        for ($year = $start->year; $year <= $end->year; $year++) {
-            $requestedDays = Demande::allowanceDays($type, $startDate, $endDate, $year);
-            $usedDays = Demande::getTotalDaysForUser($userId, $year, $excludeDemandeId);
-
-            if ($usedDays + $requestedDays > $maxDays) {
-                abort(response()->json([
-                    'message' => "Impossible d'accepter cette demande. L'employé dépasserait la limite de "
-                        . "{$maxDays} jours de congé annuel pour {$year}.",
-                ], 422));
-            }
-        }
+        return redirect()->back()->with('success', 'Demande supprimée avec succès');
     }
 }

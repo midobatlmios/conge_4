@@ -35,20 +35,7 @@ return [
     // ISO weekday numbers that count as working days (1 = Monday … 7 = Sunday).
     'working_days' => [1, 2, 3, 4, 5],
 
-    // Public holidays that are not counted as leave days.
-    // "MM-DD" repeats every year; "YYYY-MM-DD" applies to that date only
-    // (use it for religious holidays, which move every year).
-    'holidays' => [
-        '01-01', // Nouvel An
-        '01-11', // Manifeste de l'Indépendance
-        '01-14', // Nouvel An amazigh
-        '05-01', // Fête du Travail
-        '07-30', // Fête du Trône
-        '08-14', // Allégeance Oued Eddahab
-        '08-20', // Révolution du Roi et du Peuple
-        '08-21', // Fête de la Jeunesse
-        '11-06', // Marche Verte
-        '11-18', // Fête de l'Indépendance
-    ],
+    // Public holidays are not here: HR manages them in the app
+    // (Administration → Jours fériés), stored in the holidays table.
 
 ];

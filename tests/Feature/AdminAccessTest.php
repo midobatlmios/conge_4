@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\Role;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,7 +27,7 @@ test('the seeder creates verified dev accounts and can run twice', function () {
     expect(User::count())->toBe(2);
 
     $admin = User::where('email', 'admin@example.com')->sole();
-    expect($admin->role)->toBe('admin')
+    expect($admin->role)->toBe(Role::Admin)
         ->and($admin->hasVerifiedEmail())->toBeTrue();
 });
 
@@ -39,7 +40,7 @@ test('an admin cannot remove their own admin role', function () {
         ->assertUnprocessable()
         ->assertJsonValidationErrors('role');
 
-    expect($admin->fresh()->role)->toBe('admin');
+    expect($admin->fresh()->role)->toBe(Role::Admin);
 });
 
 test('an admin can demote another admin while one remains', function () {
@@ -50,7 +51,7 @@ test('an admin can demote another admin while one remains', function () {
         ->putJson("/admin/users/{$other->id}", ['name' => $other->name, 'email' => $other->email, 'role' => 'user'])
         ->assertOk();
 
-    expect($other->fresh()->role)->toBe('user');
+    expect($other->fresh()->role)->toBe(Role::User);
 });
 
 test('the last admin cannot delete their account', function () {

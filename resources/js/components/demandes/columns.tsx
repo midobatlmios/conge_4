@@ -1,24 +1,25 @@
 // columns.tsx
-"use client";
+'use client';
 
-import { ColumnDef } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Demande } from "@/types";
-import { TYPE_CONGE_LABELS, TypeConge } from "@/lib/leave";
+import { Button } from '@/components/ui/button';
+import { TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
+import { Demande } from '@/types';
+import { ColumnDef } from '@tanstack/react-table';
 
 export const columns = (
     onDelete: (id: number) => void,
     onEdit: (isOpen: boolean) => void,
     setSelectedDemande: (demande: Demande) => void,
-    isAdmin: boolean
+    isAdmin: boolean,
+    onHistory: (id: number) => void,
 ): ColumnDef<Demande>[] => [
     {
-        accessorKey: "user.name",
-        header: "Employé",
+        accessorKey: 'user.name',
+        header: 'Employé',
     },
     {
-        id: "remaining_days",
-        header: "Jours restants",
+        id: 'remaining_days',
+        header: 'Jours restants',
         cell: ({ row }) => {
             const remainingDays = row.original.user.remaining_days ?? 18;
             return (
@@ -26,72 +27,72 @@ export const columns = (
                     {remainingDays} jours
                 </div>
             );
-        }
+        },
     },
     {
-        accessorKey: "date_demande",
-        header: "Date de demande",
+        accessorKey: 'date_demande',
+        header: 'Date de demande',
         cell: ({ row }) => {
-            const date = new Date(row.getValue("date_demande"));
+            const date = new Date(row.getValue('date_demande'));
             return date.toLocaleDateString('fr-FR');
-        }
+        },
     },
     {
-        accessorKey: "date_debut",
-        header: "Date de début",
+        accessorKey: 'date_debut',
+        header: 'Date de début',
         cell: ({ row }) => {
-            const date = new Date(row.getValue("date_debut"));
+            const date = new Date(row.getValue('date_debut'));
             return date.toLocaleDateString('fr-FR');
-        }
+        },
     },
     {
-        accessorKey: "date_fin",
-        header: "Date de fin",
+        accessorKey: 'date_fin',
+        header: 'Date de fin',
         cell: ({ row }) => {
-            const date = new Date(row.getValue("date_fin"));
+            const date = new Date(row.getValue('date_fin'));
             return date.toLocaleDateString('fr-FR');
-        }
+        },
     },
     {
-        accessorKey: "type_conge",
-        header: "Type de congé",
+        accessorKey: 'type_conge',
+        header: 'Type de congé',
         cell: ({ row }) => {
-            const type = row.getValue("type_conge") as TypeConge;
+            const type = row.getValue('type_conge') as TypeConge;
             return <div className="font-medium">{TYPE_CONGE_LABELS[type] ?? type}</div>;
         },
     },
     {
-        accessorKey: "nbr_jours",
-        header: "Nombre de jours",
+        accessorKey: 'nbr_jours',
+        header: 'Nombre de jours',
         cell: ({ row }) => {
-            const nbr_jours = parseFloat(row.getValue("nbr_jours"));
-            return <div className="text-right font-medium">{nbr_jours} jour{nbr_jours !== 1 ? 's' : ''}</div>;
-        }
+            const nbr_jours = parseFloat(row.getValue('nbr_jours'));
+            return (
+                <div className="text-right font-medium">
+                    {nbr_jours} jour{nbr_jours !== 1 ? 's' : ''}
+                </div>
+            );
+        },
     },
     {
-        accessorKey: "etat",
-        header: "État",
-        filterFn: "equals",
+        accessorKey: 'etat',
+        header: 'État',
+        filterFn: 'equals',
         cell: ({ row }) => {
-            const etat = row.getValue("etat") as string;
+            const etat = row.getValue('etat') as string;
             return (
-                <div className={`font-medium ${
-                    etat === "en attente" ? "text-yellow-500" :
-                    etat === "acceptée" ? "text-green-500" :
-                    "text-red-500"
-                }`}>
+                <div className={`font-medium ${etat === 'en attente' ? 'text-yellow-500' : etat === 'acceptée' ? 'text-green-500' : 'text-red-500'}`}>
                     {etat.charAt(0).toUpperCase() + etat.slice(1)}
                 </div>
             );
         },
     },
     {
-        accessorKey: "annee",
-        header: "Année",
+        accessorKey: 'annee',
+        header: 'Année',
     },
     {
-        accessorKey: "comment",
-        header: "Commentaire",
+        accessorKey: 'comment',
+        header: 'Commentaire',
         cell: ({ row }) => {
             const comment = row.original.comment;
             return (
@@ -99,21 +100,24 @@ export const columns = (
                     {comment || '-'}
                 </div>
             );
-        }
+        },
     },
     {
-        id: "actions",
+        id: 'actions',
         cell: ({ row }) => {
             const demande = row.original;
             // Hide edit button for certain types unless user is admin
-            const hideEdit = !isAdmin && ["mariage", "naissance", "deces"].includes(demande.type_conge);
+            const hideEdit = !isAdmin && ['mariage', 'naissance', 'deces'].includes(demande.type_conge);
             return (
                 <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => onHistory(demande.id)}>
+                        Historique
+                    </Button>
                     {!hideEdit && (
                         <Button
                             variant="outline"
                             size="sm"
-                            className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                            className="text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700"
                             onClick={() => {
                                 setSelectedDemande(demande);
                                 onEdit(true);
@@ -125,7 +129,7 @@ export const columns = (
                     <Button
                         variant="outline"
                         size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
                         onClick={() => onDelete(demande.id)}
                     >
                         Supprimer
@@ -134,4 +138,4 @@ export const columns = (
             );
         },
     },
-]; 
+];

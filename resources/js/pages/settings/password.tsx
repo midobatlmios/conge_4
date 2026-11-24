@@ -54,7 +54,10 @@ export default function Password() {
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <HeadingSmall title="Mettre à jour le mot de passe" description="Assurez-vous que votre compte utilise un mot de passe long et aléatoire pour rester sécurisé" />
+                    <HeadingSmall
+                        title="Mettre à jour le mot de passe"
+                        description="Assurez-vous que votre compte utilise un mot de passe long et aléatoire pour rester sécurisé"
+                    />
 
                     <form onSubmit={updatePassword} className="space-y-6">
                         <div className="grid gap-2">

@@ -65,18 +65,27 @@ These are for local development only. Never seed them in production.
 ## Tests and checks
 
 ```bash
-php artisan test     # Pest feature tests
-npm run lint         # ESLint
-npm run types        # TypeScript type check
+php artisan test           # Pest feature tests
+vendor/bin/pint            # Format PHP (CI runs: vendor/bin/pint --test)
+npm run format             # Format frontend (CI runs: npm run format:check)
+npm run lint               # ESLint with auto-fix (CI runs: npm run lint:check)
+npm run types              # TypeScript type check
 ```
+
+The GitHub `linter` workflow only checks; it fails if any of these report a problem.
 
 ## Project layout
 
 | Path | Contents |
 |------|----------|
-| `app/Http/Controllers/DemandesController.php` | Leave requests: listing, creation, approval, limits |
-| `app/Http/Controllers/AdminController.php` | User management (admin only) |
-| `app/Models/Demande.php` | Leave request model, day counting, yearly limit |
+| `config/conge.php` | Leave rules: yearly allowance, deductions, type limits, working days, holidays |
+| `app/Enums/` | `LeaveType`, `LeaveStatus`, `Role`: the allowed values, with French labels |
+| `app/Services/LeaveCalculator.php` | All day arithmetic: working days, allowance used and remaining |
+| `app/Policies/DemandePolicy.php` | Who may view, create for others, edit, delete or accept/refuse requests |
+| `app/Http/Requests/` | Validation: leave requests (dates, limits, overlaps) and admin user forms |
+| `app/Http/Controllers/DemandesController.php` | Leave requests: listing, creation, approval |
+| `app/Http/Controllers/AdminController.php` | Employee accounts (admin only) |
 | `app/Http/Middleware/RoleMiddleware.php` | `role:admin` route guard |
+| `resources/js/lib/leave.ts` | Frontend copy of the day-counting rules, for live feedback in forms |
 | `resources/js/pages/` | Inertia pages (Dashboard, Demandes, Admin/Users, auth, settings) |
-| `tests/Feature/DemandesTest.php` | Tests for permissions and leave rules |
+| `tests/Feature/` | Tests for permissions, leave rules and admin safeguards |

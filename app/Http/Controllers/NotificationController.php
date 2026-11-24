@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Notifications\DatabaseNotification;
-use Illuminate\Http\JsonResponse;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
@@ -15,7 +14,7 @@ class NotificationController extends Controller
         /** @var User $user */
         $user = Auth::user();
         $notifications = $user->notifications()->orderBy('created_at', 'desc')->get();
-        
+
         $formattedNotifications = $notifications->map(function (DatabaseNotification $notification) {
             return [
                 'id' => $notification->id,
@@ -37,4 +36,4 @@ class NotificationController extends Controller
 
         return response()->json(['success' => true]);
     }
-} 
+}

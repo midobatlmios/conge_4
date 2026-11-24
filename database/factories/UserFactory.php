@@ -41,4 +41,12 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /** An employee who has left: cannot sign in, history kept. */
+    public function deactivated(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'deactivated_at' => now(),
+        ]);
+    }
 }

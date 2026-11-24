@@ -2,66 +2,76 @@
 
 namespace App\Notifications;
 
+use App\Enums\LeaveStatus;
+use App\Models\Demande;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use App\Models\Demande;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 
-// Sent immediately rather than queued: it is only written to the database, and a
-// queued notification never arrives unless a queue worker is running.
+/**
+ * Tells an employee their request was accepted or refused: stored in the
+ * database (the bell in the app) and sent by email.
+ *
+ * Sent immediately rather than queued: a queued notification never arrives
+ * unless a queue worker is running. 'database' comes first so the in-app
+ * notification is saved even if the mail server is unreachable.
+ */
 class DemandeStatusChanged extends Notification
 {
     use Queueable;
 
-    protected $demande;
+    public function __construct(protected Demande $demande) {}
 
-    public function __construct(Demande $demande)
+    /** @return list<string> */
+    public function via(object $notifiable): array
     {
-        $this->demande = $demande;
+        return ['database', 'mail'];
     }
 
-    public function via($notifiable)
+    public function toMail(object $notifiable): MailMessage
     {
-        return ['database'];
+        $accepted = $this->demande->etat === LeaveStatus::Accepted;
+
+        $mail = (new MailMessage)
+            ->subject($accepted ? 'Votre demande de congé a été acceptée' : 'Votre demande de congé a été refusée')
+            ->greeting("Bonjour {$notifiable->name},")
+            ->line($this->message())
+            ->line('**Type :** '.$this->demande->type_conge->label())
+            ->line('**Du :** '.$this->formatDate($this->demande->date_debut).' **au :** '.$this->formatDate($this->demande->date_fin))
+            ->line("**Nombre de jours :** {$this->demande->nbr_jours}");
+
+        if (filled($this->demande->comment)) {
+            $mail->line("**Commentaire :** {$this->demande->comment}");
+        }
+
+        return $mail->action('Voir mes demandes', route('dashboard'));
     }
 
-    public function toMail($notifiable)
+    /** @return array<string, mixed> */
+    public function toArray(object $notifiable): array
     {
-        $status = $this->demande->etat;
-        $message = $status === 'acceptée' 
-            ? 'Votre demande de congé a été acceptée.' 
-            : 'Votre demande de congé a été refusée.';
-
-        return (new MailMessage)
-            ->subject('Mise à jour de votre demande de congé')
-            ->line($message)
-            ->line('Détails de la demande:')
-            ->line("Date de début: {$this->demande->date_debut}")
-            ->line("Date de fin: {$this->demande->date_fin}")
-            ->line("Nombre de jours: {$this->demande->nbr_jours}")
-            ->line("Commentaire: {$this->demande->comment}")
-            ->action('Voir la demande', url('/demandes'));
-    }
-
-    public function toArray($notifiable)
-    {
-        Log::info('Creating notification data', [
-            'demande_id' => $this->demande->id,
-            'status' => $this->demande->etat
-        ]);
-
         return [
             'demande_id' => $this->demande->id,
-            'status' => $this->demande->etat,
-            'message' => $this->demande->etat === 'acceptée' 
-                ? 'Votre demande de congé a été acceptée.' 
-                : 'Votre demande de congé a été refusée.',
+            'status' => $this->demande->etat->value,
+            'message' => $this->message(),
             'date_debut' => $this->demande->date_debut,
             'date_fin' => $this->demande->date_fin,
             'nbr_jours' => $this->demande->nbr_jours,
             'comment' => $this->demande->comment,
-            'type_conge' => $this->demande->type_conge
+            'type_conge' => $this->demande->type_conge->value,
         ];
     }
-} 
+
+    private function message(): string
+    {
+        return $this->demande->etat === LeaveStatus::Accepted
+            ? 'Votre demande de congé a été acceptée.'
+            : 'Votre demande de congé a été refusée.';
+    }
+
+    private function formatDate(mixed $date): string
+    {
+        return Carbon::parse($date)->format('d/m/Y');
+    }
+}

@@ -1,5 +1,5 @@
-import type { LucideIcon } from 'lucide-react';
 import type { TypeConge } from '@/lib/leave';
+import type { LucideIcon } from 'lucide-react';
 
 export interface PageProps {
     auth: {
@@ -58,7 +58,7 @@ export interface Demande {
     nbr_jours: number;
     annee: number;
     type_conge: TypeConge;
-    etat: "en attente" | "acceptée" | "refusée";
+    etat: 'en attente' | 'acceptée' | 'refusée';
     valide_par: number | null;
     comment: string | null;
-} 
+}

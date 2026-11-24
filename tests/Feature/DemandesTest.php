@@ -1,9 +1,11 @@
 <?php
 
+use App\Enums\LeaveStatus;
 use App\Models\Demande;
 use App\Models\User;
-use Inertia\Testing\AssertableInertia as Assert;
+use App\Services\LeaveCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
@@ -56,7 +58,7 @@ test('employees cannot edit or delete another employees request', function () {
         ->assertForbidden();
 
     $this->delete("/demandes/{$demande->id}")->assertForbidden();
-    expect($demande->fresh()->etat)->toBe('en attente');
+    expect($demande->fresh()->etat)->toBe(LeaveStatus::Pending);
 });
 
 test('new requests ignore client-supplied owner status days year and request date', function () {
@@ -78,7 +80,7 @@ test('new requests ignore client-supplied owner status days year and request dat
 
     $demande = Demande::sole();
     expect($demande->user_id)->toBe($employee->id)
-        ->and($demande->etat)->toBe('en attente')
+        ->and($demande->etat)->toBe(LeaveStatus::Pending)
         ->and($demande->nbr_jours)->toBe(4)
         ->and($demande->annee)->toBe(2027)
         ->and($demande->date_demande)->toBe('2026-02-02');
@@ -132,7 +134,7 @@ test('leave-type day limits are counted in working days', function () {
 
 test('weekends and public holidays are not counted as leave days', function () {
     // Thu 30 Apr, Fri 1 May (Fête du Travail), Sat, Sun, Mon 4 May.
-    expect(Demande::countWorkingDays('2026-04-30', '2026-05-04'))->toBe(2);
+    expect(app(LeaveCalculator::class)->workingDays('2026-04-30', '2026-05-04'))->toBe(2);
 });
 
 test('a request covering only non-working days is rejected', function () {
@@ -194,7 +196,7 @@ test('admins can approve annual leave only when the yearly limit is respected', 
         ]))
         ->assertUnprocessable();
 
-    expect($pending->fresh()->etat)->toBe('en attente');
+    expect($pending->fresh()->etat)->toBe(LeaveStatus::Pending);
 });
 
 test('mariage and deces take 2 days from the allowance, naissance takes none', function () {
@@ -219,7 +221,7 @@ test('mariage and deces take 2 days from the allowance, naissance takes none', f
         'etat' => 'acceptée',
     ]);
 
-    expect(Demande::getTotalDaysForUser($employee->id, 2026))->toBe(4);
+    expect(app(LeaveCalculator::class)->usedDays($employee->id, 2026))->toBe(4);
 });
 
 test('a mariage cannot be accepted when it would exceed the allowance', function () {
@@ -246,7 +248,7 @@ test('a mariage cannot be accepted when it would exceed the allowance', function
         ]))
         ->assertUnprocessable();
 
-    expect($mariage->fresh()->etat)->toBe('en attente');
+    expect($mariage->fresh()->etat)->toBe(LeaveStatus::Pending);
 });
 
 test('unpaid leave does not use up the annual allowance', function () {
@@ -263,7 +265,7 @@ test('unpaid leave does not use up the annual allowance', function () {
         'date_fin' => '2026-12-30',
     ]);
 
-    expect(Demande::getTotalDaysForUser($employee->id, 2026))->toBe(0);
+    expect(app(LeaveCalculator::class)->usedDays($employee->id, 2026))->toBe(0);
 
     $this->actingAs($admin)
         ->putJson("/demandes/{$pending->id}", leavePayload([
@@ -283,8 +285,8 @@ test('approved days are counted in the calendar years they overlap', function ()
         'etat' => 'acceptée',
     ]);
 
-    expect(Demande::getTotalDaysForUser($employee->id, 2025))->toBe(1)
-        ->and(Demande::getTotalDaysForUser($employee->id, 2026))->toBe(1);
+    expect(app(LeaveCalculator::class)->usedDays($employee->id, 2025))->toBe(1)
+        ->and(app(LeaveCalculator::class)->usedDays($employee->id, 2026))->toBe(1);
 });
 
 test('the employee is notified right away when a request is accepted', function () {
@@ -297,4 +299,44 @@ test('the employee is notified right away when a request is accepted', function 
         ->assertOk();
 
     expect($employee->notifications()->count())->toBe(1);
+});
+
+test('the employee also gets an email in French when a request is decided', function () {
+    \Illuminate\Support\Facades\Notification::fake();
+    $admin = User::factory()->create(['role' => 'admin']);
+    $employee = User::factory()->create(['name' => 'Sara']);
+    $demande = createDemandeForTest($employee);
+
+    $this->actingAs($admin)
+        ->putJson("/demandes/{$demande->id}", leavePayload(['etat' => 'refusée', 'comment' => 'Période chargée']))
+        ->assertOk();
+
+    \Illuminate\Support\Facades\Notification::assertSentTo(
+        $employee,
+        \App\Notifications\DemandeStatusChanged::class,
+        function ($notification, array $channels) use ($employee) {
+            $mail = $notification->toMail($employee);
+
+            return in_array('mail', $channels, true)
+                && $mail->subject === 'Votre demande de congé a été refusée'
+                && $mail->greeting === 'Bonjour Sara,'
+                && in_array('**Du :** 02/03/2026 **au :** 03/03/2026', $mail->introLines, true)
+                && in_array('**Commentaire :** Période chargée', $mail->introLines, true);
+        }
+    );
+});
+
+test('a mail server outage does not block accepting a request', function () {
+    // Nothing listens on port 1, so the SMTP connection is refused.
+    config(['mail.default' => 'smtp', 'mail.mailers.smtp.host' => '127.0.0.1', 'mail.mailers.smtp.port' => 1]);
+    $admin = User::factory()->create(['role' => 'admin']);
+    $employee = User::factory()->create();
+    $demande = createDemandeForTest($employee);
+
+    $this->actingAs($admin)
+        ->putJson("/demandes/{$demande->id}", leavePayload(['etat' => 'acceptée']))
+        ->assertOk();
+
+    expect($demande->fresh()->etat)->toBe(LeaveStatus::Accepted)
+        ->and($employee->notifications()->count())->toBe(1);
 });

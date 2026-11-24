@@ -2,24 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Demande;
-use Illuminate\Support\Facades\Auth;
+use App\Services\LeaveCalculator;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request, LeaveCalculator $calculator): Response
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        $demandes = Demande::where('user_id', $user->id)
-            ->latest()
-            ->get();
-
-        $remainingDays = Demande::maxDaysPerYear()
-            - Demande::getTotalDaysForUser($user->id, now()->year);
+        $user = $request->user();
 
         return Inertia::render('Dashboard', [
             'auth' => [
@@ -28,10 +20,10 @@ class DashboardController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
-                    'remaining_days' => $remainingDays,
+                    'remaining_days' => $calculator->remainingDays($user->id, now()->year),
                 ],
             ],
-            'demandes' => $demandes,
+            'demandes' => $user->demandes()->latest()->get(),
         ]);
     }
 }
