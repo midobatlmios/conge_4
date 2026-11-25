@@ -64,8 +64,11 @@ export function DataTable<TData, TValue>({ columns, data, isAdmin = false, users
                     <SelectContent>
                         <SelectItem value={ALL_STATUSES}>Tous les états</SelectItem>
                         <SelectItem value="en attente">En attente</SelectItem>
+                        <SelectItem value="validée manager">Validées par le responsable</SelectItem>
                         <SelectItem value="acceptée">Acceptées</SelectItem>
                         <SelectItem value="refusée">Refusées</SelectItem>
+                        <SelectItem value="annulation demandée">Annulation demandée</SelectItem>
+                        <SelectItem value="annulée">Annulées</SelectItem>
                     </SelectContent>
                 </Select>
                 <Button onClick={() => setIsAddOpen(true)}>Nouvelle demande</Button>

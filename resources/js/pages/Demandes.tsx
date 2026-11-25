@@ -1,9 +1,11 @@
 import { columns } from '@/components/demandes/columns';
 import { DataTable } from '@/components/demandes/data-table';
 import DemandeHistoryModal from '@/components/demandes/DemandeHistoryModal';
+import DocumentsModal from '@/components/demandes/DocumentsModal';
 import EditDemandeModal from '@/components/EditDemandeModal';
 import AppLayout from '@/layouts/app-layout';
-import { Demande, type BreadcrumbItem } from '@/types';
+import { usePermissions } from '@/lib/roles';
+import { Demande, type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -16,30 +18,29 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface DemandesProps {
     demandes: Demande[];
+    /** Sick leave from this many calendar days needs a CNSS dossier. */
+    cnssMinDays: number;
     users: { id: number; name: string }[];
 }
 
-export default function Demandes({ demandes, users }: DemandesProps) {
+export default function Demandes({ demandes, users, cnssMinDays }: DemandesProps) {
     const [editModelOpen, setEditModelOpen] = useState(false);
     const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null);
     const [historyId, setHistoryId] = useState<number | null>(null);
-    const { auth } = usePage<{ auth: { user: { role: string } } }>().props;
+    // Looked up in the props on each render so the list stays current after an upload.
+    const [documentsId, setDocumentsId] = useState<number | null>(null);
+    const documentsDemande = demandes.find((d) => d.id === documentsId) ?? null;
+    const { auth } = usePage<SharedData>().props;
     const user = auth.user;
-    const isAdmin = user.role === 'admin';
+    // Admin and RH decide; Paie only reads (it still manages its own requests).
+    const isAdmin = usePermissions().manage_hr;
 
-    const handleUpdate = () => {
-        setEditModelOpen(false);
-        router.reload({ preserveUrl: true });
-    };
+    // The server redirects back after each change, so the list is already fresh.
+    const handleUpdate = () => setEditModelOpen(false);
 
     const handleDelete = (id: number) => {
         if (window.confirm('Êtes-vous sûr de vouloir supprimer cette demande ?')) {
-            router.delete(`/demandes/${id}`, {
-                preserveUrl: true,
-                onSuccess: () => {
-                    router.reload({ preserveUrl: true });
-                },
-            });
+            router.delete(`/demandes/${id}`, { preserveScroll: true });
         }
     };
 
@@ -48,13 +49,20 @@ export default function Demandes({ demandes, users }: DemandesProps) {
             <Head title="Gestion des demandes" />
             <div className="container mx-auto py-10">
                 <DataTable
-                    columns={columns(handleDelete, setEditModelOpen, setSelectedDemande, isAdmin, setHistoryId)}
+                    columns={columns(handleDelete, setEditModelOpen, setSelectedDemande, isAdmin, setHistoryId, setDocumentsId, user.id, cnssMinDays)}
                     data={demandes}
                     isAdmin={isAdmin}
                     users={users}
                 />
             </div>
             <DemandeHistoryModal demandeId={historyId} onClose={() => setHistoryId(null)} />
+            <DocumentsModal
+                demande={documentsDemande}
+                canManage={
+                    isAdmin || (documentsDemande?.user_id === user.id && ['en attente', 'validée manager'].includes(documentsDemande?.etat ?? ''))
+                }
+                onClose={() => setDocumentsId(null)}
+            />
             <EditDemandeModal
                 isOpen={editModelOpen}
                 onClose={() => setEditModelOpen(false)}

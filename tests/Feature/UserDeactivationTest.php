@@ -124,10 +124,10 @@ test('deactivated employees are not offered when an admin files a request', func
     );
 
     $this->travelTo('2026-02-02 10:00:00');
-    $this->actingAs($admin)->postJson('/demandes', [
+    $this->actingAs($admin)->post('/demandes', [
         'user_id' => $gone->id,
         'date_debut' => '2026-03-02',
         'date_fin' => '2026-03-03',
         'type_conge' => 'annuel',
-    ])->assertStatus(422)->assertJsonValidationErrors('user_id');
+    ])->assertSessionHasErrors('user_id');
 });

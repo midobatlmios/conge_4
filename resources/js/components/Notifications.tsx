@@ -85,7 +85,7 @@ export default function Notifications() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
+                <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
@@ -107,9 +107,11 @@ export default function Notifications() {
                             <p className="font-medium">{notification.data.message}</p>
                             <p className="text-sm text-gray-500">{notification.created_at}</p>
                             {notification.data.comment && <p className="mt-1 text-sm text-gray-600">{notification.data.comment}</p>}
-                            <p className="text-sm text-gray-500">
-                                Type : {TYPE_CONGE_LABELS[notification.data.type_conge as TypeConge] ?? notification.data.type_conge}
-                            </p>
+                            {notification.data.type_conge && (
+                                <p className="text-sm text-gray-500">
+                                    Type : {TYPE_CONGE_LABELS[notification.data.type_conge as TypeConge] ?? notification.data.type_conge}
+                                </p>
+                            )}
                         </DropdownMenuItem>
                     ))
                 )}

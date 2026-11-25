@@ -19,7 +19,7 @@ class DemandeEvent extends Model
     public const UPDATED_AT = null;
 
     /** Fields whose changes are recorded. */
-    public const TRACKED = ['user_id', 'type_conge', 'date_debut', 'date_fin', 'etat', 'comment'];
+    public const TRACKED = ['user_id', 'type_conge', 'date_debut', 'date_fin', 'start_half', 'end_half', 'etat', 'comment', 'manager_comment', 'cnss_filed_on'];
 
     protected $fillable = ['demande_id', 'employee_id', 'user_id', 'action', 'changes'];
 
@@ -53,14 +53,34 @@ class DemandeEvent extends Model
         $action = 'updated';
 
         if (isset($changes['etat'])) {
-            $action = match (LeaveStatus::from($changes['etat']['new'])) {
-                LeaveStatus::Accepted => 'accepted',
-                LeaveStatus::Refused => 'refused',
+            $previous = LeaveStatus::tryFrom((string) $changes['etat']['old']);
+            $new = LeaveStatus::from($changes['etat']['new']);
+            $actor = auth()->user();
+            $byManager = $actor && ! $actor->isHr() && $demande->user?->manager_id === $actor->id;
+
+            $action = match ($new) {
+                LeaveStatus::Accepted => $previous === LeaveStatus::CancellationRequested ? 'cancellation_refused' : 'accepted',
+                LeaveStatus::Refused => $byManager ? 'manager_refused' : 'refused',
                 LeaveStatus::Pending => 'reopened',
+                LeaveStatus::ManagerApproved => 'manager_approved',
+                LeaveStatus::CancellationRequested => 'cancellation_requested',
+                LeaveStatus::Cancelled => 'cancelled',
             };
+
+            // HR decided while the employee's manager had not approved yet.
+            if ($new->isDecided() && $previous === LeaveStatus::Pending && ! $byManager
+                && ($manager = $demande->user?->approvingManager()) && $manager->id !== $actor?->id) {
+                $changes['skipped_manager'] = true;
+            }
         }
 
         static::record($demande, $action, $changes);
+    }
+
+    /** A supporting document was added or removed ($action: document_added / document_removed). */
+    public static function recordDocument(Demande $demande, string $action, string $fileName): void
+    {
+        static::record($demande, $action, ['document' => $fileName]);
     }
 
     public static function recordDeleted(Demande $demande): void

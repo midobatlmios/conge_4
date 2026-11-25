@@ -1,12 +1,35 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { parseISODate, TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
+import { parseISODate, STATUS_LABELS, TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
 import axios from 'axios';
-import { CheckCircle2, CirclePlus, Pencil, RotateCcw, Trash2, XCircle } from 'lucide-react';
+import { Ban, CheckCircle2, CirclePlus, Paperclip, Pencil, RotateCcw, Trash2, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-type Action = 'created' | 'updated' | 'accepted' | 'refused' | 'reopened' | 'deleted';
-type Field = 'user_id' | 'type_conge' | 'date_debut' | 'date_fin' | 'etat' | 'comment';
-type Value = string | number | null;
+type Action =
+    | 'created'
+    | 'updated'
+    | 'accepted'
+    | 'refused'
+    | 'reopened'
+    | 'deleted'
+    | 'cancellation_requested'
+    | 'cancelled'
+    | 'cancellation_refused'
+    | 'manager_approved'
+    | 'manager_refused'
+    | 'document_added'
+    | 'document_removed';
+type Field =
+    | 'user_id'
+    | 'type_conge'
+    | 'date_debut'
+    | 'date_fin'
+    | 'start_half'
+    | 'end_half'
+    | 'etat'
+    | 'comment'
+    | 'manager_comment'
+    | 'cnss_filed_on';
+type Value = string | number | boolean | null;
 
 interface HistoryEvent {
     id: number;
@@ -14,7 +37,8 @@ interface HistoryEvent {
     by: string | null;
     at: string;
     // Updates: { field: { old, new } }. Created/deleted: a snapshot { field: value }.
-    changes: Partial<Record<Field, { old: Value; new: Value } | Value>> | null;
+    // skipped_manager: HR decided before the employee's manager had approved.
+    changes: (Partial<Record<Field, { old: Value; new: Value } | Value>> & { skipped_manager?: boolean; document?: string }) | null;
     employee_names: Record<string, string>;
 }
 
@@ -25,6 +49,13 @@ const ACTIONS: Record<Action, { label: string; icon: typeof Pencil; color: strin
     refused: { label: 'Demande refusée', icon: XCircle, color: 'text-red-600' },
     reopened: { label: 'Remise en attente', icon: RotateCcw, color: 'text-orange-600' },
     deleted: { label: 'Demande supprimée', icon: Trash2, color: 'text-red-600' },
+    cancellation_requested: { label: 'Annulation demandée', icon: Ban, color: 'text-orange-600' },
+    cancelled: { label: 'Congé annulé', icon: Ban, color: 'text-gray-600' },
+    cancellation_refused: { label: 'Annulation refusée, congé maintenu', icon: CheckCircle2, color: 'text-green-600' },
+    manager_approved: { label: 'Validée par le responsable', icon: CheckCircle2, color: 'text-blue-600' },
+    manager_refused: { label: 'Refusée par le responsable', icon: XCircle, color: 'text-red-600' },
+    document_added: { label: 'Justificatif ajouté', icon: Paperclip, color: 'text-blue-600' },
+    document_removed: { label: 'Justificatif supprimé', icon: Paperclip, color: 'text-gray-600' },
 };
 
 const FIELDS: Record<Field, string> = {
@@ -33,12 +64,20 @@ const FIELDS: Record<Field, string> = {
     date_debut: 'Début',
     date_fin: 'Fin',
     etat: 'État',
+    start_half: "Début l'après-midi",
+    end_half: 'Fin à midi',
     comment: 'Commentaire',
+    manager_comment: 'Motif du responsable',
+    cnss_filed_on: 'Dossier CNSS déposé le',
 };
 
-const STATUS: Record<string, string> = { 'en attente': 'En attente', acceptée: 'Acceptée', refusée: 'Refusée' };
+const STATUS: Record<string, string> = STATUS_LABELS;
 
 function formatValue(field: Field, value: Value, names: Record<string, string>): string {
+    if (field === 'start_half' || field === 'end_half') {
+        // Stored as 0/1 (or a boolean): show it as yes/no.
+        return value === true || value === 1 || value === '1' ? 'Oui' : 'Non';
+    }
     if (value === null || value === '') return '(vide)';
     switch (field) {
         case 'date_debut':
@@ -96,7 +135,9 @@ export default function DemandeHistoryModal({ demandeId, onClose }: Props) {
                         {events.map((event) => {
                             const meta = ACTIONS[event.action] ?? ACTIONS.updated;
                             const Icon = meta.icon;
-                            const changes = Object.entries(event.changes ?? {}) as [Field, { old: Value; new: Value } | Value][];
+                            const changes = Object.entries(event.changes ?? {}).filter(
+                                ([key]) => key !== 'skipped_manager' && key !== 'document',
+                            ) as [Field, { old: Value; new: Value } | Value][];
                             const isUpdate = changes.some(([, v]) => isChange(v));
                             const date = new Date(event.at);
 
@@ -112,6 +153,10 @@ export default function DemandeHistoryModal({ demandeId, onClose }: Props) {
                                         {' · par '}
                                         {event.by ?? 'le système'}
                                     </div>
+                                    {event.changes?.document && <div className="mt-1 text-sm">{event.changes.document}</div>}
+                                    {event.changes?.skipped_manager && (
+                                        <div className="text-xs text-orange-600">Décision RH sans attendre la validation du responsable</div>
+                                    )}
                                     {isUpdate ? (
                                         <ul className="mt-1.5 space-y-0.5 text-sm">
                                             {changes

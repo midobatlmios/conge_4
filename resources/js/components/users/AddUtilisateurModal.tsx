@@ -3,82 +3,92 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import EmployeeRecordFields, { emptyEmployeeRecord, Option } from '@/components/users/EmployeeRecordFields';
+import { RoleOption } from '@/lib/roles';
+import { useForm } from '@inertiajs/react';
 
 interface AddUtilisateurModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
+    departments: Option[];
+    managers: Option[];
+    /** Roles the signed-in user may give (RH: employees only). */
+    roles: RoleOption[];
 }
 
-export default function AddUtilisateurModal({ isOpen, onClose, onSuccess }: AddUtilisateurModalProps) {
-    const [formData, setFormData] = useState({
+export default function AddUtilisateurModal({ isOpen, onClose, onSuccess, departments, managers, roles }: AddUtilisateurModalProps) {
+    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         name: '',
         email: '',
         password: '',
         role: 'user',
+        ...emptyEmployeeRecord,
     });
+
+    const close = () => {
+        reset();
+        clearErrors();
+        onClose();
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.post('/admin/users', formData, {
+        post('/admin/users', {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
+                reset();
                 onSuccess();
             },
-            preserveUrl: true,
         });
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[425px]">
+        <Dialog open={isOpen} onOpenChange={close}>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
                 <DialogHeader>
                     <DialogTitle>Ajouter un utilisateur</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Nom</Label>
-                        <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required />
+                        <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
+                        {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Adresse e-mail</Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            required
-                        />
+                        <Input id="email" type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} required />
+                        {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="password">Mot de passe</Label>
-                        <Input
-                            id="password"
-                            type="password"
-                            value={formData.password}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                            required
-                        />
+                        <Input id="password" type="password" value={data.password} onChange={(e) => setData('password', e.target.value)} required />
+                        {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="role">Rôle</Label>
-                        <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                            <SelectTrigger>
+                        <Select value={data.role} onValueChange={(value) => setData('role', value)} disabled={roles.length < 2}>
+                            <SelectTrigger id="role">
                                 <SelectValue placeholder="Sélectionner un rôle" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="user">Utilisateur</SelectItem>
-                                <SelectItem value="admin">Administrateur</SelectItem>
+                                {roles.map((role) => (
+                                    <SelectItem key={role.value} value={role.value}>
+                                        {role.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
+                        {errors.role && <p className="text-sm text-red-500">{errors.role}</p>}
                     </div>
+                    <EmployeeRecordFields data={data} setData={setData} errors={errors} departments={departments} managers={managers} />
                     <div className="flex justify-end gap-2">
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button type="button" variant="outline" onClick={close} disabled={processing}>
                             Annuler
                         </Button>
-                        <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                            Ajouter
+                        <Button type="submit" disabled={processing} className="bg-green-600 hover:bg-green-700">
+                            {processing ? 'Ajout...' : 'Ajouter'}
                         </Button>
                     </div>
                 </form>

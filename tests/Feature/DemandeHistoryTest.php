@@ -24,16 +24,16 @@ test('creating, editing and deciding a request is recorded with who and what', f
     $employee = User::factory()->create(['role' => 'user', 'name' => 'Sara']);
     $admin = User::factory()->create(['role' => 'admin', 'name' => 'RH']);
 
-    $this->actingAs($employee)->postJson('/demandes', historyPayload())->assertCreated();
+    $this->actingAs($employee)->post('/demandes', historyPayload())->assertRedirect()->assertSessionHasNoErrors();
     $demande = Demande::sole();
 
     $this->actingAs($employee)
-        ->putJson("/demandes/{$demande->id}", historyPayload(['date_fin' => '2026-03-04', 'etat' => 'en attente']))
-        ->assertOk();
+        ->put("/demandes/{$demande->id}", historyPayload(['date_fin' => '2026-03-04', 'etat' => 'en attente']))
+        ->assertRedirect()->assertSessionHasNoErrors();
 
     $this->actingAs($admin)
-        ->putJson("/demandes/{$demande->id}", historyPayload(['date_fin' => '2026-03-04', 'etat' => 'acceptée', 'comment' => 'OK']))
-        ->assertOk();
+        ->put("/demandes/{$demande->id}", historyPayload(['date_fin' => '2026-03-04', 'etat' => 'acceptée', 'comment' => 'OK']))
+        ->assertRedirect()->assertSessionHasNoErrors();
 
     $events = $demande->events()->with('user')->get();
 
@@ -49,19 +49,19 @@ test('creating, editing and deciding a request is recorded with who and what', f
 
 test('saving without any real change adds no entry', function () {
     $employee = User::factory()->create(['role' => 'user']);
-    $this->actingAs($employee)->postJson('/demandes', historyPayload())->assertCreated();
+    $this->actingAs($employee)->post('/demandes', historyPayload())->assertRedirect()->assertSessionHasNoErrors();
     $demande = Demande::sole();
 
     $this->actingAs($employee)
-        ->putJson("/demandes/{$demande->id}", historyPayload(['etat' => 'en attente']))
-        ->assertOk();
+        ->put("/demandes/{$demande->id}", historyPayload(['etat' => 'en attente']))
+        ->assertRedirect()->assertSessionHasNoErrors();
 
     expect($demande->events()->count())->toBe(1);
 });
 
 test('the trail of a deleted request is kept', function () {
     $employee = User::factory()->create(['role' => 'user']);
-    $this->actingAs($employee)->postJson('/demandes', historyPayload())->assertCreated();
+    $this->actingAs($employee)->post('/demandes', historyPayload())->assertRedirect()->assertSessionHasNoErrors();
     $demande = Demande::sole();
 
     $this->actingAs($employee)->delete("/demandes/{$demande->id}")->assertRedirect();
@@ -73,7 +73,7 @@ test('the trail of a deleted request is kept', function () {
 
 test('the employee and admins can read the history, other employees cannot', function () {
     $employee = User::factory()->create(['role' => 'user', 'name' => 'Sara']);
-    $this->actingAs($employee)->postJson('/demandes', historyPayload())->assertCreated();
+    $this->actingAs($employee)->post('/demandes', historyPayload())->assertRedirect()->assertSessionHasNoErrors();
     $demande = Demande::sole();
 
     $this->actingAs($employee)

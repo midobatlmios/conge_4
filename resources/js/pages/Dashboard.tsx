@@ -1,10 +1,12 @@
 import { AddDemandeModal } from '@/components/AddDemandeModal';
+import { canRequestCancellation, requestCancellation } from '@/components/demandes/cancellation';
 import DemandeHistoryModal from '@/components/demandes/DemandeHistoryModal';
+import DocumentsModal, { DocumentsButton } from '@/components/demandes/DocumentsModal';
 import EditDemandeModal from '@/components/EditDemandeModal';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { TYPE_CONGE_LABELS, useLeaveRules } from '@/lib/leave';
+import { STATUS_COLORS, STATUS_LABELS, TYPE_CONGE_LABELS, formatDays, halfDayNote, parseISODate, useLeaveRules } from '@/lib/leave';
 import type { Demande } from '@/types';
 import { PageProps } from '@inertiajs/core';
 import { Head, router } from '@inertiajs/react';
@@ -31,6 +33,8 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedDemande, setSelectedDemande] = useState<Demande | null>(null);
     const [historyId, setHistoryId] = useState<number | null>(null);
+    const [documentsId, setDocumentsId] = useState<number | null>(null);
+    const documentsDemande = demandes.find((d) => d.id === documentsId) ?? null;
 
     // Calculate status counts
     const statusCounts = {
@@ -48,27 +52,9 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
         }
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'en attente':
-                return 'text-yellow-500';
-            case 'acceptée':
-                return 'text-green-500';
-            case 'refusée':
-                return 'text-red-500';
-            default:
-                return 'text-gray-500';
-        }
-    };
-
     const handleDelete = (id: number) => {
         if (window.confirm('Êtes-vous sûr de vouloir supprimer cette demande ?')) {
-            router.delete(`/demandes/${id}`, {
-                preserveUrl: true,
-                onSuccess: () => {
-                    router.reload({ preserveUrl: true });
-                },
-            });
+            router.delete(`/demandes/${id}`, { preserveScroll: true });
         }
     };
 
@@ -79,10 +65,22 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                     <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-4">
                         <h2 className="mb-2 text-xl font-bold">Bienvenue, {auth.user.name}</h2>
-                        <p className="text-4xl font-bold">{auth.user.remaining_days}</p>
-                        <p className="text-muted-foreground text-sm">
-                            jours de congé annuel restants sur {rules.maxDaysPerYear} en {new Date().getFullYear()}
-                        </p>
+                        <p className="text-4xl font-bold">{formatDays(rules.balance?.remainingDays ?? auth.user.remaining_days)}</p>
+                        <p className="text-muted-foreground text-sm">jours de congé annuel disponibles aujourd'hui</p>
+                        {rules.balance && (
+                            <p className="text-muted-foreground mt-2 text-xs">
+                                Acquis à ce jour : {formatDays(rules.balance.earnedDays)} sur {formatDays(rules.balance.annualDays)} en{' '}
+                                {new Date().getFullYear()} · pris ou prévus : {formatDays(rules.balance.usedDays)}
+                                {rules.balance.annualDays > rules.maxDaysPerYear &&
+                                    ` · dont ${formatDays(rules.balance.annualDays - rules.maxDaysPerYear)} d'ancienneté`}
+                            </p>
+                        )}
+                        {rules.balance && rules.balance.carryLeftDays > 0 && (
+                            <p className="mt-2 rounded-md border border-orange-200 bg-orange-50 px-2 py-1 text-xs text-orange-800 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300">
+                                Dont {formatDays(rules.balance.carryLeftDays)} jour(s) reporté(s) de {new Date().getFullYear() - 1}, à prendre avant
+                                le {parseISODate(rules.balance.carryExpires)?.toLocaleDateString('fr-FR')}.
+                            </p>
+                        )}
                     </div>
                     <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-4">
                         <h2 className="mb-2 text-xl font-bold">Statut des demandes</h2>
@@ -133,20 +131,24 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                                     <TableRow key={demande.id}>
                                         <TableCell>{formatDate(demande.date_demande)}</TableCell>
                                         <TableCell>{TYPE_CONGE_LABELS[demande.type_conge] ?? demande.type_conge}</TableCell>
-                                        <TableCell>{formatDate(demande.date_debut)}</TableCell>
-                                        <TableCell>{formatDate(demande.date_fin)}</TableCell>
-                                        <TableCell>{demande.nbr_jours}</TableCell>
+                                        <TableCell>{formatDate(demande.date_debut) + halfDayNote(demande.start_half, 'start')}</TableCell>
+                                        <TableCell>{formatDate(demande.date_fin) + halfDayNote(demande.end_half, 'end')}</TableCell>
+                                        <TableCell>{formatDays(Number(demande.nbr_jours))}</TableCell>
                                         <TableCell>
-                                            <span className={getStatusColor(demande.etat)}>
-                                                {demande.etat.charAt(0).toUpperCase() + demande.etat.slice(1)}
-                                            </span>
+                                            <span className={STATUS_COLORS[demande.etat]}>{STATUS_LABELS[demande.etat]}</span>
                                         </TableCell>
-                                        <TableCell>{demande.comment || '-'}</TableCell>
+                                        <TableCell>
+                                            {demande.comment || '-'}
+                                            {demande.manager_comment && (
+                                                <div className="text-xs text-red-600">Motif du responsable : {demande.manager_comment}</div>
+                                            )}
+                                        </TableCell>
                                         <TableCell>
                                             <div className="flex gap-2">
                                                 <Button variant="outline" size="sm" onClick={() => setHistoryId(demande.id)}>
                                                     Historique
                                                 </Button>
+                                                <DocumentsButton demande={demande} onClick={() => setDocumentsId(demande.id)} />
                                                 {demande.etat === 'en attente' && (
                                                     <Button
                                                         variant="outline"
@@ -164,6 +166,16 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                                                         Supprimer
                                                     </Button>
                                                 )}
+                                                {canRequestCancellation(demande) && (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                                                        onClick={() => requestCancellation(demande)}
+                                                    >
+                                                        Demander l'annulation
+                                                    </Button>
+                                                )}
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -174,6 +186,12 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                 </div>
 
                 <DemandeHistoryModal demandeId={historyId} onClose={() => setHistoryId(null)} />
+
+                <DocumentsModal
+                    demande={documentsDemande}
+                    canManage={['en attente', 'validée manager'].includes(documentsDemande?.etat ?? '')}
+                    onClose={() => setDocumentsId(null)}
+                />
 
                 <AddDemandeModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
@@ -187,7 +205,6 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                     onUpdate={() => {
                         setIsEditModalOpen(false);
                         setSelectedDemande(null);
-                        router.reload({ preserveUrl: true });
                     }}
                 />
             </div>

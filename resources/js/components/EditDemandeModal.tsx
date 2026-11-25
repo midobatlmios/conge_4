@@ -1,55 +1,70 @@
+import HalfDayFields from '@/components/demandes/HalfDayFields';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { TypeConge, countWorkingDays, endAfterWorkingDays, todayISO, useLeaveRules } from '@/lib/leave';
+import { TypeConge, endAfterWorkingDays, formatDays, leaveDays, useLeaveRules } from '@/lib/leave';
 import { Demande } from '@/types';
-import axios from 'axios';
+import { useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 interface EditDemandeModalProps {
     isOpen: boolean;
     onClose: () => void;
     demande: Demande | null;
-    onUpdate: (updateDemande: Demande) => void;
+    onUpdate: () => void;
     isAdmin?: boolean;
 }
 
+type EditDemandeForm = {
+    date_debut: string;
+    date_fin: string;
+    type_conge: TypeConge;
+    etat: Demande['etat'];
+    comment: string;
+    start_half: boolean; // starts in the afternoon
+    end_half: boolean; // ends at noon
+};
+
 const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, demande, onUpdate, isAdmin = false }) => {
-    const [formData, setFormData] = useState<Demande>({
-        id: 0,
-        user_id: 0,
-        date_demande: todayISO(),
+    const { data, setData, put, processing, errors, clearErrors } = useForm<EditDemandeForm>({
         date_debut: '',
         date_fin: '',
-        nbr_jours: 0,
-        annee: new Date().getFullYear(),
         type_conge: 'annuel',
         etat: 'en attente',
-        valide_par: null,
         comment: '',
-        user: {
-            name: '',
-            email: '',
-            role: 'user',
-            remaining_days: 18,
-        },
+        start_half: false,
+        end_half: false,
     });
+    const [succeeded, setSucceeded] = useState(false);
 
-    const [message, setMessage] = useState<{ type: 'success' | 'error' | 'default'; text: string } | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string[]>>({});
-
+    // Load the selected request into the form.
     useEffect(() => {
         if (demande) {
-            setFormData(demande);
+            setData({
+                date_debut: demande.date_debut,
+                date_fin: demande.date_fin,
+                type_conge: demande.type_conge,
+                etat: demande.etat,
+                comment: demande.comment ?? '',
+                start_half: demande.start_half,
+                end_half: demande.end_half,
+            });
+            clearErrors();
+            setSucceeded(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [demande]);
 
     const rules = useLeaveRules();
-    const fixedLength = rules.typeLimits[formData.type_conge];
-    const nbrJours = formData.date_debut && formData.date_fin ? countWorkingDays(formData.date_debut, formData.date_fin, rules) : 0;
+    const fixedLength = rules.typeLimits[data.type_conge];
+    // Exceptional leave is taken in whole days only.
+    const halfDays = rules.halfDayTypes.includes(data.type_conge);
+    const nbrJours =
+        data.date_debut && data.date_fin
+            ? leaveDays(data.date_debut, data.date_fin, halfDays && data.start_half, halfDays && data.end_half, rules)
+            : 0;
 
     // Fixed-length leave types (mariage, naissance, décès) get their end date computed in working days.
     const computeEndDate = (type: TypeConge, start: string, currentEnd: string) => {
@@ -57,113 +72,36 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
         return limit && start ? endAfterWorkingDays(start, limit, rules) : currentEnd;
     };
 
-    const handleTypeCongeChange = (value: TypeConge) => {
-        setFormData((prev) => ({
-            ...prev,
-            type_conge: value,
-            date_fin: computeEndDate(value, prev.date_debut, prev.date_fin),
-        }));
-        clearDateErrors();
+    // A changed date or type makes earlier date errors stale.
+    const updateDates = (changes: Partial<EditDemandeForm>) => {
+        setData((prev) => {
+            const next = { ...prev, ...changes };
+            const whole = !rules.halfDayTypes.includes(next.type_conge);
+            return {
+                ...next,
+                date_fin: computeEndDate(next.type_conge, next.date_debut, next.date_fin),
+                start_half: whole ? false : next.start_half,
+                end_half: whole ? false : next.end_half,
+            };
+        });
+        clearErrors('date_debut', 'date_fin');
     };
 
-    // A changed date or type makes earlier date errors stale.
-    const clearDateErrors = () => {
-        setErrors((prev) => {
-            const rest = { ...prev };
-            delete rest.date_debut;
-            delete rest.date_fin;
-            return rest;
+    const handleSubmit = (event: React.FormEvent) => {
+        event.preventDefault();
+        setSucceeded(false);
+
+        put(`/demandes/${demande?.id}`, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                setSucceeded(true);
+                setTimeout(onUpdate, 1500);
+            },
         });
     };
 
-    const handleDateDebutChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newDateDebut = e.target.value;
-        setFormData((prev) => ({
-            ...prev,
-            date_debut: newDateDebut,
-            date_fin: computeEndDate(prev.type_conge, newDateDebut, prev.date_fin),
-        }));
-        clearDateErrors();
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: name === 'nbr_jours' || name === 'annee' || name === 'user_id' ? parseInt(value) : value,
-        }));
-
-        if (errors[name]) {
-            setErrors((prev) => {
-                const newErrors = { ...prev };
-                delete newErrors[name];
-                return newErrors;
-            });
-        }
-    };
-
-    const handleSubmit = async (event: React.FormEvent) => {
-        event.preventDefault();
-        setLoading(true);
-        setMessage(null);
-        setErrors({});
-
-        try {
-            const dataToSend = {
-                _method: 'PUT',
-                date_debut: formData.date_debut,
-                date_fin: formData.date_fin,
-                type_conge: formData.type_conge,
-                etat: formData.etat,
-                comment: formData.comment,
-            };
-
-            const response = await axios.post(`/demandes/${demande?.id}`, dataToSend, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    Accept: 'application/json',
-                },
-                withCredentials: true,
-            });
-
-            if (response.data) {
-                setMessage({ type: 'success', text: 'Demande mise à jour avec succès' });
-                const updatedDemande = {
-                    ...formData,
-                    ...response.data,
-                };
-
-                onUpdate(updatedDemande);
-                setTimeout(() => {
-                    onClose();
-                }, 1500);
-            }
-        } catch (error) {
-            console.error('Error updating demande:', error);
-
-            if (axios.isAxiosError(error)) {
-                if (error.response?.status === 419) {
-                    setMessage({
-                        type: 'error',
-                        text: 'Session expirée. Veuillez rafraîchir la page et réessayer.',
-                    });
-                } else if (error.response?.status === 422 && error.response.data.errors) {
-                    setErrors(error.response.data.errors);
-                    const errorMessage = Object.values(error.response.data.errors).flat().join(', ');
-                    setMessage({ type: 'error', text: errorMessage });
-                } else {
-                    setMessage({
-                        type: 'error',
-                        text: error.response?.data?.message || "Une erreur s'est produite lors de la mise à jour de la demande",
-                    });
-                }
-            } else {
-                setMessage({ type: 'error', text: "Une erreur s'est produite lors de la mise à jour de la demande" });
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
+    const errorList = Object.values(errors);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -174,23 +112,15 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                 </DialogHeader>
                 <div className="-mr-4 flex-1 overflow-y-auto pr-4">
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {message && (
-                            <div className={`rounded p-2 ${message.type === 'success' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                                {message.text}
-                            </div>
-                        )}
+                        {succeeded && <div className="rounded bg-green-200 p-2 text-green-800">Demande mise à jour avec succès</div>}
+                        {errorList.length > 0 && <div className="rounded bg-red-200 p-2 text-red-800">{errorList.join(', ')}</div>}
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-1">
                                 <label htmlFor="type_conge" className="text-sm font-medium">
                                     Type de congé
                                 </label>
-                                <Select
-                                    value={formData.type_conge}
-                                    onValueChange={(value: TypeConge) => {
-                                        handleTypeCongeChange(value);
-                                    }}
-                                >
+                                <Select value={data.type_conge} onValueChange={(value: TypeConge) => updateDates({ type_conge: value })}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Sélectionner un type de congé" />
                                     </SelectTrigger>
@@ -201,31 +131,34 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                         <SelectItem value="deces">Congé de Décès (3 jours max)</SelectItem>
                                         <SelectItem value="sans_solde">Congé sans solde</SelectItem>
                                         <SelectItem value="recuperation">Récupération</SelectItem>
+                                        <SelectItem value="maladie">Congé maladie (arrêt de travail)</SelectItem>
                                     </SelectContent>
                                 </Select>
-                                {formData.type_conge === 'annuel' && (
-                                    <p className="text-sm text-gray-500">Déduit du solde de {rules.maxDaysPerYear} jours ouvrés par an</p>
+                                {data.type_conge === 'annuel' && (
+                                    <p className="text-sm text-gray-500">
+                                        Déduit des jours acquis : {formatDays(rules.maxDaysPerYear / 12)} jour par mois travaillé (plus l'ancienneté)
+                                    </p>
                                 )}
-                                {formData.type_conge === 'mariage' && (
+                                {data.type_conge === 'mariage' && (
                                     <p className="text-sm text-gray-500">
                                         4 jours dont deux jours payés et deux jours déduits automatiquement du congé
                                     </p>
                                 )}
-                                {formData.type_conge === 'naissance' && (
+                                {data.type_conge === 'naissance' && (
                                     <p className="text-sm text-gray-500">
                                         3 jours - à prendre dans un délai de un mois à compter de la date de la naissance
                                     </p>
                                 )}
-                                {formData.type_conge === 'deces' && (
+                                {data.type_conge === 'deces' && (
                                     <p className="text-sm text-gray-500">
                                         3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours
                                         déduits automatiquement du congé
                                     </p>
                                 )}
-                                {formData.type_conge === 'sans_solde' && (
+                                {data.type_conge === 'sans_solde' && (
                                     <p className="text-sm text-gray-500">Ce congé sera déduit automatiquement de votre salaire</p>
                                 )}
-                                {formData.type_conge === 'recuperation' && (
+                                {data.type_conge === 'recuperation' && (
                                     <p className="text-sm text-gray-500">La journée à récupérer doit se faire dans un délai de 2 mois</p>
                                 )}
                             </div>
@@ -234,7 +167,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                 <label htmlFor="nbr_jours" className="text-sm font-medium">
                                     Nombre de jours
                                 </label>
-                                <Input id="nbr_jours" type="number" name="nbr_jours" value={nbrJours} className="w-full" readOnly />
+                                <Input id="nbr_jours" type="text" name="nbr_jours" value={formatDays(nbrJours)} className="w-full" readOnly />
                                 <p className="text-xs text-gray-500">Jours ouvrés, hors week-ends et jours fériés</p>
                             </div>
                         </div>
@@ -248,12 +181,12 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     id="date_debut"
                                     type="date"
                                     name="date_debut"
-                                    value={formData.date_debut}
-                                    onChange={handleDateDebutChange}
+                                    value={data.date_debut}
+                                    onChange={(e) => updateDates({ date_debut: e.target.value })}
                                     className={errors.date_debut ? 'border-red-500' : ''}
                                     required
                                 />
-                                {errors.date_debut && <p className="text-xs text-red-500">{errors.date_debut[0]}</p>}
+                                {errors.date_debut && <p className="text-xs text-red-500">{errors.date_debut}</p>}
                             </div>
 
                             <div className="space-y-1">
@@ -264,13 +197,13 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     id="date_fin"
                                     type="date"
                                     name="date_fin"
-                                    value={formData.date_fin}
-                                    onChange={handleChange}
+                                    value={data.date_fin}
+                                    onChange={(e) => updateDates({ date_fin: e.target.value })}
                                     className={errors.date_fin ? 'border-red-500' : ''}
                                     required
                                     readOnly={Boolean(fixedLength)}
                                 />
-                                {errors.date_fin && <p className="text-xs text-red-500">{errors.date_fin[0]}</p>}
+                                {errors.date_fin && <p className="text-xs text-red-500">{errors.date_fin}</p>}
                                 {fixedLength && (
                                     <p className="text-sm text-gray-500">
                                         La date de fin est automatiquement calculée en fonction de la date de début
@@ -279,6 +212,19 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
+                        {halfDays && (
+                            <HalfDayFields
+                                start={data.date_debut}
+                                end={data.date_fin}
+                                startHalf={data.start_half}
+                                endHalf={data.end_half}
+                                onChange={(halves) => {
+                                    setData((prev) => ({ ...prev, ...halves }));
+                                    clearErrors('date_debut', 'date_fin');
+                                }}
+                            />
+                        )}
+
                         <div className="space-y-1">
                             <label htmlFor="comment" className="text-sm font-medium">
                                 Commentaire
@@ -286,12 +232,15 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                             <Textarea
                                 id="comment"
                                 name="comment"
-                                value={formData.comment || ''}
-                                onChange={handleChange}
+                                value={data.comment}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                                    setData('comment', e.target.value);
+                                    clearErrors('comment');
+                                }}
                                 placeholder="Entrez la raison de votre demande..."
                                 className={`min-h-[100px] ${errors.comment ? 'border-red-500' : ''}`}
                             />
-                            {errors.comment && <p className="text-xs text-red-500">{errors.comment[0]}</p>}
+                            {errors.comment && <p className="text-xs text-red-500">{errors.comment}</p>}
                         </div>
 
                         {/* État field: only editable by admin */}
@@ -303,34 +252,38 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                 <select
                                     id="etat"
                                     name="etat"
-                                    value={formData.etat}
-                                    onChange={handleChange}
+                                    value={data.etat}
+                                    onChange={(e) => {
+                                        setData('etat', e.target.value as Demande['etat']);
+                                        clearErrors('etat');
+                                    }}
                                     className={`w-full rounded border p-2 ${errors.etat ? 'border-red-500' : ''}`}
                                     required
                                 >
                                     <option value="en attente">En attente</option>
+                                    <option value="validée manager">Validée par le responsable (décision RH attendue)</option>
                                     <option value="acceptée">Acceptée</option>
                                     <option value="refusée">Refusée</option>
                                 </select>
-                                {errors.etat && <p className="text-xs text-red-500">{errors.etat[0]}</p>}
+                                {errors.etat && <p className="text-xs text-red-500">{errors.etat}</p>}
                             </div>
                         ) : (
                             <div className="space-y-1">
                                 <label htmlFor="etat" className="text-sm font-medium">
                                     État
                                 </label>
-                                <Input id="etat" type="text" value={formData.etat} readOnly className="cursor-not-allowed bg-gray-100" />
+                                <Input id="etat" type="text" value={data.etat} readOnly className="cursor-not-allowed bg-gray-100" />
                             </div>
                         )}
                     </form>
                 </div>
 
                 <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
-                    <Button variant="outline" type="button" onClick={onClose} disabled={loading} className="w-full sm:w-auto">
+                    <Button variant="outline" type="button" onClick={onClose} disabled={processing} className="w-full sm:w-auto">
                         Annuler
                     </Button>
-                    <Button type="submit" disabled={loading} onClick={handleSubmit} className="w-full sm:w-auto">
-                        {loading ? 'Mise à jour...' : 'Modifier demande'}
+                    <Button type="submit" disabled={processing} onClick={handleSubmit} className="w-full sm:w-auto">
+                        {processing ? 'Mise à jour...' : 'Modifier demande'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

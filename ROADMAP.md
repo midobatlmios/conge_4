@@ -65,6 +65,54 @@ policy, form requests), check-only CI.
 | 5.3 | **Architecture section** in README (diagram of request → policy → form request → service) | Shows you understand the design | S |
 | 5.4 | **HR user guide** (short PDF or page in French) | Real users need it; shows product thinking | S |
 
+## 6. From leave manager to HR application (SIRH)
+
+What turns a leave module into a tool HR runs the company with: the whole
+employee lifecycle, documents, every kind of absence, reporting and compliance.
+
+### Everyday HR work
+
+| # | Item | Why | Size |
+|---|------|-----|------|
+| 6.1 | ✅ **Sick leave (congé maladie)** (done: declared within 48 h, no manager step, certificate required, CNSS dossier tracking, sick days in payroll): own type and counter, medical certificate required, CNSS declaration reminder | The most frequent absence; no HR tool is credible without it | M |
+| 6.2 | ✅ **Administrative documents on request** (done: employee asks, RH issues a numbered PDF; company page "Entreprise"; salary on contracts): "Attestation de travail" / "Attestation de salaire" generated as PDF with the company letterhead and the employee record | One of HR's most frequent requests in Moroccan companies; instant visible value | M |
+| 6.3 | ✅ **Contracts** (done: history per employee, legal trial period suggested from the category, alerts on the employee page and Vue d'ensemble): type (CDI, CDD, stage, ANAPEC), start/end dates, trial period, alerts ("CDD de X se termine dans 30 jours", "fin de période d'essai") | HR tracks contracts before anything else | M |
+
+### Complete employee record
+
+| # | Item | Why | Size |
+|---|------|-----|------|
+| 6.4 | ✅ **Personal & administrative data**: CIN, CNSS number, birth date, address, RIB, emergency contact (HR-only access) — done: employee page `/admin/users/{id}`, encrypted fields, RIB key check, employee reads own data in Paramètres | Needed for payroll, declarations and attestations | M |
+| 6.5 | ✅ **Employee document folder**: contract, CIN copy, diplomas (private storage, as for leave certificates) — done: categories, optional expiry date with 30-day alert (employee page + Vue d'ensemble), employee reads own in Paramètres → Mes documents | Replaces the paper file in the HR cabinet | S |
+| 6.6 | ✅ **Org chart** built from the manager links (done: "Organigramme" page for everyone, search, collapsible teams, outline on phones) | Shows the structure at a glance; already have the data | S |
+| 6.7 | **Import employees from Excel** (with a downloadable template and error report) | No company re-types 50 people by hand | M |
+
+### Steering and day-to-day running
+
+| # | Item | Why | Size |
+|---|------|-----|------|
+| 6.8 | ✅ **HR indicators** (done: "Indicateurs RH" page per year and department, year-end report in Excel): absence rate, headcount over time, turnover, days expiring soon, year-end report | What HR presents to management | M |
+| 6.9 | **Reminders**: requests waiting > 3 days nudge the manager/HR; carried-over days expiring on 31 March trigger an alert in February | Nothing gets stuck or lost | S |
+| 6.10 | **Delegation**: a manager on leave hands their approvals to someone else | Approvals don't stop during holidays | S |
+| 6.11 | **Calendar export** (iCal feed of approved leave for Outlook / Google Calendar) | Leave shows up where people already plan | S |
+
+### Trust and compliance
+
+| # | Item | Why | Size |
+|---|------|-----|------|
+| 6.12 | **Personal data protection (loi 09-08 / CNDP)**: consent, retention periods, export of an employee's data on request, access limited by role | A buyer checks this first; personal data is now stored | M |
+| 6.13 | ✅ **Finer roles**: HR, super-admin, read-only (payroll / accountant) instead of one admin role — done: roles admin / rh / paie / user | Matches how companies split responsibilities | M |
+| 6.14 | **Company settings** (started: name, address, ICE/RC/IF/CNSS, signatory and logo on the "Entreprise" page; multi-site still to do): name, logo, address, ICE (used on attestations), several sites with their own holidays | One app per company, branded and multi-site | M |
+
+### Presentation
+
+| # | Item | Why | Size |
+|---|------|-----|------|
+| 6.15 | ✅ **Company branding** on every page and PDF (done: company name, logo or initials badge and accent color in the sidebar, sign-in pages and attestations) | Looks like the company's own tool | S |
+| 6.16 | ✅ **Realistic demo data** (done: `php artisan demo:reset`, fictional company Atlas Distribution): ~30 employees, several departments, a year of history | An empty app looks like a prototype | S |
+
+See also 4.5 (installable on phone) and 4.6 (Arabic / English).
+
 ---
 
 ### Suggested order
@@ -74,3 +122,4 @@ policy, form requests), check-only CI.
 3. **2.5, 2.6, 2.9** — the features HR will notice most.
 4. **1.3, 1.4, 3.2** — robustness.
 5. **1.5** when it's time to deploy; **section 5** before showing it to anyone.
+6. **6.1 → 6.2 → 6.3 → 6.16 + 6.15** — sick leave, attestations, contracts, then demo data and branding: the shortest path to being seen as an HR application.

@@ -54,7 +54,7 @@ test('employees cannot edit or delete another employees request', function () {
     $demande = createDemandeForTest($otherEmployee);
 
     $this->actingAs($employee)
-        ->putJson("/demandes/{$demande->id}", leavePayload(['etat' => 'acceptée']))
+        ->put("/demandes/{$demande->id}", leavePayload(['etat' => 'acceptée']))
         ->assertForbidden();
 
     $this->delete("/demandes/{$demande->id}")->assertForbidden();
@@ -66,7 +66,7 @@ test('new requests ignore client-supplied owner status days year and request dat
     $otherEmployee = User::factory()->create();
 
     $this->actingAs($employee)
-        ->postJson('/demandes', [
+        ->post('/demandes', [
             'date_demande' => '2020-01-01',
             'date_debut' => '2027-03-01', // Monday
             'date_fin' => '2027-03-04',
@@ -76,12 +76,12 @@ test('new requests ignore client-supplied owner status days year and request dat
             'annee' => 2020,
             'user_id' => $otherEmployee->id,
         ])
-        ->assertCreated();
+        ->assertRedirect()->assertSessionHasNoErrors();
 
     $demande = Demande::sole();
     expect($demande->user_id)->toBe($employee->id)
         ->and($demande->etat)->toBe(LeaveStatus::Pending)
-        ->and($demande->nbr_jours)->toBe(4)
+        ->and($demande->nbr_jours)->toEqual(4)
         ->and($demande->annee)->toBe(2027)
         ->and($demande->date_demande)->toBe('2026-02-02');
 });
@@ -91,24 +91,22 @@ test('admins can file a request on behalf of an employee', function () {
     $employee = User::factory()->create();
 
     $this->actingAs($admin)
-        ->postJson('/demandes', leavePayload(['user_id' => $employee->id]))
-        ->assertCreated();
+        ->post('/demandes', leavePayload(['user_id' => $employee->id]))
+        ->assertRedirect()->assertSessionHasNoErrors();
 
     expect(Demande::sole()->user_id)->toBe($employee->id);
 });
 
 test('requests cannot have an end date before their start date', function () {
     $this->actingAs(User::factory()->create())
-        ->postJson('/demandes', leavePayload(['date_debut' => '2026-03-04', 'date_fin' => '2026-03-02']))
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('date_fin');
+        ->post('/demandes', leavePayload(['date_debut' => '2026-03-04', 'date_fin' => '2026-03-02']))
+        ->assertSessionHasErrors('date_fin');
 });
 
 test('employees cannot request leave in the past', function () {
     $this->actingAs(User::factory()->create())
-        ->postJson('/demandes', leavePayload(['date_debut' => '2026-01-26', 'date_fin' => '2026-01-27']))
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('date_debut');
+        ->post('/demandes', leavePayload(['date_debut' => '2026-01-26', 'date_fin' => '2026-01-27']))
+        ->assertSessionHasErrors('date_debut');
 });
 
 test('leave-type day limits are counted in working days', function () {
@@ -116,20 +114,19 @@ test('leave-type day limits are counted in working days', function () {
 
     // Monday to Friday = 5 working days, over the 4-day mariage limit.
     $this->actingAs($employee)
-        ->postJson('/demandes', leavePayload([
+        ->post('/demandes', leavePayload([
             'date_debut' => '2026-03-02',
             'date_fin' => '2026-03-06',
             'type_conge' => 'mariage',
         ]))
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('date_fin');
+        ->assertSessionHasErrors('date_fin');
 
     // Friday to Wednesday spans 6 calendar days but only 4 working days.
-    $this->postJson('/demandes', leavePayload([
+    $this->post('/demandes', leavePayload([
         'date_debut' => '2026-03-06',
         'date_fin' => '2026-03-11',
         'type_conge' => 'mariage',
-    ]))->assertCreated();
+    ]))->assertRedirect()->assertSessionHasNoErrors();
 });
 
 test('weekends and public holidays are not counted as leave days', function () {
@@ -139,9 +136,8 @@ test('weekends and public holidays are not counted as leave days', function () {
 
 test('a request covering only non-working days is rejected', function () {
     $this->actingAs(User::factory()->create())
-        ->postJson('/demandes', leavePayload(['date_debut' => '2026-03-07', 'date_fin' => '2026-03-08']))
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('date_fin');
+        ->post('/demandes', leavePayload(['date_debut' => '2026-03-07', 'date_fin' => '2026-03-08']))
+        ->assertSessionHasErrors('date_fin');
 });
 
 test('requests cannot overlap another pending or accepted request', function () {
@@ -149,9 +145,8 @@ test('requests cannot overlap another pending or accepted request', function () 
     createDemandeForTest($employee, ['date_debut' => '2026-03-02', 'date_fin' => '2026-03-04']);
 
     $this->actingAs($employee)
-        ->postJson('/demandes', leavePayload(['date_debut' => '2026-03-04', 'date_fin' => '2026-03-06']))
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('date_debut');
+        ->post('/demandes', leavePayload(['date_debut' => '2026-03-04', 'date_fin' => '2026-03-06']))
+        ->assertSessionHasErrors('date_debut');
 });
 
 test('a refused request does not block the same dates', function () {
@@ -159,8 +154,8 @@ test('a refused request does not block the same dates', function () {
     createDemandeForTest($employee, ['etat' => 'refusée']);
 
     $this->actingAs($employee)
-        ->postJson('/demandes', leavePayload())
-        ->assertCreated();
+        ->post('/demandes', leavePayload())
+        ->assertRedirect()->assertSessionHasNoErrors();
 });
 
 test('editing a request does not conflict with itself', function () {
@@ -168,10 +163,10 @@ test('editing a request does not conflict with itself', function () {
     $demande = createDemandeForTest($employee);
 
     $this->actingAs($employee)
-        ->putJson("/demandes/{$demande->id}", leavePayload(['date_fin' => '2026-03-04']))
-        ->assertOk();
+        ->put("/demandes/{$demande->id}", leavePayload(['date_fin' => '2026-03-04']))
+        ->assertRedirect()->assertSessionHasNoErrors();
 
-    expect($demande->fresh()->nbr_jours)->toBe(3);
+    expect($demande->fresh()->nbr_jours)->toEqual(3);
 });
 
 test('admins can approve annual leave only when the yearly limit is respected', function () {
@@ -189,12 +184,12 @@ test('admins can approve annual leave only when the yearly limit is respected', 
     ]);
 
     $this->actingAs($admin)
-        ->putJson("/demandes/{$pending->id}", leavePayload([
+        ->put("/demandes/{$pending->id}", leavePayload([
             'date_debut' => '2026-12-30',
             'date_fin' => '2026-12-30',
             'etat' => 'acceptée',
         ]))
-        ->assertUnprocessable();
+        ->assertSessionHasErrors();
 
     expect($pending->fresh()->etat)->toBe(LeaveStatus::Pending);
 });
@@ -221,7 +216,7 @@ test('mariage and deces take 2 days from the allowance, naissance takes none', f
         'etat' => 'acceptée',
     ]);
 
-    expect(app(LeaveCalculator::class)->usedDays($employee->id, 2026))->toBe(4);
+    expect(app(LeaveCalculator::class)->usedDays($employee->id, 2026))->toEqual(4);
 });
 
 test('a mariage cannot be accepted when it would exceed the allowance', function () {
@@ -240,13 +235,13 @@ test('a mariage cannot be accepted when it would exceed the allowance', function
     ]);
 
     $this->actingAs($admin)
-        ->putJson("/demandes/{$mariage->id}", leavePayload([
+        ->put("/demandes/{$mariage->id}", leavePayload([
             'date_debut' => '2026-06-01',
             'date_fin' => '2026-06-04',
             'type_conge' => 'mariage',
             'etat' => 'acceptée',
         ]))
-        ->assertUnprocessable();
+        ->assertSessionHasErrors();
 
     expect($mariage->fresh()->etat)->toBe(LeaveStatus::Pending);
 });
@@ -265,15 +260,15 @@ test('unpaid leave does not use up the annual allowance', function () {
         'date_fin' => '2026-12-30',
     ]);
 
-    expect(app(LeaveCalculator::class)->usedDays($employee->id, 2026))->toBe(0);
+    expect(app(LeaveCalculator::class)->usedDays($employee->id, 2026))->toEqual(0);
 
     $this->actingAs($admin)
-        ->putJson("/demandes/{$pending->id}", leavePayload([
+        ->put("/demandes/{$pending->id}", leavePayload([
             'date_debut' => '2026-12-30',
             'date_fin' => '2026-12-30',
             'etat' => 'acceptée',
         ]))
-        ->assertOk();
+        ->assertRedirect()->assertSessionHasNoErrors();
 });
 
 test('approved days are counted in the calendar years they overlap', function () {
@@ -285,8 +280,8 @@ test('approved days are counted in the calendar years they overlap', function ()
         'etat' => 'acceptée',
     ]);
 
-    expect(app(LeaveCalculator::class)->usedDays($employee->id, 2025))->toBe(1)
-        ->and(app(LeaveCalculator::class)->usedDays($employee->id, 2026))->toBe(1);
+    expect(app(LeaveCalculator::class)->usedDays($employee->id, 2025))->toEqual(1)
+        ->and(app(LeaveCalculator::class)->usedDays($employee->id, 2026))->toEqual(1);
 });
 
 test('the employee is notified right away when a request is accepted', function () {
@@ -295,8 +290,8 @@ test('the employee is notified right away when a request is accepted', function 
     $demande = createDemandeForTest($employee);
 
     $this->actingAs($admin)
-        ->putJson("/demandes/{$demande->id}", leavePayload(['etat' => 'acceptée']))
-        ->assertOk();
+        ->put("/demandes/{$demande->id}", leavePayload(['etat' => 'acceptée']))
+        ->assertRedirect()->assertSessionHasNoErrors();
 
     expect($employee->notifications()->count())->toBe(1);
 });
@@ -308,8 +303,8 @@ test('the employee also gets an email in French when a request is decided', func
     $demande = createDemandeForTest($employee);
 
     $this->actingAs($admin)
-        ->putJson("/demandes/{$demande->id}", leavePayload(['etat' => 'refusée', 'comment' => 'Période chargée']))
-        ->assertOk();
+        ->put("/demandes/{$demande->id}", leavePayload(['etat' => 'refusée', 'comment' => 'Période chargée']))
+        ->assertRedirect()->assertSessionHasNoErrors();
 
     \Illuminate\Support\Facades\Notification::assertSentTo(
         $employee,
@@ -334,8 +329,8 @@ test('a mail server outage does not block accepting a request', function () {
     $demande = createDemandeForTest($employee);
 
     $this->actingAs($admin)
-        ->putJson("/demandes/{$demande->id}", leavePayload(['etat' => 'acceptée']))
-        ->assertOk();
+        ->put("/demandes/{$demande->id}", leavePayload(['etat' => 'acceptée']))
+        ->assertRedirect()->assertSessionHasNoErrors();
 
     expect($demande->fresh()->etat)->toBe(LeaveStatus::Accepted)
         ->and($employee->notifications()->count())->toBe(1);

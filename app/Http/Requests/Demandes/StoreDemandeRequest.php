@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Demandes;
 
+use App\Http\Controllers\DemandeDocumentController;
 use App\Models\Demande;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,11 @@ class StoreDemandeRequest extends LeaveRequestForm
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        $rules = parent::rules();
+        $rules = [
+            ...parent::rules(),
+            // An optional supporting document sent with the request.
+            ...DemandeDocumentController::rules(required: false),
+        ];
 
         // Only admins may file for someone else; an employee's user_id is ignored.
         if ($this->actor()->can('createForOthers', Demande::class)) {
@@ -19,6 +24,12 @@ class StoreDemandeRequest extends LeaveRequestForm
         }
 
         return $rules;
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [...parent::messages(), ...DemandeDocumentController::messages()];
     }
 
     public function ownerId(): int

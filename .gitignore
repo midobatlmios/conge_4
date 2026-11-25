@@ -15,6 +15,11 @@
 Homestead.json
 Homestead.yaml
 npm-debug.log
+# End-to-end tests (Playwright): throwaway database and reports.
+/database/e2e.sqlite
+/test-results
+/playwright-report
+/blob-report
 yarn-error.log
 /auth.json
 /.fleet

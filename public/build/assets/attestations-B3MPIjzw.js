@@ -1,0 +1,1 @@
+const r={demandee:"border-orange-500 text-orange-700 dark:text-orange-400",delivree:"border-green-600 text-green-700 dark:text-green-400",refusee:"border-red-500 text-red-700 dark:text-red-400"},t=e=>`/attestations/${e.id}/pdf`;export{r as S,t as p};

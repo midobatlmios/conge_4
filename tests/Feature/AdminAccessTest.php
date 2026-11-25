@@ -24,7 +24,7 @@ test('the seeder creates verified dev accounts and can run twice', function () {
     $this->seed(DatabaseSeeder::class);
     $this->seed(DatabaseSeeder::class);
 
-    expect(User::count())->toBe(2);
+    expect(User::count())->toBe(4);
 
     $admin = User::where('email', 'admin@example.com')->sole();
     expect($admin->role)->toBe(Role::Admin)
@@ -36,9 +36,8 @@ test('an admin cannot remove their own admin role', function () {
     User::factory()->create(['role' => 'admin']);
 
     $this->actingAs($admin)
-        ->putJson("/admin/users/{$admin->id}", ['name' => $admin->name, 'email' => $admin->email, 'role' => 'user'])
-        ->assertUnprocessable()
-        ->assertJsonValidationErrors('role');
+        ->put("/admin/users/{$admin->id}", ['name' => $admin->name, 'email' => $admin->email, 'role' => 'user'])
+        ->assertSessionHasErrors('role');
 
     expect($admin->fresh()->role)->toBe(Role::Admin);
 });
@@ -48,8 +47,8 @@ test('an admin can demote another admin while one remains', function () {
     $other = User::factory()->create(['role' => 'admin']);
 
     $this->actingAs($admin)
-        ->putJson("/admin/users/{$other->id}", ['name' => $other->name, 'email' => $other->email, 'role' => 'user'])
-        ->assertOk();
+        ->put("/admin/users/{$other->id}", ['name' => $other->name, 'email' => $other->email, 'role' => 'user', 'hire_date' => '2020-01-06'])
+        ->assertRedirect()->assertSessionHasNoErrors();
 
     expect($other->fresh()->role)->toBe(Role::User);
 });
@@ -81,11 +80,11 @@ test('an admin can reset an employee password', function () {
     $employee = User::factory()->create();
 
     $this->actingAs($admin)
-        ->putJson("/admin/users/{$employee->id}/reset-password", [
+        ->put("/admin/users/{$employee->id}/reset-password", [
             'password' => 'nouveau-mdp-123',
             'password_confirmation' => 'nouveau-mdp-123',
         ])
-        ->assertOk();
+        ->assertRedirect()->assertSessionHasNoErrors();
 
     expect(Hash::check('nouveau-mdp-123', $employee->fresh()->password))->toBeTrue();
 });
@@ -96,7 +95,7 @@ test('saving a user from the admin page redirects back instead of returning JSON
 
     $this->actingAs($admin)
         ->from('/admin/users')
-        ->put("/admin/users/{$employee->id}", ['name' => 'Nouveau Nom', 'email' => $employee->email, 'role' => 'user'])
+        ->put("/admin/users/{$employee->id}", ['name' => 'Nouveau Nom', 'email' => $employee->email, 'role' => 'user', 'hire_date' => '2020-01-06'])
         ->assertRedirect('/admin/users');
 
     expect($employee->fresh()->name)->toBe('Nouveau Nom');

@@ -7,7 +7,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\Validator;
 
-/** Admin adding or editing a public holiday. Access is checked by the role:admin route middleware. */
+/** Admin adding or editing a public holiday. Access is checked by the role:admin,rh route middleware. */
 class HolidayRequest extends FormRequest
 {
     /** @return array<string, mixed> */

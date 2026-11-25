@@ -1,4 +1,5 @@
-import type { TypeConge } from '@/lib/leave';
+import type { LeaveStatus, TypeConge } from '@/lib/leave';
+import type { Permissions } from '@/lib/roles';
 import type { LucideIcon } from 'lucide-react';
 
 export interface PageProps {
@@ -30,6 +31,10 @@ export interface User {
     role: string;
     avatar?: string;
     is_admin?: boolean;
+    /** Has employees reporting to them: approves their requests first. */
+    is_manager?: boolean;
+    /** What the signed-in user may do (shared on every page). */
+    can?: Permissions;
     remaining_days?: number;
     email_verified_at?: string | null;
     created_at?: string;
@@ -55,10 +60,25 @@ export interface Demande {
     date_demande: string;
     date_debut: string;
     date_fin: string;
+    start_half: boolean; // starts in the afternoon
+    end_half: boolean; // ends at noon
     nbr_jours: number;
     annee: number;
     type_conge: TypeConge;
-    etat: 'en attente' | 'acceptée' | 'refusée';
+    etat: LeaveStatus;
     valide_par: number | null;
     comment: string | null;
+    manager_comment: string | null; // the manager's reason when refusing
+    /** Sick leave: calendar days (how the CNSS counts) and when HR filed the CNSS dossier. */
+    calendar_days: number;
+    cnss_filed_on: string | null;
+    documents?: DemandeDocument[]; // supporting documents (certificates)
+}
+
+export interface DemandeDocument {
+    id: number;
+    original_name: string;
+    mime_type: string;
+    size: number; // bytes
+    created_at: string;
 }

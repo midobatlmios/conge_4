@@ -20,10 +20,12 @@ class DashboardController extends Controller
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role,
+                    'is_manager' => $user->isManager(),
+                    'can' => $user->permissions(),
                     'remaining_days' => $calculator->remainingDays($user->id, now()->year),
                 ],
             ],
-            'demandes' => $user->demandes()->latest()->get(),
+            'demandes' => $user->demandes()->with('documents')->latest()->get(),
         ]);
     }
 }

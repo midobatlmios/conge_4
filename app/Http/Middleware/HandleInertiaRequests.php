@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CompanySetting;
 use App\Models\Holiday;
 use App\Services\LeaveCalculator;
 use Illuminate\Foundation\Inspiring;
@@ -44,6 +45,8 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // The company's name, accent color and logo (or initials), on every page incl. sign-in.
+            'brand' => fn (): array => CompanySetting::current()->brand(),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth' => [
                 'user' => $request->user() ? [
@@ -51,6 +54,9 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'email' => $request->user()->email,
                     'role' => $request->user()->role,
+                    // Approves their team's requests first (two-step approval).
+                    'is_manager' => $request->user()->isManager(),
+                    'can' => $request->user()->permissions(),
                 ] : null,
             ],
             'ziggy' => fn (): array => [
@@ -61,11 +67,18 @@ class HandleInertiaRequests extends Middleware
                 'maxDaysPerYear' => config('conge.max_days_per_year'),
                 'countedTypes' => config('conge.counted_types'),
                 'fixedDeductions' => config('conge.fixed_deductions'),
-                // The signed-in user's remaining annual days for the current year.
-                'remainingDays' => $request->user()
-                    ? app(LeaveCalculator::class)->remainingDays($request->user()->id, now()->year)
-                    : null,
+                'seniorityBonusDays' => config('conge.seniority_bonus_days'),
+                'seniorityYears' => config('conge.seniority_years'),
+                // The signed-in user's balance for the current year (days earned so far, used, left).
+                'balance' => $request->user() ? app(LeaveCalculator::class)->balance($request->user()) : null,
                 'typeLimits' => config('conge.type_limits'),
+                'halfDayTypes' => config('conge.half_day_types'),
+                // Supporting documents: types that need one before HR accepts, accepted files, size limit.
+                'documentTypes' => config('conge.document_types'),
+                // Sick leave can be declared up to this many days after it started.
+                'sickLeaveBackdateDays' => config('conge.sick_leave_backdate_days'),
+                'documentMimes' => config('conge.document_mimes'),
+                'documentMaxKb' => config('conge.document_max_kb'),
                 'workingDays' => config('conge.working_days'),
                 // Only signed-in pages count leave days; skip the query for guests.
                 'holidays' => $request->user() ? Holiday::keys() : [],

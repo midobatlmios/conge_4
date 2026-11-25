@@ -8,9 +8,19 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
-/** Admin editing an account. Access is checked by the role:admin route middleware. */
+/**
+ * Admin or RH editing an account (role:admin,rh route middleware). RH only
+ * edits plain employees and cannot give a role; only an Admin can.
+ */
 class UpdateUserRequest extends FormRequest
 {
+    use ValidatesEmployeeRecord;
+
+    public function authorize(): bool
+    {
+        return $this->user()->canManageAccount($this->target());
+    }
+
     public function target(): User
     {
         return $this->route('user');
@@ -22,9 +32,19 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', Rule::unique('users', 'email')->ignore($this->target()->id)],
-            'role' => ['required', Rule::enum(Role::class)],
+            'role' => ['required', Rule::enum(Role::class)->only($this->user()->assignableRoles())],
             // Optional: only changed when filled in.
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            ...$this->employeeRecordRules($this->target()),
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            ...$this->employeeRecordMessages(),
+            'role.enum' => 'Seul un administrateur peut attribuer ce rôle.',
         ];
     }
 
@@ -32,6 +52,7 @@ class UpdateUserRequest extends FormRequest
     public function after(): array
     {
         return [
+            fn (Validator $validator) => $this->checkManagerChain($validator, $this->target()),
             function (Validator $validator) {
                 $target = $this->target();
 

@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { User } from '@/components/users/columns';
-import axios from 'axios';
+import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 interface ResetPasswordModalProps {
@@ -13,71 +13,26 @@ interface ResetPasswordModalProps {
 }
 
 const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose, user, onSuccess }) => {
-    const [password, setPassword] = useState('');
-    const [passwordConfirmation, setPasswordConfirmation] = useState('');
-    const [message, setMessage] = useState<{ type: 'success' | 'error' | 'default'; text: string } | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string[]>>({});
+    const { data, setData, put, processing, errors, setError, clearErrors, wasSuccessful } = useForm({
+        password: '',
+        password_confirmation: '',
+    });
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleSubmit = async (event: React.FormEvent) => {
+    const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
-        setLoading(true);
-        setMessage(null);
-        setErrors({});
+        clearErrors();
 
-        if (password !== passwordConfirmation) {
-            setErrors({
-                password_confirmation: ['Les mots de passe ne correspondent pas'],
-            });
-            setLoading(false);
+        if (data.password !== data.password_confirmation) {
+            setError('password_confirmation', 'Les mots de passe ne correspondent pas');
             return;
         }
 
-        try {
-            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-
-            await axios.put(
-                `/admin/users/${user?.id}/reset-password`,
-                {
-                    password,
-                    password_confirmation: passwordConfirmation,
-                },
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        Accept: 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                    },
-                    withCredentials: true,
-                },
-            );
-
-            setMessage({ type: 'success', text: 'Mot de passe réinitialisé avec succès' });
-            setTimeout(() => {
-                onClose();
-                onSuccess();
-            }, 1500);
-        } catch (error) {
-            console.error('Error resetting password:', error);
-
-            if (axios.isAxiosError(error) && error.response) {
-                if (error.response.status === 422 && error.response.data.errors) {
-                    setErrors(error.response.data.errors);
-                    const errorMessage = Object.values(error.response.data.errors).flat().join(', ');
-                    setMessage({ type: 'error', text: errorMessage });
-                } else {
-                    setMessage({
-                        type: 'error',
-                        text: error.response.data.message || "Une erreur s'est produite lors de la réinitialisation du mot de passe",
-                    });
-                }
-            } else {
-                setMessage({ type: 'error', text: "Une erreur s'est produite lors de la réinitialisation du mot de passe" });
-            }
-        } finally {
-            setLoading(false);
-        }
+        put(`/admin/users/${user?.id}/reset-password`, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => setTimeout(onSuccess, 1500),
+        });
     };
 
     return (
@@ -87,11 +42,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
                     <DialogTitle>Réinitialiser le mot de passe de {user?.name}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {message && (
-                        <div className={`rounded p-2 ${message.type === 'success' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                            {message.text}
-                        </div>
-                    )}
+                    {wasSuccessful && <div className="rounded bg-green-200 p-2 text-green-800">Mot de passe réinitialisé avec succès</div>}
 
                     <div className="flex flex-col space-y-1">
                         <label htmlFor="password">Nouveau mot de passe</label>
@@ -99,8 +50,8 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
                             <Input
                                 id="password"
                                 type={showPassword ? 'text' : 'password'}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                value={data.password}
+                                onChange={(e) => setData('password', e.target.value)}
                                 className={`w-full ${errors.password ? 'border-red-500' : ''}`}
                                 minLength={8}
                                 required
@@ -115,7 +66,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
                                 {showPassword ? 'Masquer' : 'Afficher'}
                             </Button>
                         </div>
-                        {errors.password && <p className="text-sm text-red-500">{errors.password[0]}</p>}
+                        {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
                     </div>
 
                     <div className="flex flex-col space-y-1">
@@ -123,21 +74,21 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
                         <Input
                             id="password_confirmation"
                             type={showPassword ? 'text' : 'password'}
-                            value={passwordConfirmation}
-                            onChange={(e) => setPasswordConfirmation(e.target.value)}
+                            value={data.password_confirmation}
+                            onChange={(e) => setData('password_confirmation', e.target.value)}
                             className={`w-full ${errors.password_confirmation ? 'border-red-500' : ''}`}
                             minLength={8}
                             required
                         />
-                        {errors.password_confirmation && <p className="text-sm text-red-500">{errors.password_confirmation[0]}</p>}
+                        {errors.password_confirmation && <p className="text-sm text-red-500">{errors.password_confirmation}</p>}
                     </div>
 
                     <DialogFooter>
-                        <Button variant="outline" type="button" onClick={onClose} disabled={loading}>
+                        <Button variant="outline" type="button" onClick={onClose} disabled={processing}>
                             Annuler
                         </Button>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
                         </Button>
                     </DialogFooter>
                 </form>

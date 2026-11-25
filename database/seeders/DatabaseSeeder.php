@@ -12,11 +12,13 @@ class DatabaseSeeder extends Seeder
      * Seed the application's database with local development accounts.
      *
      * Safe to run more than once: existing accounts are left untouched.
-     * Both accounts use the password "password" — development only.
+     * Every account uses the password "password" — development only.
      */
     public function run(): void
     {
         $this->createAccount('admin@example.com', 'Admin', Role::Admin);
+        $this->createAccount('rh@example.com', 'RH', Role::Hr);
+        $this->createAccount('paie@example.com', 'Paie', Role::Payroll);
         $this->createAccount('test@example.com', 'Test User', Role::User);
     }
 

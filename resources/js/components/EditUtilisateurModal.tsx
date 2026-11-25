@@ -2,109 +2,68 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { User } from '@/components/users/columns';
-import { router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import EmployeeRecordFields, { Option } from '@/components/users/EmployeeRecordFields';
+import { RoleOption } from '@/lib/roles';
+import { useForm } from '@inertiajs/react';
+import { useState } from 'react';
 
 interface EditUtilisateurModalProps {
     isOpen: boolean;
     onClose: () => void;
-    user: User | null;
+    user: User;
+    departments: Option[];
+    managers: Option[];
+    /** Roles the signed-in user may give (RH: employees only). */
+    roles: RoleOption[];
 }
 
-const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onClose, user }) => {
-    const [formData, setFormData] = useState<User & { password?: string; password_confirmation?: string }>({
-        id: 0,
-        name: '',
-        email: '',
-        email_verified_at: null,
-        role: 'user',
-        deactivated_at: null,
-        created_at: '',
-        updated_at: '',
+const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onClose, user, departments, managers, roles }) => {
+    const { data, setData, put, processing, errors, setError, clearErrors, transform } = useForm({
+        name: user.name,
+        email: user.email,
+        role: user.role,
         password: '',
         password_confirmation: '',
+        matricule: user.matricule ?? '',
+        department_id: user.department_id ? String(user.department_id) : '',
+        job_title: user.job_title ?? '',
+        hire_date: user.hire_date ?? '',
+        manager_id: user.manager_id ? String(user.manager_id) : '',
     });
 
-    const [message, setMessage] = useState<{ type: 'success' | 'error' | 'default'; text: string } | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState<Record<string, string>>({});
+    // Keep a current manager who has since left selectable, so the form shows them.
+    const managerOptions = user.manager && !managers.some((m) => m.id === user.manager?.id) ? [...managers, user.manager] : managers;
     const [showPassword, setShowPassword] = useState(false);
 
-    useEffect(() => {
-        if (user) {
-            setFormData({ ...user, password: '', password_confirmation: '' });
-        }
-    }, [user]);
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({
-            ...prev,
-            [name]: value,
-        }));
-
-        if (errors[name]) {
-            setErrors((prev) => {
-                const newErrors = { ...prev };
-                delete newErrors[name];
-                return newErrors;
-            });
-        }
+        const name = e.target.name as keyof typeof data;
+        setData(name, e.target.value);
+        clearErrors(name);
     };
 
-    const handleSubmit = async (event: React.FormEvent) => {
+    const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
-        setLoading(true);
-        setMessage(null);
-        setErrors({});
+        clearErrors();
 
-        // Vérifier que les mots de passe correspondent
-        if (formData.password && formData.password !== formData.password_confirmation) {
-            setErrors({
-                password_confirmation: 'Les mots de passe ne correspondent pas',
-            });
-            setLoading(false);
+        if (data.password && data.password !== data.password_confirmation) {
+            setError('password_confirmation', 'Les mots de passe ne correspondent pas');
             return;
         }
 
-        try {
-            const dataToSend = {
-                _method: 'PUT',
-                name: formData.name,
-                email: formData.email,
-                role: formData.role,
-                password: formData.password || undefined,
-                password_confirmation: formData.password_confirmation || undefined,
-            };
-
-            router.post(`/admin/users/${user?.id}`, dataToSend, {
-                preserveScroll: true,
-                onSuccess: () => {
-                    router.visit('/admin/users', {
-                        preserveState: false,
-                        preserveScroll: false,
-                    });
-                },
-                onError: (errors) => {
-                    // Each error is shown under its own field; the banner only points to them.
-                    setErrors(errors);
-                    setMessage({
-                        type: 'error',
-                        text: 'Veuillez corriger les champs indiqués ci-dessous.',
-                    });
-                },
-            });
-        } catch (error) {
-            console.error('Error updating user:', error);
-            setMessage({ type: 'error', text: "Une erreur s'est produite lors de la mise à jour de l'utilisateur" });
-        } finally {
-            setLoading(false);
-        }
+        // An empty password means "keep the current one".
+        transform(({ password, password_confirmation, ...rest }) => (password ? { ...rest, password, password_confirmation } : rest));
+        put(`/admin/users/${user.id}`, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: onClose,
+        });
     };
+
+    const hasErrors = Object.keys(errors).length > 0;
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent aria-describedby="edit-user-description">
+            <DialogContent aria-describedby="edit-user-description" className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
                 <DialogHeader>
                     <DialogTitle>Modifier l'utilisateur</DialogTitle>
                 </DialogHeader>
@@ -112,11 +71,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                     Formulaire de modification des informations de l'utilisateur
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {message && (
-                        <div className={`rounded p-2 ${message.type === 'success' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>
-                            {message.text}
-                        </div>
-                    )}
+                    {hasErrors && <div className="rounded bg-red-200 p-2 text-red-800">Veuillez corriger les champs indiqués ci-dessous.</div>}
 
                     <div className="flex flex-col space-y-1">
                         <label htmlFor="name">Nom</label>
@@ -124,7 +79,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                             id="name"
                             type="text"
                             name="name"
-                            value={formData.name}
+                            value={data.name}
                             onChange={handleChange}
                             className={`w-full ${errors.name ? 'border-red-500' : ''}`}
                             required
@@ -138,7 +93,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                             id="email"
                             type="email"
                             name="email"
-                            value={formData.email}
+                            value={data.email}
                             onChange={handleChange}
                             className={`w-full ${errors.email ? 'border-red-500' : ''}`}
                             required
@@ -155,7 +110,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                                     id="password"
                                     type={showPassword ? 'text' : 'password'}
                                     name="password"
-                                    value={formData.password}
+                                    value={data.password}
                                     onChange={handleChange}
                                     className={`w-full ${errors.password ? 'border-red-500' : ''}`}
                                     minLength={8}
@@ -179,7 +134,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                                 id="password_confirmation"
                                 type={showPassword ? 'text' : 'password'}
                                 name="password_confirmation"
-                                value={formData.password_confirmation}
+                                value={data.password_confirmation}
                                 onChange={handleChange}
                                 className={`w-full ${errors.password_confirmation ? 'border-red-500' : ''}`}
                                 minLength={8}
@@ -193,23 +148,39 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                         <select
                             id="role"
                             name="role"
-                            value={formData.role}
+                            value={data.role}
                             onChange={handleChange}
                             className={`w-full rounded border p-2 ${errors.role ? 'border-red-500' : ''}`}
                             required
+                            disabled={roles.length < 2}
                         >
-                            <option value="user">Utilisateur</option>
-                            <option value="admin">Administrateur</option>
+                            {roles.map((role) => (
+                                <option key={role.value} value={role.value}>
+                                    {role.label}
+                                </option>
+                            ))}
                         </select>
                         {errors.role && <p className="text-sm text-red-500">{errors.role}</p>}
                     </div>
 
+                    <EmployeeRecordFields
+                        data={data}
+                        setData={(field, value) => {
+                            setData(field, value);
+                            clearErrors(field);
+                        }}
+                        errors={errors}
+                        departments={departments}
+                        managers={managerOptions}
+                        selfId={user.id}
+                    />
+
                     <DialogFooter>
-                        <Button variant="outline" type="button" onClick={onClose} disabled={loading}>
+                        <Button variant="outline" type="button" onClick={onClose} disabled={processing}>
                             Annuler
                         </Button>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? 'Mise à jour...' : 'Modifier utilisateur'}
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Mise à jour...' : 'Modifier utilisateur'}
                         </Button>
                     </DialogFooter>
                 </form>

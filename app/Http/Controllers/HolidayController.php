@@ -9,7 +9,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Public holidays, managed by HR. Every route is behind the role:admin middleware.
+ * Public holidays, managed by HR. Every route is behind the role:admin,rh middleware.
  * Changes apply at once to day counts and remaining balances, which are
  * always computed from the current list.
  */

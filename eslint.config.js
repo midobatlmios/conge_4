@@ -38,7 +38,16 @@ export default [
         },
     },
     {
-        ignores: ['vendor', 'node_modules', 'public', 'bootstrap/ssr', 'tailwind.config.js'],
+        // End-to-end tests and their config run in Node, not in the browser.
+        files: ['tests/e2e/**', 'playwright.config.ts'],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
+    {
+        ignores: ['vendor', 'node_modules', 'public', 'bootstrap/ssr', 'tailwind.config.js', 'test-results', 'playwright-report'],
     },
     prettier, // Turn off all rules that might conflict with Prettier
 ];

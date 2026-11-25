@@ -13,6 +13,21 @@ const sidebarNavItems: NavItem[] = [
         icon: null,
     },
     {
+        title: 'Données personnelles',
+        href: '/settings/personal-data',
+        icon: null,
+    },
+    {
+        title: 'Mes documents',
+        href: '/settings/documents',
+        icon: null,
+    },
+    {
+        title: 'Mes attestations',
+        href: '/settings/attestations',
+        icon: null,
+    },
+    {
         title: 'Mot de passe',
         href: '/settings/password',
         icon: null,

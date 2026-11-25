@@ -33,11 +33,15 @@ abstract class LeaveRequestForm extends FormRequest
     {
         return [
             // Employees can't request leave in the past; admins may record it after the fact.
-            'date_debut' => $this->actor()->isAdmin()
+            // Sick leave can be declared up to 48 hours after it started.
+            'date_debut' => $this->actor()->isHr()
                 ? ['required', 'date']
-                : ['required', 'date', 'after_or_equal:today'],
+                : ['required', 'date', 'after_or_equal:'.$this->earliestStart()],
             'date_fin' => ['required', 'date', 'after_or_equal:date_debut'],
             'type_conge' => ['required', Rule::enum(LeaveType::class)],
+            // Starts in the afternoon / ends at noon (ignored for whole-day leave types).
+            'start_half' => ['sometimes', 'boolean'],
+            'end_half' => ['sometimes', 'boolean'],
             'comment' => ['required_if:type_conge,'.LeaveType::Recovery->value, 'nullable', 'string', 'max:1000'],
         ];
     }
@@ -46,7 +50,9 @@ abstract class LeaveRequestForm extends FormRequest
     public function messages(): array
     {
         return [
-            'date_debut.after_or_equal' => 'La date de début ne peut pas être dans le passé.',
+            'date_debut.after_or_equal' => $this->input('type_conge') === LeaveType::Sick->value
+                ? 'Un arrêt maladie se déclare dans les 48 heures. Pour un arrêt plus ancien, adressez-vous au service RH.'
+                : 'La date de début ne peut pas être dans le passé.',
         ];
     }
 
@@ -65,22 +71,60 @@ abstract class LeaveRequestForm extends FormRequest
         ];
     }
 
+    /** Employees can't start leave in the past, except a sick leave declared within the allowed delay. */
+    private function earliestStart(): string
+    {
+        return $this->input('type_conge') === LeaveType::Sick->value
+            ? today()->subDays(config('conge.sick_leave_backdate_days'))->toDateString()
+            : 'today';
+    }
+
     public function leaveType(): LeaveType
     {
         return LeaveType::from($this->validated('type_conge'));
     }
 
+    /**
+     * Half-day flags to store: always false for leave types taken in whole days.
+     *
+     * @return array{start_half: bool, end_half: bool}
+     */
+    public function halfDays(): array
+    {
+        $allowed = app(LeaveCalculator::class)->allowsHalfDays(LeaveType::from($this->input('type_conge')));
+
+        return [
+            'start_half' => $allowed && $this->boolean('start_half'),
+            'end_half' => $allowed && $this->boolean('end_half'),
+        ];
+    }
+
     private function checkDays(Validator $validator): void
     {
         $calculator = app(LeaveCalculator::class);
-        $days = $calculator->workingDays($this->input('date_debut'), $this->input('date_fin'));
+        ['start_half' => $startHalf, 'end_half' => $endHalf] = $this->halfDays();
+        $start = $this->input('date_debut');
+        $end = $this->input('date_fin');
 
-        if ($days === 0) {
+        if ($calculator->workingDays($start, $end) === 0) {
             $validator->errors()->add('date_fin', 'La période choisie ne contient aucun jour ouvré.');
 
             return;
         }
 
+        if ($startHalf && $endHalf && Carbon::parse($start)->isSameDay(Carbon::parse($end))) {
+            $validator->errors()->add('date_fin', 'Pour une seule demi-journée, choisissez le matin ou l\'après-midi.');
+
+            return;
+        }
+
+        if (($startHalf && ! $calculator->isWorkingDay($start)) || ($endHalf && ! $calculator->isWorkingDay($end))) {
+            $validator->errors()->add('date_debut', 'Une demi-journée doit tomber sur un jour ouvré.');
+
+            return;
+        }
+
+        $days = $calculator->leaveDays($start, $end, $startHalf, $endHalf);
         $limit = $calculator->typeLimit(LeaveType::from($this->input('type_conge')));
 
         if ($limit !== null && $days > $limit) {
@@ -90,12 +134,15 @@ abstract class LeaveRequestForm extends FormRequest
 
     private function checkOverlap(Validator $validator): void
     {
-        $overlap = Demande::overlapping(
+        ['start_half' => $startHalf, 'end_half' => $endHalf] = $this->halfDays();
+        $overlap = Demande::firstClash(
             $this->ownerId(),
             $this->input('date_debut'),
             $this->input('date_fin'),
+            $startHalf,
+            $endHalf,
             $this->excludedDemandeId()
-        )->first();
+        );
 
         if ($overlap) {
             $from = Carbon::parse($overlap->date_debut)->format('d/m/Y');

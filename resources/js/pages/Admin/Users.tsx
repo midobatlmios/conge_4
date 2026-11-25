@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import AddUtilisateurModal from '@/components/users/AddUtilisateurModal';
 import { columns, User } from '@/components/users/columns';
 import { DataTable } from '@/components/users/data-table';
+import { Option } from '@/components/users/EmployeeRecordFields';
 import AppLayout from '@/layouts/app-layout';
+import { RoleOption, usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
@@ -15,6 +17,10 @@ import { useEffect, useState } from 'react';
 
 interface UsersProps {
     users: User[];
+    departments: Option[];
+    managers: Option[];
+    /** Roles the signed-in user may give. */
+    roles: RoleOption[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -28,7 +34,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 
-const Users = ({ users: initialUsers }: UsersProps) => {
+const Users = ({ users: initialUsers, departments, managers, roles }: UsersProps) => {
+    const can = usePermissions();
     const [users, setUsers] = useState<User[]>([]);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
@@ -89,10 +96,12 @@ Il ne pourra plus se connecter. Son historique de congés est conservé et le co
             <div className="container mx-auto py-10">
                 <div className="mb-6 flex items-center justify-between">
                     <h1 className="text-2xl font-bold">Gestion des employés</h1>
-                    <Button onClick={() => setAddModalOpen(true)} className="bg-green-600 hover:bg-green-700">
-                        <Plus className="mr-2 h-4 w-4" />
-                        Ajouter un employé
-                    </Button>
+                    {can.manage_hr && (
+                        <Button onClick={() => setAddModalOpen(true)} className="bg-green-600 hover:bg-green-700">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Ajouter un employé
+                        </Button>
+                    )}
                 </div>
                 {feedback && (
                     <div
@@ -114,6 +123,7 @@ Il ne pourra plus se connecter. Son historique de congés est conservé et le co
                         handleResetPassword,
                         handleToggleActive,
                         auth.user?.id,
+                        can,
                     )}
                     data={users}
                 />
@@ -126,6 +136,9 @@ Il ne pourra plus se connecter. Son historique de congés est conservé et le co
                             setSelectedUser(null);
                         }}
                         user={selectedUser}
+                        departments={departments}
+                        managers={managers}
+                        roles={roles}
                     />
                 )}
 
@@ -147,6 +160,9 @@ Il ne pourra plus se connecter. Son historique de congés est conservé et le co
                 <AddUtilisateurModal
                     isOpen={addModalOpen}
                     onClose={() => setAddModalOpen(false)}
+                    departments={departments}
+                    managers={managers}
+                    roles={roles}
                     onSuccess={() => {
                         setAddModalOpen(false);
                         refreshData();

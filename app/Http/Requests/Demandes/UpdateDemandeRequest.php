@@ -20,7 +20,8 @@ class UpdateDemandeRequest extends LeaveRequestForm
 
         // Only admins set the status; an employee's etat is ignored.
         if ($this->actor()->can('decide', Demande::class)) {
-            $rules['etat'] = ['required', Rule::enum(LeaveStatus::class)];
+            // Cancelling has its own actions (see DemandesController::cancel).
+            $rules['etat'] = ['required', Rule::enum(LeaveStatus::class)->only(LeaveStatus::decisions())];
         }
 
         return $rules;

@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\AttestationController;
+use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeDocumentController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +17,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('settings/password', [PasswordController::class, 'edit'])->name('password.edit');
     Route::put('settings/password', [PasswordController::class, 'update'])->name('password.update');
+
+    // The employee's own personal data, read-only (HR edits it on the employee page).
+    Route::get('settings/personal-data', [EmployeeController::class, 'own'])->name('personal-data');
+    Route::get('settings/documents', [EmployeeDocumentController::class, 'own'])->name('my-documents');
+    Route::get('settings/attestations', [AttestationController::class, 'mine'])->name('my-attestations');
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');

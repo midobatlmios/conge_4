@@ -21,7 +21,15 @@ class DemandeStatusChanged extends Notification
 {
     use Queueable;
 
-    public function __construct(protected Demande $demande) {}
+    /**
+     * @param  bool  $cancellationKept  The admin turned down the employee's cancellation request.
+     * @param  bool  $byManager  The employee's manager refused the request (first approval step).
+     */
+    public function __construct(
+        protected Demande $demande,
+        protected bool $cancellationKept = false,
+        protected bool $byManager = false,
+    ) {}
 
     /** @return list<string> */
     public function via(object $notifiable): array
@@ -31,18 +39,21 @@ class DemandeStatusChanged extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
-        $accepted = $this->demande->etat === LeaveStatus::Accepted;
-
         $mail = (new MailMessage)
-            ->subject($accepted ? 'Votre demande de congé a été acceptée' : 'Votre demande de congé a été refusée')
+            ->subject($this->subject())
             ->greeting("Bonjour {$notifiable->name},")
             ->line($this->message())
             ->line('**Type :** '.$this->demande->type_conge->label())
-            ->line('**Du :** '.$this->formatDate($this->demande->date_debut).' **au :** '.$this->formatDate($this->demande->date_fin))
-            ->line("**Nombre de jours :** {$this->demande->nbr_jours}");
+            ->line('**Du :** '.$this->formatDate($this->demande->date_debut).($this->demande->start_half ? ' (après-midi)' : '')
+                .' **au :** '.$this->formatDate($this->demande->date_fin).($this->demande->end_half ? ' (midi)' : ''))
+            ->line('**Nombre de jours :** '.str_replace('.', ',', (string) (float) $this->demande->nbr_jours));
 
         if (filled($this->demande->comment)) {
             $mail->line("**Commentaire :** {$this->demande->comment}");
+        }
+
+        if ($this->byManager && filled($this->demande->manager_comment)) {
+            $mail->line("**Motif du responsable :** {$this->demande->manager_comment}");
         }
 
         return $mail->action('Voir mes demandes', route('dashboard'));
@@ -58,16 +69,33 @@ class DemandeStatusChanged extends Notification
             'date_debut' => $this->demande->date_debut,
             'date_fin' => $this->demande->date_fin,
             'nbr_jours' => $this->demande->nbr_jours,
-            'comment' => $this->demande->comment,
+            // The bell shows one comment: the manager's reason when they refused.
+            'comment' => $this->byManager && filled($this->demande->manager_comment)
+                ? "Motif : {$this->demande->manager_comment}"
+                : $this->demande->comment,
             'type_conge' => $this->demande->type_conge->value,
         ];
     }
 
+    private function subject(): string
+    {
+        return match (true) {
+            $this->cancellationKept => "Votre demande d'annulation a été refusée",
+            $this->demande->etat === LeaveStatus::Accepted => 'Votre demande de congé a été acceptée',
+            $this->demande->etat === LeaveStatus::Cancelled => 'Votre congé a été annulé',
+            default => 'Votre demande de congé a été refusée',
+        };
+    }
+
     private function message(): string
     {
-        return $this->demande->etat === LeaveStatus::Accepted
-            ? 'Votre demande de congé a été acceptée.'
-            : 'Votre demande de congé a été refusée.';
+        return match (true) {
+            $this->cancellationKept => "Votre demande d'annulation a été refusée : votre congé est maintenu.",
+            $this->demande->etat === LeaveStatus::Accepted => 'Votre demande de congé a été acceptée.',
+            $this->demande->etat === LeaveStatus::Cancelled => 'Votre congé a été annulé et ses jours vous sont rendus.',
+            $this->byManager => 'Votre demande de congé a été refusée par votre responsable.',
+            default => 'Votre demande de congé a été refusée.',
+        };
     }
 
     private function formatDate(mixed $date): string
