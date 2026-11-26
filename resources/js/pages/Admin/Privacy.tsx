@@ -75,11 +75,11 @@ export default function PrivacyRegister({ notice, acknowledged, employees, notAc
                     <div className="flex gap-2 print:hidden">
                         <Button variant="outline" asChild>
                             <Link href="/admin/privacy/log">
-                                <History className="mr-2 h-4 w-4" /> Journal des accès
+                                <History className="me-2 h-4 w-4" /> Journal des accès
                             </Link>
                         </Button>
                         <Button variant="outline" onClick={() => window.print()}>
-                            <Printer className="mr-2 h-4 w-4" /> Imprimer
+                            <Printer className="me-2 h-4 w-4" /> Imprimer
                         </Button>
                     </div>
                 </div>
@@ -184,7 +184,7 @@ export default function PrivacyRegister({ notice, acknowledged, employees, notAc
                         <NoticeText notice={notice} />
                         <div className="mt-6 space-y-2 text-sm">
                             <h2 className="text-base font-semibold">Mesures de sécurité</h2>
-                            <ul className="text-muted-foreground list-disc space-y-1 pl-5">
+                            <ul className="text-muted-foreground list-disc space-y-1 ps-5">
                                 <li>accès par compte personnel et mot de passe ; rôles Administrateur, RH, Paie (lecture seule), employé ;</li>
                                 <li>données sensibles chiffrées en base (clé de l'application) ; documents stockés hors du dossier public ;</li>
                                 <li>journal des consultations et modifications des données personnelles, consultable par l'Administrateur ;</li>

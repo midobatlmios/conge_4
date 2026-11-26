@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n';
 import { Head } from '@inertiajs/react';
 
 import AppearanceTabs from '@/components/appearance-tabs';
@@ -17,11 +18,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Appearance() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Paramètres d'apparence" />
+            <Head title={t("Paramètres d'apparence")} />
 
             <SettingsLayout>
                 <div className="space-y-6">
-                    <HeadingSmall title="Paramètres d'apparence" description="Mettez à jour les paramètres d'apparence de votre compte" />
+                    <HeadingSmall title={t("Paramètres d'apparence")} description={t("Mettez à jour les paramètres d'apparence de votre compte")} />
                     <AppearanceTabs />
                 </div>
             </SettingsLayout>

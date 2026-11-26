@@ -20,6 +20,7 @@ use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\EmploymentContractController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\IndicatorsController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrgChartController;
 use App\Http\Controllers\OverviewController;
@@ -32,6 +33,9 @@ use Inertia\Inertia;
 
 // The company logo, shown on the sign-in pages too (not sensitive).
 Route::get('/brand/logo', [CompanyController::class, 'logo'])->name('brand.logo');
+
+// Interface language (also on the sign-in pages: kept in the session until signed in).
+Route::put('/locale', [LocaleController::class, 'update'])->name('locale.update');
 
 // Calendar subscriptions (iCal) read by Outlook / Google Calendar: the secret token is the access.
 Route::get('/calendrier/abonnement/{token}/{feed}.ics', [CalendarFeedController::class, 'feed'])
@@ -134,7 +138,8 @@ Route::middleware(['auth', 'verified', 'role:admin,rh,paie'])->prefix('admin')->
     Route::put('/payroll-runs/{run}/submit', [PayrollRunController::class, 'submit'])->name('payroll-runs.submit');
     Route::put('/payroll-runs/{run}/reopen', [PayrollRunController::class, 'reopen'])->name('payroll-runs.reopen');
     Route::put('/payroll-runs/{run}/lock', [PayrollRunController::class, 'lock'])->name('payroll-runs.lock');
-    Route::put('/payslips/{payslip}/overtime', [PayrollRunController::class, 'updateOvertime'])->name('payslips.overtime');
+    Route::put('/payslips/{payslip}/inputs', [PayrollRunController::class, 'updateInputs'])->name('payslips.inputs');
+    Route::get('/payroll-runs/{run}/journal', [PayrollRunController::class, 'journal'])->name('payroll-runs.journal');
 
     // Attendance report per month (Excel export).
     Route::get('/attendance', [AttendanceReportController::class, 'index'])->name('attendance.index');

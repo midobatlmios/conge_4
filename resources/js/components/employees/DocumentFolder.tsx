@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { t } from '@/lib/i18n';
 import { router, useForm } from '@inertiajs/react';
 import { FileText, FolderOpen, Image, Trash2, Upload } from 'lucide-react';
 import { FormEvent, useRef } from 'react';
@@ -37,16 +38,24 @@ function formatSize(bytes: number): string {
 export function ExpiryBadge({ expiry, expiresOn }: { expiry: FolderDocument['expiry']; expiresOn: string | null }) {
     if (!expiresOn) return null;
     if (expiry === 'expired') {
-        return <Badge variant="destructive">Expiré le {formatDate(expiresOn)}</Badge>;
+        return (
+            <Badge variant="destructive">
+                {t('Expiré le')} {formatDate(expiresOn)}
+            </Badge>
+        );
     }
     if (expiry === 'soon') {
         return (
             <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400">
-                Expire le {formatDate(expiresOn)}
+                {t('Expire le')} {formatDate(expiresOn)}
             </Badge>
         );
     }
-    return <span className="text-muted-foreground text-xs">Valable jusqu'au {formatDate(expiresOn)}</span>;
+    return (
+        <span className="text-muted-foreground text-xs">
+            {t("Valable jusqu'au")} {formatDate(expiresOn)}
+        </span>
+    );
 }
 
 interface DocumentFolderProps {
@@ -80,9 +89,9 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
 
     const remove = async (document: FolderDocument) => {
         const ok = await confirmAction({
-            title: 'Supprimer ce document ?',
-            description: `« ${document.title || document.category_label} » sera retiré du dossier et le fichier effacé.`,
-            confirmLabel: 'Supprimer',
+            title: t('Supprimer ce document ?'),
+            description: t('« :name » sera retiré du dossier et le fichier effacé.', { name: document.title || document.category_label }),
+            confirmLabel: t('Supprimer'),
             destructive: true,
         });
         if (ok) router.delete(`/admin/employee-documents/${document.id}`, { preserveScroll: true, onError: toastErrors });
@@ -93,8 +102,8 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
             {documents.length === 0 ? (
                 <EmptyState
                     icon={FolderOpen}
-                    title="Aucun document dans le dossier"
-                    description="Contrat, copie CIN, diplômes… ajoutés par le service RH."
+                    title={t('Aucun document dans le dossier')}
+                    description={t('Contrat, copie CIN, diplômes… ajoutés par le service RH.')}
                 />
             ) : (
                 <ul className="divide-y rounded-md border">
@@ -115,7 +124,8 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
                                         </a>
                                         <p className="text-muted-foreground truncate text-xs">
                                             {document.title ? `${document.category_label} · ` : ''}
-                                            {document.original_name} · {formatSize(document.size)} · ajouté le {formatDate(document.created_at)}
+                                            {document.original_name} · {formatSize(document.size)} {t('· ajouté le')}{' '}
+                                            {formatDate(document.created_at)}
                                             {document.uploaded_by ? ` par ${document.uploaded_by}` : ''}
                                         </p>
                                         <ExpiryBadge expiry={document.expiry} expiresOn={document.expires_on} />
@@ -129,7 +139,7 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
                                         onClick={() => remove(document)}
                                     >
                                         <Trash2 className="h-4 w-4" />
-                                        <span className="sr-only">Supprimer</span>
+                                        <span className="sr-only">{t('Supprimer')}</span>
                                     </Button>
                                 )}
                             </li>
@@ -140,10 +150,10 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
 
             {upload && (
                 <form onSubmit={submit} className="space-y-4 rounded-md border border-dashed p-4">
-                    <h3 className="text-sm font-semibold">Ajouter un document</h3>
+                    <h3 className="text-sm font-semibold">{t('Ajouter un document')}</h3>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-1">
-                            <Label htmlFor="doc-category">Type de document</Label>
+                            <Label htmlFor="doc-category">{t('Type de document')}</Label>
                             <select
                                 id="doc-category"
                                 className={selectClass}
@@ -159,28 +169,28 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
                             {form.errors.category && <p className="text-sm text-red-700 dark:text-red-400">{form.errors.category}</p>}
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="doc-title">Intitulé (facultatif)</Label>
+                            <Label htmlFor="doc-title">{t('Intitulé (facultatif)')}</Label>
                             <Input
                                 id="doc-title"
                                 value={form.data.title}
                                 onChange={(e) => form.setData('title', e.target.value)}
-                                placeholder="Ex. : Master en finance"
+                                placeholder={t('Ex. : Master en finance')}
                             />
                             {form.errors.title && <p className="text-sm text-red-700 dark:text-red-400">{form.errors.title}</p>}
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="doc-expires">Date d'expiration (facultatif)</Label>
+                            <Label htmlFor="doc-expires">{t("Date d'expiration (facultatif)")}</Label>
                             <Input
                                 id="doc-expires"
                                 type="date"
                                 value={form.data.expires_on}
                                 onChange={(e) => form.setData('expires_on', e.target.value)}
                             />
-                            <p className="text-muted-foreground text-xs">CIN, carte de séjour, aptitude médicale… : alerte 30 jours avant.</p>
+                            <p className="text-muted-foreground text-xs">{t('CIN, carte de séjour, aptitude médicale… : alerte 30 jours avant.')}</p>
                             {form.errors.expires_on && <p className="text-sm text-red-700 dark:text-red-400">{form.errors.expires_on}</p>}
                         </div>
                         <div className="space-y-1">
-                            <Label htmlFor="doc-file">Fichier</Label>
+                            <Label htmlFor="doc-file">{t('Fichier')}</Label>
                             <Input
                                 id="doc-file"
                                 ref={fileInput}
@@ -189,14 +199,16 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
                                 onChange={(e) => form.setData('file', e.target.files?.[0] ?? null)}
                                 required
                             />
-                            <p className="text-muted-foreground text-xs">PDF, JPG ou PNG, {upload.maxKb / 1024} Mo maximum.</p>
+                            <p className="text-muted-foreground text-xs">
+                                {t('PDF, JPG ou PNG,')} {upload.maxKb / 1024} {t('Mo maximum.')}
+                            </p>
                             {form.errors.file && <p className="text-sm text-red-700 dark:text-red-400">{form.errors.file}</p>}
                         </div>
                     </div>
                     <div className="flex justify-end">
                         <Button type="submit" disabled={form.processing}>
-                            <Upload className="mr-2 h-4 w-4" />
-                            {form.processing ? 'Envoi…' : 'Ajouter au dossier'}
+                            <Upload className="me-2 h-4 w-4" />
+                            {form.processing ? t('Envoi…') : t('Ajouter au dossier')}
                         </Button>
                     </div>
                 </form>

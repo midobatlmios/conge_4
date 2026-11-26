@@ -1,4 +1,5 @@
 // Components
+import { t } from '@/lib/i18n';
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
@@ -24,20 +25,20 @@ export default function ConfirmPassword() {
 
     return (
         <AuthLayout
-            title="Confirmez votre mot de passe"
-            description="Cette zone est sécurisée. Veuillez confirmer votre mot de passe pour continuer."
+            title={t('Confirmez votre mot de passe')}
+            description={t('Cette zone est sécurisée. Veuillez confirmer votre mot de passe pour continuer.')}
         >
-            <Head title="Confirmer le mot de passe" />
+            <Head title={t('Confirmer le mot de passe')} />
 
             <form onSubmit={submit}>
                 <div className="space-y-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="password">Mot de passe</Label>
+                        <Label htmlFor="password">{t('Mot de passe')}</Label>
                         <Input
                             id="password"
                             type="password"
                             name="password"
-                            placeholder="Mot de passe"
+                            placeholder={t('Mot de passe')}
                             autoComplete="current-password"
                             value={data.password}
                             autoFocus
@@ -50,7 +51,7 @@ export default function ConfirmPassword() {
                     <div className="flex items-center">
                         <Button className="w-full" disabled={processing}>
                             {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                            Confirmer le mot de passe
+                            {t('Confirmer le mot de passe')}
                         </Button>
                     </div>
                 </div>

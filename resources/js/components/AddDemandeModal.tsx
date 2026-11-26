@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { intlLocale, t } from '@/lib/i18n';
 import {
     TypeConge,
     allowanceDays,
@@ -140,7 +141,7 @@ export const AddDemandeModal = ({
         } else if (data.date_debut && nbr_jours === 0) {
             found.date_fin = 'La période choisie ne contient aucun jour ouvré';
         } else if (fixedLength && nbr_jours > fixedLength) {
-            found.date_fin = `Ce type de congé ne peut pas dépasser ${fixedLength} jours ouvrés`;
+            found.date_fin = t('Ce type de congé ne peut pas dépasser :days jours ouvrés', { days: fixedLength });
         }
         if (data.type_conge === 'recuperation' && !data.comment) {
             found.comment = 'Veuillez renseigner les dates sujet de récupération';
@@ -191,22 +192,24 @@ export const AddDemandeModal = ({
         <Dialog open={isOpen} onOpenChange={close}>
             <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col sm:w-[85vw] md:w-[75vw] lg:w-[60vw] xl:w-[50vw]">
                 <DialogHeader>
-                    <DialogTitle>Ajouter une demande de congé</DialogTitle>
-                    <DialogDescription>Remplissez le formulaire ci-dessous pour soumettre une nouvelle demande de congé.</DialogDescription>
+                    <DialogTitle>{t('Ajouter une demande de congé')}</DialogTitle>
+                    <DialogDescription>{t('Remplissez le formulaire ci-dessous pour soumettre une nouvelle demande de congé.')}</DialogDescription>
                 </DialogHeader>
-                <div className="-mr-4 flex-1 overflow-y-auto pr-4">
+                <div className="-me-4 flex-1 overflow-y-auto pe-4">
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {succeeded && <div className="rounded bg-green-200 p-2 text-green-800">Demande ajoutée avec succès</div>}
-                        {hasErrors && <div className="rounded bg-red-200 p-2 text-red-800">Veuillez corriger les erreurs dans le formulaire</div>}
+                        {succeeded && <div className="rounded bg-green-200 p-2 text-green-800">{t('Demande ajoutée avec succès')}</div>}
+                        {hasErrors && (
+                            <div className="rounded bg-red-200 p-2 text-red-800">{t('Veuillez corriger les erreurs dans le formulaire')}</div>
+                        )}
 
                         {isAdmin && (
                             <div className="space-y-1">
                                 <label htmlFor="user_id" className="text-sm font-medium">
-                                    Employé
+                                    {t('Employé')}
                                 </label>
                                 <Select value={data.user_id} onValueChange={(value) => setData('user_id', value)}>
                                     <SelectTrigger id="user_id" className={errors.user_id ? 'border-red-500' : ''}>
-                                        <SelectValue placeholder="Sélectionner un employé" />
+                                        <SelectValue placeholder={t('Sélectionner un employé')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {users.map((user) => (
@@ -223,75 +226,80 @@ export const AddDemandeModal = ({
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-1">
                                 <label htmlFor="type_conge" className="text-sm font-medium">
-                                    Type de congé
+                                    {t('Type de congé')}
                                 </label>
                                 <Select value={data.type_conge} onValueChange={(value: TypeConge) => setData('type_conge', value)}>
                                     <SelectTrigger id="type_conge">
-                                        <SelectValue placeholder="Sélectionner un type de congé" />
+                                        <SelectValue placeholder={t('Sélectionner un type de congé')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="annuel">Congé annuel</SelectItem>
-                                        <SelectItem value="mariage">Congé de Mariage (4 jours max)</SelectItem>
-                                        <SelectItem value="naissance">Congé de Naissance (3 jours)</SelectItem>
-                                        <SelectItem value="deces">Congé de Décès (3 jours max)</SelectItem>
-                                        <SelectItem value="sans_solde">Congé sans solde</SelectItem>
-                                        <SelectItem value="recuperation">Récupération</SelectItem>
-                                        <SelectItem value="maladie">Congé maladie (arrêt de travail)</SelectItem>
+                                        <SelectItem value="annuel">{t('Congé annuel')}</SelectItem>
+                                        <SelectItem value="mariage">{t('Congé de Mariage (4 jours max)')}</SelectItem>
+                                        <SelectItem value="naissance">{t('Congé de Naissance (3 jours)')}</SelectItem>
+                                        <SelectItem value="deces">{t('Congé de Décès (3 jours max)')}</SelectItem>
+                                        <SelectItem value="sans_solde">{t('Congé sans solde')}</SelectItem>
+                                        <SelectItem value="recuperation">{t('Récupération')}</SelectItem>
+                                        <SelectItem value="maladie">{t('Congé maladie (arrêt de travail)')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 {data.type_conge === 'annuel' && (
                                     <p className="text-muted-foreground text-sm">
-                                        Déduit des jours acquis : {formatDays(rules.maxDaysPerYear / 12)} jour par mois travaillé (plus l'ancienneté)
+                                        {t('Déduit des jours acquis :')} {formatDays(rules.maxDaysPerYear / 12)}{' '}
+                                        {t("jour par mois travaillé (plus l'ancienneté)")}
                                     </p>
                                 )}
                                 {data.type_conge === 'mariage' && (
                                     <p className="text-muted-foreground text-sm">
-                                        4 jours dont deux jours payés et deux jours déduits automatiquement du congé
+                                        {t('4 jours dont deux jours payés et deux jours déduits automatiquement du congé')}
                                     </p>
                                 )}
                                 {data.type_conge === 'naissance' && (
                                     <p className="text-muted-foreground text-sm">
-                                        3 jours - à prendre dans un délai de un mois à compter de la date de la naissance
+                                        {t('3 jours - à prendre dans un délai de un mois à compter de la date de la naissance')}
                                     </p>
                                 )}
                                 {data.type_conge === 'deces' && (
                                     <p className="text-muted-foreground text-sm">
-                                        3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours
-                                        déduits automatiquement du congé
+                                        {t(
+                                            "3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours déduits automatiquement du congé",
+                                        )}
                                     </p>
                                 )}
                                 {data.type_conge === 'sans_solde' && (
-                                    <p className="text-muted-foreground text-sm">Ce congé sera déduit automatiquement de votre salaire</p>
+                                    <p className="text-muted-foreground text-sm">{t('Ce congé sera déduit automatiquement de votre salaire')}</p>
                                 )}
                                 {data.type_conge === 'recuperation' && (
-                                    <p className="text-muted-foreground text-sm">La journée à récupérer doit se faire dans un délai de 2 mois</p>
+                                    <p className="text-muted-foreground text-sm">
+                                        {t('La journée à récupérer doit se faire dans un délai de 2 mois')}
+                                    </p>
                                 )}
                                 {data.type_conge === 'maladie' && (
                                     <p className="text-muted-foreground text-sm">
-                                        Arrêt de travail à déclarer dans les 48 heures, avec le certificat médical. Il ne réduit pas vos jours de
-                                        congé.
+                                        {t(
+                                            'Arrêt de travail à déclarer dans les 48 heures, avec le certificat médical. Il ne réduit pas vos jours de congé.',
+                                        )}
                                     </p>
                                 )}
                             </div>
 
                             <div className="space-y-1">
                                 <label htmlFor="nbr_jours" className="text-sm font-medium">
-                                    Nombre de jours
+                                    {t('Nombre de jours')}
                                 </label>
                                 <Input id="nbr_jours" type="text" name="nbr_jours" value={formatDays(nbr_jours)} className="w-full" readOnly />
-                                <p className="text-muted-foreground text-xs">Jours ouvrés, hors week-ends et jours fériés</p>
+                                <p className="text-muted-foreground text-xs">{t('Jours ouvrés, hors week-ends et jours fériés')}</p>
                                 {beforeEligibility && balance?.eligibleFrom && (
                                     <p className="text-xs text-amber-700 dark:text-amber-400">
-                                        Le congé annuel n'est dû qu'après 6 mois de service, soit à partir du{' '}
-                                        {parseISODate(balance.eligibleFrom)?.toLocaleDateString('fr-FR')}. Cette demande ne pourra pas être acceptée
-                                        en l'état.
+                                        {t("Le congé annuel n'est dû qu'après 6 mois de service, soit à partir du")}{' '}
+                                        {parseISODate(balance.eligibleFrom)?.toLocaleDateString(intlLocale())}
+                                        {t(". Cette demande ne pourra pas être acceptée en l'état.")}
                                     </p>
                                 )}
                                 {!beforeEligibility && exceedsBalance && availableAtStart !== null && (
                                     <p className="text-xs text-amber-700 dark:text-amber-400">
-                                        Cette demande utilise {requestedFromAllowance} jour(s), mais vous n'aurez acquis que{' '}
-                                        {formatDays(Math.max(0, availableAtStart))} jour(s) disponibles à cette date. Elle ne pourra pas être acceptée
-                                        en l'état.
+                                        {t('Cette demande utilise')} {requestedFromAllowance} {t("jour(s), mais vous n'aurez acquis que")}{' '}
+                                        {formatDays(Math.max(0, availableAtStart))}{' '}
+                                        {t("jour(s) disponibles à cette date. Elle ne pourra pas être acceptée en l'état.")}
                                     </p>
                                 )}
                             </div>
@@ -300,7 +308,7 @@ export const AddDemandeModal = ({
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-1">
                                 <label htmlFor="date_debut" className="text-sm font-medium">
-                                    Date de début
+                                    {t('Date de début')}
                                 </label>
                                 <Input
                                     id="date_debut"
@@ -317,7 +325,7 @@ export const AddDemandeModal = ({
 
                             <div className="space-y-1">
                                 <label htmlFor="date_fin" className="text-sm font-medium">
-                                    Date de fin
+                                    {t('Date de fin')}
                                 </label>
                                 <Input
                                     id="date_fin"
@@ -333,7 +341,7 @@ export const AddDemandeModal = ({
                                 {errors.date_fin && <p className="text-xs text-red-700 dark:text-red-400">{errors.date_fin}</p>}
                                 {fixedLength && (
                                     <p className="text-muted-foreground text-sm">
-                                        La date de fin est automatiquement calculée en fonction de la date de début
+                                        {t('La date de fin est automatiquement calculée en fonction de la date de début')}
                                     </p>
                                 )}
                             </div>
@@ -342,7 +350,7 @@ export const AddDemandeModal = ({
                         {rules.documentTypes.includes(data.type_conge) && (
                             <div className="space-y-1">
                                 <label htmlFor="document" className="text-sm font-medium">
-                                    Justificatif
+                                    {t('Justificatif')}
                                 </label>
                                 <Input
                                     id="document"
@@ -352,8 +360,9 @@ export const AddDemandeModal = ({
                                     className={errors.document ? 'border-red-500' : ''}
                                 />
                                 <p className="text-muted-foreground text-xs">
-                                    Acte de mariage, de naissance ou de décès (PDF, JPG ou PNG). Vous pouvez aussi l'ajouter plus tard ; il est
-                                    nécessaire avant l'acceptation par les RH.
+                                    {t(
+                                        "Acte de mariage, de naissance ou de décès (PDF, JPG ou PNG). Vous pouvez aussi l'ajouter plus tard ; il est nécessaire avant l'acceptation par les RH.",
+                                    )}
                                 </p>
                                 {errors.document && <p className="text-xs text-red-700 dark:text-red-400">{errors.document}</p>}
                             </div>
@@ -371,14 +380,14 @@ export const AddDemandeModal = ({
 
                         <div className="space-y-1">
                             <label htmlFor="comment" className="text-sm font-medium">
-                                Commentaire
+                                {t('Commentaire')}
                             </label>
                             <Textarea
                                 id="comment"
                                 name="comment"
                                 value={data.comment}
                                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setData('comment', e.target.value)}
-                                placeholder="Entrez la raison de votre demande..."
+                                placeholder={t('Entrez la raison de votre demande...')}
                                 className={`min-h-[100px] ${errors.comment ? 'border-red-500' : ''}`}
                             />
                             {errors.comment && <p className="text-xs text-red-700 dark:text-red-400">{errors.comment}</p>}
@@ -388,10 +397,10 @@ export const AddDemandeModal = ({
 
                 <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
                     <Button variant="outline" type="button" onClick={close} disabled={processing} className="w-full sm:w-auto">
-                        Annuler
+                        {t('Annuler')}
                     </Button>
                     <Button type="submit" disabled={processing} onClick={handleSubmit} className="w-full sm:w-auto">
-                        {processing ? 'Envoi...' : 'Soumettre la demande'}
+                        {processing ? t('Envoi...') : t('Soumettre la demande')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

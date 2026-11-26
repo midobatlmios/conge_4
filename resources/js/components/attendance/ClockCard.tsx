@@ -1,5 +1,6 @@
 import { TodayState } from '@/components/attendance/attendance';
 import { Button } from '@/components/ui/button';
+import { intlLocale, t } from '@/lib/i18n';
 import { Link, router } from '@inertiajs/react';
 import { Clock, LogIn, LogOut } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -17,7 +18,7 @@ export default function ClockCard({ state }: { state: TodayState }) {
     if (!state.tracking) return null;
 
     const post = (url: string) => router.post(url, {}, { preserveScroll: true, onStart: () => setBusy(true), onFinish: () => setBusy(false) });
-    const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const time = now.toLocaleTimeString(intlLocale(), { hour: '2-digit', minute: '2-digit' });
 
     let status: string;
     let action: React.ReactNode = null;
@@ -27,36 +28,38 @@ export default function ClockCard({ state }: { state: TodayState }) {
             : "Jour de repos : pointez seulement si vous travaillez aujourd'hui.";
         action = (
             <Button onClick={() => post('/pointage/arrivee')} disabled={busy}>
-                <LogIn className="mr-2 h-4 w-4" /> Pointer l'arrivée
+                <LogIn className="me-2 h-4 w-4" /> {t("Pointer l'arrivée")}
             </Button>
         );
     } else if (!state.clock_out) {
-        status = `Arrivée pointée à ${state.clock_in}.`;
+        status = t('Arrivée pointée à :time.', { time: state.clock_in });
         action = (
             <Button variant="outline" onClick={() => post('/pointage/depart')} disabled={busy}>
-                <LogOut className="mr-2 h-4 w-4" /> Pointer le départ
+                <LogOut className="me-2 h-4 w-4" /> {t('Pointer le départ')}
             </Button>
         );
     } else {
-        status = `Arrivée à ${state.clock_in}, départ à ${state.clock_out}. Bonne soirée !`;
+        status = t('Arrivée à :in, départ à :out. Bonne soirée !', { in: state.clock_in, out: state.clock_out ?? '' });
     }
 
     return (
         <section
-            aria-label="Pointage"
+            aria-label={t('Pointage')}
             className="border-sidebar-border/70 dark:border-sidebar-border flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between"
         >
             <div className="flex items-center gap-3">
                 <Clock className="text-muted-foreground h-5 w-5 shrink-0" />
                 <div>
-                    <p className="font-semibold tabular-nums">Pointage · {time}</p>
+                    <p className="font-semibold tabular-nums">
+                        {t('Pointage ·')} {time}
+                    </p>
                     <p className="text-muted-foreground text-sm">{status}</p>
                 </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
                 {action}
                 <Button variant="ghost" size="sm" asChild>
-                    <Link href="/pointage">Mes pointages</Link>
+                    <Link href="/pointage">{t('Mes pointages')}</Link>
                 </Button>
             </div>
         </section>

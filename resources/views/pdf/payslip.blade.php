@@ -70,6 +70,7 @@
                 <span class="label">Service :</span> {{ $e['department'] ?? '—' }}<br>
                 <span class="label">Embauche :</span> {{ $date($e['hire_date']) }} · <span class="label">Ancienneté :</span> {{ $p['seniority_years'] }} an(s)
                 · <span class="label">Personnes à charge :</span> {{ $p['dependents'] }}
+                · <span class="label">Jours CNSS :</span> {{ $p['cnss_days'] ?? 26 }}
             </td>
         </tr>
     </table>
@@ -78,19 +79,34 @@
         <tr><th>Rubrique</th><th class="r">Base</th><th class="r">Taux</th><th class="r">Gains</th><th class="r">Retenues</th></tr>
         <tr>
             <td>Salaire de base{{ $p['employed_days'] < $p['month_days'] ? " ({$p['employed_days']} / {$p['month_days']} jours ouvrés)" : '' }}</td>
-            <td class="r">{{ $dh($p['base_salary']) }}</td><td class="r"></td><td class="r">{{ $dh($p['base']) }}</td><td></td>
+            <td class="r">{{ $dh($p['base_salary']) }}</td><td class="r"></td><td class="r">{{ $dh($p['prorated'] ?? $p['base']) }}</td><td></td>
         </tr>
+        @if (($p['absence_deduction'] ?? 0) > 0)
+            <tr>
+                <td>Absences non payées ({{ collect([($p['unpaid_days'] ?? 0) > 0 ? $dh($p['unpaid_days']) . ' j sans solde' : null, ($p['absent_days'] ?? 0) > 0 ? $dh($p['absent_days']) . ' j d\'absence' : null])->filter()->implode(', ') }})</td>
+                <td class="r">{{ $dh(($p['unpaid_days'] ?? 0) + ($p['absent_days'] ?? 0)) }} j</td><td class="r">{{ $dh($p['day_value']) }}</td><td></td><td class="r">{{ $dh($p['absence_deduction']) }}</td>
+            </tr>
+        @endif
         @if ($p['seniority'] > 0)
             <tr><td>Prime d'ancienneté</td><td class="r">{{ $dh($p['base']) }}</td><td class="r">{{ $pct($p['seniority_rate']) }}</td><td class="r">{{ $dh($p['seniority']) }}</td><td></td></tr>
         @endif
         @foreach ($p['overtime_lines'] as $line)
             <tr><td>{{ $line['label'] }}</td><td class="r">{{ $dh($line['hours']) }} h</td><td class="r">{{ $dh($line['rate']) }}</td><td class="r">{{ $dh($line['amount']) }}</td><td></td></tr>
         @endforeach
+        @foreach (collect($p['bonus_lines'] ?? [])->where('taxable', true) as $line)
+            <tr><td>{{ $line['label'] }}</td><td></td><td></td><td class="r">{{ $dh($line['amount']) }}</td><td></td></tr>
+        @endforeach
         <tr class="sub"><td>Salaire brut</td><td></td><td></td><td class="r">{{ $dh($p['gross']) }}</td><td></td></tr>
         <tr><td>CNSS prestations sociales</td><td class="r">{{ $dh($p['cnss_base']) }}</td><td class="r">{{ $pct(config('payroll.cnss_employee_rate')) }}</td><td></td><td class="r">{{ $dh($p['cnss']) }}</td></tr>
         <tr><td>AMO</td><td class="r">{{ $dh($p['gross']) }}</td><td class="r">{{ $pct(config('payroll.amo_employee_rate')) }}</td><td></td><td class="r">{{ $dh($p['amo']) }}</td></tr>
         <tr><td>Impôt sur le revenu (IR)</td><td class="r">{{ $dh($p['taxable']) }}</td><td class="r">{{ $pct($p['ir_rate']) }}</td><td></td><td class="r">{{ $dh($p['ir']) }}</td></tr>
-        <tr class="sub"><td>Total</td><td></td><td></td><td class="r">{{ $dh($p['gross']) }}</td><td class="r">{{ $dh($p['deductions']) }}</td></tr>
+        @foreach (collect($p['bonus_lines'] ?? [])->where('taxable', false) as $line)
+            <tr><td>{{ $line['label'] }} (non imposable)</td><td></td><td></td><td class="r">{{ $dh($line['amount']) }}</td><td></td></tr>
+        @endforeach
+        @foreach ($p['advance_lines'] ?? [] as $line)
+            <tr><td>{{ $line['label'] }}</td><td></td><td></td><td></td><td class="r">{{ $dh($line['amount']) }}</td></tr>
+        @endforeach
+        <tr class="sub"><td>Total</td><td></td><td></td><td class="r">{{ $dh($p['gross'] + ($p['exempt_allowances'] ?? 0)) }}</td><td class="r">{{ $dh($p['deductions'] + ($p['advances'] ?? 0)) }}</td></tr>
     </table>
     <p class="small">
         Net imposable : {{ $dh($p['taxable']) }} DH (brut − frais professionnels {{ $pct($p['professional_expenses_rate']) }} soit {{ $dh($p['professional_expenses']) }} DH − CNSS − AMO).

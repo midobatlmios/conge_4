@@ -1,3 +1,4 @@
+import { intlLocale, translated } from '@/lib/i18n';
 /** Personal and administrative data of an employee (HR only; the employee reads their own). */
 export type EmployeeProfile = {
     gender: 'homme' | 'femme' | null;
@@ -22,17 +23,17 @@ export type EmployeeProfile = {
 
 export type ProfileField = Exclude<keyof EmployeeProfile, 'updated_at' | 'editor'>;
 
-export const GENDER_LABELS: Record<NonNullable<EmployeeProfile['gender']>, string> = {
+export const GENDER_LABELS: Record<NonNullable<EmployeeProfile['gender']>, string> = translated({
     homme: 'Homme',
     femme: 'Femme',
-};
+});
 
-export const MARITAL_STATUS_LABELS: Record<NonNullable<EmployeeProfile['marital_status']>, string> = {
+export const MARITAL_STATUS_LABELS: Record<NonNullable<EmployeeProfile['marital_status']>, string> = translated({
     celibataire: 'Célibataire',
     marie: 'Marié(e)',
     divorce: 'Divorcé(e)',
     veuf: 'Veuf / veuve',
-};
+});
 
 /** Suggestions only: HR can type any bank. */
 export const BANKS = [
@@ -56,7 +57,7 @@ export function formatRib(rib: string | null): string {
 
 export function formatDate(date: string | null | undefined): string {
     if (!date) return '';
-    return new Date(date.length === 10 ? `${date}T00:00:00` : date).toLocaleDateString('fr-FR');
+    return new Date(date.length === 10 ? `${date}T00:00:00` : date).toLocaleDateString(intlLocale());
 }
 
 /** Age in full years on today's date. */

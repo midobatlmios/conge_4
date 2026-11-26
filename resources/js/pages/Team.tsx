@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
+import { intlLocale, t } from '@/lib/i18n';
 import { LeaveStatus, STATUS_COLORS, STATUS_LABELS, TYPE_CONGE_LABELS, TypeConge, formatDays, halfDayNote, parseISODate } from '@/lib/leave';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
@@ -46,15 +47,15 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Mon équipe', href: '/equipe' },
 ];
 
-const longDate = (iso: string) => parseISODate(iso)?.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }) ?? iso;
+const longDate = (iso: string) => parseISODate(iso)?.toLocaleDateString(intlLocale(), { weekday: 'short', day: 'numeric', month: 'short' }) ?? iso;
 
 const period = (r: TeamRequest) => `${longDate(r.start)}${halfDayNote(r.start_half, 'start')} → ${longDate(r.end)}${halfDayNote(r.end_half, 'end')}`;
 
 const approve = async (r: TeamRequest) => {
     const ok = await confirmAction({
-        title: `Valider la demande de ${r.name} ?`,
-        description: `${period(r)}\nElle sera transmise aux RH pour la décision finale.`,
-        confirmLabel: 'Valider',
+        title: t('Valider la demande de :name ?', { name: r.name }),
+        description: `${period(r)}\n${t('Elle sera transmise aux RH pour la décision finale.')}`,
+        confirmLabel: t('Valider'),
     });
     if (ok) router.put(`/demandes/${r.id}/manager-approve`, {}, { preserveScroll: true, onError: toastErrors });
 };
@@ -62,11 +63,11 @@ const approve = async (r: TeamRequest) => {
 const refuse = async (r: TeamRequest) => {
     // null when cancelled; an empty reason is allowed.
     const reason = await promptValue({
-        title: `Refuser la demande de ${r.name} ?`,
-        description: `${period(r)}\nLe refus est définitif.`,
-        label: 'Motif (facultatif)',
+        title: t('Refuser la demande de :name ?', { name: r.name }),
+        description: `${period(r)}\n${t('Le refus est définitif.')}`,
+        label: t('Motif (facultatif)'),
         multiline: true,
-        confirmLabel: 'Refuser',
+        confirmLabel: t('Refuser'),
         destructive: true,
     });
     if (reason !== null) router.put(`/demandes/${r.id}/manager-refuse`, { manager_comment: reason }, { preserveScroll: true, onError: toastErrors });
@@ -80,8 +81,8 @@ function RequestRow({ request }: { request: TeamRequest }) {
                     {request.name}
                     {request.job_title && <span className="text-muted-foreground text-sm font-normal"> · {request.job_title}</span>}
                     {request.delegated_by && (
-                        <Badge variant="outline" className="ml-2 align-middle text-[11px]">
-                            Par délégation de {request.delegated_by}
+                        <Badge variant="outline" className="ms-2 align-middle text-[11px]">
+                            {t('Par délégation de')} {request.delegated_by}
                         </Badge>
                     )}
                 </div>
@@ -93,18 +94,22 @@ function RequestRow({ request }: { request: TeamRequest }) {
                     <div
                         className={`text-xs ${request.documents > 0 ? 'text-green-700 dark:text-green-400' : 'text-orange-700 dark:text-orange-400'}`}
                     >
-                        {request.documents > 0 ? 'Justificatif joint (consultable par les RH)' : 'Justificatif pas encore joint'}
+                        {request.documents > 0 ? t('Justificatif joint (consultable par les RH)') : t('Justificatif pas encore joint')}
                     </div>
                 )}
-                {request.manager_comment && <div className="text-xs text-red-700 dark:text-red-400">Motif du refus : {request.manager_comment}</div>}
+                {request.manager_comment && (
+                    <div className="text-xs text-red-700 dark:text-red-400">
+                        {t('Motif du refus :')} {request.manager_comment}
+                    </div>
+                )}
             </div>
             {request.can_decide ? (
                 <div className="flex shrink-0 gap-2">
                     <Button size="sm" className="bg-green-700 text-white hover:bg-green-800" onClick={() => approve(request)}>
-                        <Check className="mr-1 h-4 w-4" /> Valider
+                        <Check className="me-1 h-4 w-4" /> {t('Valider')}
                     </Button>
                     <Button size="sm" variant="outline" className="text-red-700 hover:text-red-700 dark:text-red-400" onClick={() => refuse(request)}>
-                        <X className="mr-1 h-4 w-4" /> Refuser
+                        <X className="me-1 h-4 w-4" /> {t('Refuser')}
                     </Button>
                 </div>
             ) : (
@@ -120,18 +125,18 @@ export default function Team({ requests, teamSize, delegations, delegateOptions,
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Mon équipe" />
+            <Head title={t('Mon équipe')} />
             <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-10">
                 <div>
-                    <h1 className="text-2xl font-bold">Mon équipe</h1>
+                    <h1 className="text-2xl font-bold">{t('Mon équipe')}</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
                         {teamSize > 0
                             ? `Vous êtes le responsable de ${teamSize} employé${teamSize > 1 ? 's' : ''}. Vous validez leurs demandes en premier ; les RH prennent ensuite la décision finale.`
-                            : "Aucun employé ne vous est rattaché pour l'instant."}
+                            : t("Aucun employé ne vous est rattaché pour l'instant.")}
                     </p>
                     {delegatedTeams.length > 0 && (
                         <p className="mt-2 text-sm">
-                            Par délégation, vous validez aussi aujourd'hui les demandes de l'équipe de{' '}
+                            {t("Par délégation, vous validez aussi aujourd'hui les demandes de l'équipe de")}{' '}
                             <span className="font-medium">{delegatedTeams.join(', ')}</span>.
                         </p>
                     )}
@@ -140,10 +145,10 @@ export default function Team({ requests, teamSize, delegations, delegateOptions,
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            À valider <Badge variant={toDecide.length ? 'default' : 'secondary'}>{toDecide.length}</Badge>
+                            {t('À valider')} <Badge variant={toDecide.length ? 'default' : 'secondary'}>{toDecide.length}</Badge>
                         </CardTitle>
                         <CardDescription>
-                            Un refus est définitif et l'employé est prévenu ; une validation transmet la demande aux RH.
+                            {t("Un refus est définitif et l'employé est prévenu ; une validation transmet la demande aux RH.")}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -156,8 +161,10 @@ export default function Team({ requests, teamSize, delegations, delegateOptions,
                         ) : (
                             <EmptyState
                                 icon={CheckCheck}
-                                title="Rien à valider"
-                                description="Les nouvelles demandes de votre équipe apparaîtront ici ; vous serez aussi prévenu par notification."
+                                title={t('Rien à valider')}
+                                description={t(
+                                    'Les nouvelles demandes de votre équipe apparaîtront ici ; vous serez aussi prévenu par notification.',
+                                )}
                             />
                         )}
                     </CardContent>
@@ -165,7 +172,7 @@ export default function Team({ requests, teamSize, delegations, delegateOptions,
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Autres demandes de l'équipe</CardTitle>
+                        <CardTitle>{t("Autres demandes de l'équipe")}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {others.length ? (
@@ -175,7 +182,7 @@ export default function Team({ requests, teamSize, delegations, delegateOptions,
                                 ))}
                             </ul>
                         ) : (
-                            <p className="text-muted-foreground text-sm">Aucune autre demande.</p>
+                            <p className="text-muted-foreground text-sm">{t('Aucune autre demande.')}</p>
                         )}
                     </CardContent>
                 </Card>
@@ -184,9 +191,9 @@ export default function Team({ requests, teamSize, delegations, delegateOptions,
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <UserCheck className="h-4 w-4" /> Délégation pendant une absence
+                                <UserCheck className="h-4 w-4" /> {t('Délégation pendant une absence')}
                             </CardTitle>
-                            <CardDescription>Confiez la validation de vos demandes à un collègue pendant vos congés.</CardDescription>
+                            <CardDescription>{t('Confiez la validation de vos demandes à un collègue pendant vos congés.')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <DelegationPanel delegations={delegations} options={delegateOptions} url="/equipe/delegations" nextLeave={nextLeave} />

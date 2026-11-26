@@ -49,7 +49,7 @@ export function NoticeText({ notice }: { notice: NoticeFacts }) {
             </Section>
 
             <Section title="Pourquoi vos données sont utilisées">
-                <ul className="list-disc space-y-1 pl-5">
+                <ul className="list-disc space-y-1 ps-5">
                     <li>gérer vos congés et absences (demandes, soldes, validation, calendrier d'équipe) ;</li>
                     <li>préparer la paie et les déclarations sociales (CNSS) ;</li>
                     <li>établir vos attestations de travail et de salaire ;</li>
@@ -59,7 +59,7 @@ export function NoticeText({ notice }: { notice: NoticeFacts }) {
             </Section>
 
             <Section title="Quelles données">
-                <ul className="list-disc space-y-1 pl-5">
+                <ul className="list-disc space-y-1 ps-5">
                     <li>identité et contact : nom, e-mail professionnel, téléphone et e-mail personnels, adresse, contact d'urgence ;</li>
                     <li>données administratives : matricule, CIN, n° CNSS, date et lieu de naissance, situation familiale, RIB ;</li>
                     <li>vie professionnelle : poste, département, responsable, contrats, salaire, attestations ;</li>
@@ -73,7 +73,7 @@ export function NoticeText({ notice }: { notice: NoticeFacts }) {
             </Section>
 
             <Section title="Qui y a accès">
-                <ul className="list-disc space-y-1 pl-5">
+                <ul className="list-disc space-y-1 ps-5">
                     <li>le service RH (comptes Administrateur et RH) ; la paie en lecture seule ;</li>
                     <li>votre responsable : vos demandes de congé seulement, sans justificatif ni donnée personnelle ;</li>
                     <li>vos collègues : votre nom, poste et département (organigramme) et vos dates d'absence, sans leur motif.</li>
@@ -82,7 +82,7 @@ export function NoticeText({ notice }: { notice: NoticeFacts }) {
             </Section>
 
             <Section title="Combien de temps">
-                <ul className="list-disc space-y-1 pl-5">
+                <ul className="list-disc space-y-1 ps-5">
                     <li>certificats médicaux : {r.medical_certificates_years} ans après l'arrêt ;</li>
                     <li>données personnelles, dossier et attestations : {r.personal_data_years} ans après votre départ ;</li>
                     <li>

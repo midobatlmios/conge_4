@@ -1,3 +1,4 @@
+import { intlLocale } from '@/lib/i18n';
 /** A before → after pair (the "before" is empty when nothing was set). */
 export type Step<T> = { from: T | null; to: T | null };
 
@@ -17,11 +18,11 @@ export type CareerChange = {
     author: string | null;
 };
 
-export const money = (amount: number) => `${amount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DH`;
+export const money = (amount: number) => `${amount.toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 })} DH`;
 
 /** "+12,5 %" between two salaries, or null when there was none before. */
 export function raisePercent(step: Step<number>): string | null {
     if (!step.from || step.to === null) return null;
     const percent = ((step.to - step.from) / step.from) * 100;
-    return `${percent > 0 ? '+' : ''}${percent.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %`;
+    return `${percent > 0 ? '+' : ''}${percent.toLocaleString(intlLocale(), { maximumFractionDigits: 1 })} %`;
 }

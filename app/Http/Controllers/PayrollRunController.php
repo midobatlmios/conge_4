@@ -6,6 +6,7 @@ use App\Models\PayrollRun;
 use App\Models\Payslip;
 use App\Models\PersonalDataAccess;
 use App\Models\User;
+use App\Services\PayrollJournal;
 use App\Services\PayslipCalculator;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -14,6 +15,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Monthly payroll. Paie (or RH / Admin) prepares the month: one payslip per
@@ -47,12 +49,22 @@ class PayrollRunController extends Controller
                 'id' => $p->id,
                 'user_id' => $p->user_id,
                 'name' => $p->user?->name ?? $p->figures['employee']['name'],
-                'overtime_hours' => $p->inputs['overtime_hours'],
-                'overtime_from_attendance' => $p->inputs['overtime_from_attendance'],
-                'overtime_adjusted' => $p->inputs['overtime_adjusted'],
-                ...collect($p->figures)->only(['base', 'seniority', 'overtime', 'gross', 'cnss', 'amo', 'ir', 'net', 'employer_total', 'cost', 'employed_days', 'month_days'])->all(),
+                'inputs' => [
+                    'overtime_hours' => $p->inputs['overtime_hours'],
+                    'overtime_from_attendance' => $p->inputs['overtime_from_attendance'],
+                    'unpaid_days' => $p->inputs['unpaid_days'] ?? 0,
+                    'unpaid_from_leave' => $p->inputs['unpaid_from_leave'] ?? 0,
+                    'absent_days' => $p->inputs['absent_days'] ?? 0,
+                    'absent_from_attendance' => $p->inputs['absent_from_attendance'] ?? 0,
+                    'bonuses' => $p->inputs['bonuses'] ?? [],
+                    'advances' => $p->inputs['advances'] ?? [],
+                ],
+                'adjusted' => array_keys(array_filter($p->inputs['adjusted'] ?? ['overtime' => $p->inputs['overtime_adjusted'] ?? false])),
+                ...collect(['absence_deduction' => 0, 'taxable_bonuses' => 0, 'exempt_allowances' => 0, 'advances' => 0, ...$p->figures])
+                    ->only(['base', 'absence_deduction', 'seniority', 'overtime', 'taxable_bonuses', 'exempt_allowances', 'advances', 'gross', 'cnss', 'amo', 'ir', 'net', 'employer_total', 'cost', 'employed_days', 'month_days'])->all(),
             ]),
             'missing' => $run && ! $run->isLocked() ? $this->withoutSalary($month) : [],
+            'bonusPresets' => config('payroll.bonus_presets'),
             'runs' => PayrollRun::orderByDesc('month')->limit(12)->get()->map(fn (PayrollRun $r) => [
                 'month' => $r->month->format('Y-m'), 'status_label' => PayrollRun::STATUS_LABELS[$r->status],
             ]),
@@ -84,21 +96,53 @@ class PayrollRunController extends Controller
         return back()->with('success', 'Bulletins recalculés.');
     }
 
-    public function updateOvertime(Request $request, Payslip $payslip): RedirectResponse
+    /**
+     * Paie adjusts a payslip: unpaid / absent days and overtime (pre-filled from
+     * leave and attendance), bonuses and allowances, advances and loan instalments.
+     */
+    public function updateInputs(Request $request, Payslip $payslip): RedirectResponse
     {
         abort_unless($payslip->run->status === 'draft', 403);
         $validated = $request->validate([
+            'unpaid_days' => ['required', 'numeric', 'min:0', 'max:31'],
+            'absent_days' => ['required', 'numeric', 'min:0', 'max:31'],
             'overtime_hours.25' => ['required', 'numeric', 'min:0', 'max:300'],
             'overtime_hours.50' => ['required', 'numeric', 'min:0', 'max:300'],
             'overtime_hours.100' => ['required', 'numeric', 'min:0', 'max:300'],
-        ], [], ['overtime_hours.25' => 'heures à +25 %', 'overtime_hours.50' => 'heures à +50 %', 'overtime_hours.100' => 'heures à +100 %']);
+            'bonuses' => ['array', 'max:10'],
+            'bonuses.*.label' => ['required', 'string', 'max:60'],
+            'bonuses.*.amount' => ['required', 'numeric', 'min:0', 'max:1000000'],
+            'bonuses.*.taxable' => ['required', 'boolean'],
+            'advances' => ['array', 'max:5'],
+            'advances.*.label' => ['required', 'string', 'max:60'],
+            'advances.*.amount' => ['required', 'numeric', 'min:0', 'max:1000000'],
+        ], [], [
+            'unpaid_days' => 'jours sans solde', 'absent_days' => "jours d'absence",
+            'overtime_hours.25' => 'heures à +25 %', 'overtime_hours.50' => 'heures à +50 %', 'overtime_hours.100' => 'heures à +100 %',
+            'bonuses.*.label' => 'libellé', 'bonuses.*.amount' => 'montant', 'advances.*.label' => 'libellé', 'advances.*.amount' => 'montant',
+        ]);
 
         $inputs = $payslip->inputs;
         $inputs['overtime_hours'] = array_map(fn ($hours) => round((float) $hours, 2), $validated['overtime_hours']);
-        $inputs['overtime_adjusted'] = $inputs['overtime_hours'] != $inputs['overtime_from_attendance'];
-        $payslip->update(['inputs' => $inputs, 'figures' => [...$payslip->figures, ...$this->calculator->compute($inputs, $payslip->run->month)]]);
+        $inputs['unpaid_days'] = round((float) $validated['unpaid_days'], 1);
+        $inputs['absent_days'] = round((float) $validated['absent_days'], 1);
+        $inputs['adjusted'] = [
+            'overtime' => $inputs['overtime_hours'] != ($inputs['overtime_from_attendance'] ?? []),
+            'unpaid' => $inputs['unpaid_days'] != ($inputs['unpaid_from_leave'] ?? 0),
+            'absent' => $inputs['absent_days'] != ($inputs['absent_from_attendance'] ?? 0),
+        ];
+        $inputs['bonuses'] = array_values($validated['bonuses'] ?? []);
+        $inputs['advances'] = array_values($validated['advances'] ?? []);
 
-        return back()->with('success', 'Heures supplémentaires mises à jour.');
+        // Advances cannot exceed what is left to pay.
+        $figures = $this->calculator->compute($inputs, $payslip->run->month);
+        if ($figures['net'] < 0) {
+            return back()->withErrors(['advances' => 'Les avances dépassent le net à payer ('.number_format($figures['net_before_advances'], 2, ',', ' ').' DH).']);
+        }
+
+        $payslip->update(['inputs' => $inputs, 'figures' => [...$payslip->figures, ...$figures]]);
+
+        return back()->with('success', 'Bulletin mis à jour.');
     }
 
     /** Paie sends the month for validation. */
@@ -132,6 +176,12 @@ class PayrollRunController extends Controller
         $run->update(['status' => 'locked', 'locked_by' => $user->id, 'locked_at' => now()]);
 
         return back()->with('success', 'Paie validée : les employés peuvent consulter leur bulletin.');
+    }
+
+    /** The month's payroll journal and CNSS list (Excel), for the accountant. */
+    public function journal(PayrollRun $run, PayrollJournal $journal): BinaryFileResponse
+    {
+        return response()->download($journal->toXlsx($run), PayrollJournal::fileName($run))->deleteFileAfterSend();
     }
 
     /** A payslip as PDF: HR, Paie and Admin; the employee only once the month is locked. */
@@ -189,11 +239,18 @@ class PayrollRunController extends Controller
                     continue;
                 }
 
-                // Hours Paie adjusted by hand stay as they are.
-                $previous = $existing[$user->id] ?? null;
-                if ($previous && ($previous->inputs['overtime_adjusted'] ?? false)) {
-                    $inputs['overtime_hours'] = $previous->inputs['overtime_hours'];
-                    $inputs['overtime_adjusted'] = true;
+                // What Paie entered or changed by hand stays as it is.
+                $previous = $existing[$user->id]->inputs ?? null;
+                if ($previous) {
+                    $adjusted = $previous['adjusted'] ?? ['overtime' => $previous['overtime_adjusted'] ?? false];
+                    foreach (['overtime' => 'overtime_hours', 'unpaid' => 'unpaid_days', 'absent' => 'absent_days'] as $flag => $key) {
+                        if (($adjusted[$flag] ?? false) && array_key_exists($key, $previous)) {
+                            $inputs[$key] = $previous[$key];
+                            $inputs['adjusted'][$flag] = true;
+                        }
+                    }
+                    $inputs['bonuses'] = $previous['bonuses'] ?? [];
+                    $inputs['advances'] = $previous['advances'] ?? [];
                 }
 
                 $figures = [...$this->calculator->compute($inputs, $month), 'employee' => $this->calculator->employee($user)];

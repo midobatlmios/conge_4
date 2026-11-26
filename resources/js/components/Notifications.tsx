@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
+import { t } from '@/lib/i18n';
 import { TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
 import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -90,10 +91,10 @@ export default function Notifications() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
+                <Button variant="ghost" size="icon" className="relative" aria-label={t('Notifications')}>
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+                        <span className="absolute -end-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
                             {unreadCount}
                         </span>
                     )}
@@ -101,13 +102,13 @@ export default function Notifications() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
                 {!loaded ? (
-                    <div className="space-y-2 p-3" aria-busy="true" aria-label="Chargement des notifications">
+                    <div className="space-y-2 p-3" aria-busy="true" aria-label={t('Chargement des notifications')}>
                         <Skeleton className="h-4 w-3/4" />
                         <Skeleton className="h-3 w-1/2" />
                         <Skeleton className="mt-3 h-4 w-2/3" />
                     </div>
                 ) : !Array.isArray(notifications) || notifications.length === 0 ? (
-                    <DropdownMenuItem className="text-muted-foreground text-sm">Aucune notification</DropdownMenuItem>
+                    <DropdownMenuItem className="text-muted-foreground text-sm">{t('Aucune notification')}</DropdownMenuItem>
                 ) : (
                     notifications.map((notification) => (
                         <DropdownMenuItem
@@ -120,7 +121,7 @@ export default function Notifications() {
                             {notification.data.comment && <p className="text-muted-foreground mt-1 text-sm">{notification.data.comment}</p>}
                             {notification.data.type_conge && (
                                 <p className="text-muted-foreground text-sm">
-                                    Type : {TYPE_CONGE_LABELS[notification.data.type_conge as TypeConge] ?? notification.data.type_conge}
+                                    {t('Type :')} {TYPE_CONGE_LABELS[notification.data.type_conge as TypeConge] ?? notification.data.type_conge}
                                 </p>
                             )}
                         </DropdownMenuItem>

@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n';
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
@@ -41,15 +42,15 @@ export default function ResetPassword({ token, email, invitation = false }: Rese
 
     return (
         <AuthLayout
-            title={invitation ? 'Bienvenue' : 'Réinitialiser le mot de passe'}
-            description={invitation ? 'Choisissez le mot de passe de votre compte' : 'Choisissez votre nouveau mot de passe'}
+            title={invitation ? t('Bienvenue') : t('Réinitialiser le mot de passe')}
+            description={invitation ? t('Choisissez le mot de passe de votre compte') : t('Choisissez votre nouveau mot de passe')}
         >
-            <Head title={invitation ? 'Choisir mon mot de passe' : 'Réinitialiser le mot de passe'} />
+            <Head title={invitation ? t('Choisir mon mot de passe') : t('Réinitialiser le mot de passe')} />
 
             <form onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Adresse e-mail</Label>
+                        <Label htmlFor="email">{t('Adresse e-mail')}</Label>
                         <Input
                             id="email"
                             type="email"
@@ -64,7 +65,7 @@ export default function ResetPassword({ token, email, invitation = false }: Rese
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="password">Nouveau mot de passe</Label>
+                        <Label htmlFor="password">{t('Nouveau mot de passe')}</Label>
                         <Input
                             id="password"
                             type="password"
@@ -74,13 +75,13 @@ export default function ResetPassword({ token, email, invitation = false }: Rese
                             className="mt-1 block w-full"
                             autoFocus
                             onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Mot de passe"
+                            placeholder={t('Mot de passe')}
                         />
                         <InputError message={errors.password} />
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="password_confirmation">Confirmer le mot de passe</Label>
+                        <Label htmlFor="password_confirmation">{t('Confirmer le mot de passe')}</Label>
                         <Input
                             id="password_confirmation"
                             type="password"
@@ -89,14 +90,14 @@ export default function ResetPassword({ token, email, invitation = false }: Rese
                             value={data.password_confirmation}
                             className="mt-1 block w-full"
                             onChange={(e) => setData('password_confirmation', e.target.value)}
-                            placeholder="Confirmer le mot de passe"
+                            placeholder={t('Confirmer le mot de passe')}
                         />
                         <InputError message={errors.password_confirmation} className="mt-2" />
                     </div>
 
                     <Button type="submit" className="mt-4 w-full" disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Réinitialiser le mot de passe
+                        {t('Réinitialiser le mot de passe')}
                     </Button>
                 </div>
             </form>

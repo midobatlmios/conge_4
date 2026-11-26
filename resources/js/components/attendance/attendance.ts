@@ -1,3 +1,4 @@
+import { intlLocale, translated } from '@/lib/i18n';
 /** Today's clocking, as AttendanceController::todayState() sends it. */
 export type TodayState = {
     tracking: boolean;
@@ -64,7 +65,7 @@ export type Correction = {
     can_decide: boolean;
 };
 
-export const STATUS_LABELS: Record<DayStatus, string> = {
+export const STATUS_LABELS: Record<DayStatus, string> = translated({
     present: 'Présent',
     in_progress: 'En poste',
     missing_out: 'Départ non pointé',
@@ -74,7 +75,7 @@ export const STATUS_LABELS: Record<DayStatus, string> = {
     rest: 'Repos',
     future: '',
     not_tracked: '',
-};
+});
 
 export const STATUS_CLASSES: Partial<Record<DayStatus, string>> = {
     absent: 'text-red-700 dark:text-red-400',
@@ -93,4 +94,4 @@ export function hours(minutes: number): string {
 export const overtimeTotal = (t: Pick<Totals, 'overtime_25' | 'overtime_50' | 'overtime_100'>) => t.overtime_25 + t.overtime_50 + t.overtime_100;
 
 export const shortDay = (iso: string) =>
-    new Date(`${iso}T00:00:00`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+    new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale(), { weekday: 'short', day: 'numeric', month: 'short' });

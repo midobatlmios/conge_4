@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { intlLocale, t } from '@/lib/i18n';
 import { todayISO } from '@/lib/leave';
 import { router, useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
@@ -24,7 +25,7 @@ interface DelegationPanelProps {
     whose?: string;
 }
 
-const frDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('fr-FR');
+const frDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale());
 const selectClass = 'border-input bg-background h-9 w-full rounded-md border px-3 text-sm';
 
 /** Hand a manager's approvals to someone else for a period, and end it early. */
@@ -43,9 +44,9 @@ export default function DelegationPanel({ delegations, options, url, nextLeave, 
 
     const end = async (delegation: Delegation) => {
         const ok = await confirmAction({
-            title: 'Terminer cette délégation ?',
-            description: `${delegation.delegate} ne validera plus les demandes à partir d'aujourd'hui.`,
-            confirmLabel: 'Terminer',
+            title: t('Terminer cette délégation ?'),
+            description: t(":name ne validera plus les demandes à partir d'aujourd'hui.", { name: delegation.delegate }),
+            confirmLabel: t('Terminer'),
         });
         if (ok) router.delete(`/delegations/${delegation.id}`, { preserveScroll: true, onError: toastErrors });
     };
@@ -57,18 +58,18 @@ export default function DelegationPanel({ delegations, options, url, nextLeave, 
                     {delegations.map((delegation) => (
                         <li key={delegation.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
                             <span>
-                                <span className="font-medium">{delegation.delegate}</span> valide du {frDate(delegation.starts_on)} au{' '}
+                                <span className="font-medium">{delegation.delegate}</span> {t('valide du')} {frDate(delegation.starts_on)} {t('au')}{' '}
                                 {frDate(delegation.ends_on)}{' '}
                                 {delegation.current ? (
-                                    <Badge className="ml-1">En cours</Badge>
+                                    <Badge className="ms-1">{t('En cours')}</Badge>
                                 ) : (
-                                    <Badge variant="outline" className="ml-1">
-                                        Prévue
+                                    <Badge variant="outline" className="ms-1">
+                                        {t('Prévue')}
                                     </Badge>
                                 )}
                             </span>
                             <Button variant="outline" size="sm" onClick={() => end(delegation)}>
-                                Terminer
+                                {t('Terminer')}
                             </Button>
                         </li>
                     ))}
@@ -77,12 +78,12 @@ export default function DelegationPanel({ delegations, options, url, nextLeave, 
 
             <form onSubmit={submit} className="space-y-3 rounded-md border border-dashed p-4">
                 <p className="text-muted-foreground text-sm">
-                    Pendant la période, le remplaçant reçoit les demandes et les rappels et peut les valider ou les refuser
-                    {whose ? ` à la place de ${whose}` : ''} ; la décision reste aussi possible pour le responsable.
+                    {t('Pendant la période, le remplaçant reçoit les demandes et les rappels et peut les valider ou les refuser')}
+                    {whose ? t(' à la place de :name', { name: whose }) : ''} {t('; la décision reste aussi possible pour le responsable.')}
                 </p>
                 <div className="grid gap-3 sm:grid-cols-3">
                     <div className="space-y-1">
-                        <Label htmlFor="delegate_id">Remplaçant</Label>
+                        <Label htmlFor="delegate_id">{t('Remplaçant')}</Label>
                         <select
                             id="delegate_id"
                             className={selectClass}
@@ -90,7 +91,7 @@ export default function DelegationPanel({ delegations, options, url, nextLeave, 
                             onChange={(e) => form.setData('delegate_id', e.target.value)}
                             required
                         >
-                            <option value="">Choisir…</option>
+                            <option value="">{t('Choisir…')}</option>
                             {options.map((option) => (
                                 <option key={option.id} value={option.id}>
                                     {option.name}
@@ -100,7 +101,7 @@ export default function DelegationPanel({ delegations, options, url, nextLeave, 
                         <InputError message={form.errors.delegate_id} />
                     </div>
                     <div className="space-y-1">
-                        <Label htmlFor="starts_on">Du</Label>
+                        <Label htmlFor="starts_on">{t('Du')}</Label>
                         <Input
                             id="starts_on"
                             type="date"
@@ -112,7 +113,7 @@ export default function DelegationPanel({ delegations, options, url, nextLeave, 
                         <InputError message={form.errors.starts_on} />
                     </div>
                     <div className="space-y-1">
-                        <Label htmlFor="ends_on">Au</Label>
+                        <Label htmlFor="ends_on">{t('Au')}</Label>
                         <Input
                             id="ends_on"
                             type="date"
@@ -126,12 +127,12 @@ export default function DelegationPanel({ delegations, options, url, nextLeave, 
                 </div>
                 {nextLeave && (
                     <p className="text-muted-foreground text-xs">
-                        Dates proposées : prochain congé du {frDate(nextLeave.start)} au {frDate(nextLeave.end)}.
+                        {t('Dates proposées : prochain congé du')} {frDate(nextLeave.start)} {t('au')} {frDate(nextLeave.end)}.
                     </p>
                 )}
                 <div className="flex justify-end">
                     <Button type="submit" disabled={form.processing}>
-                        Déléguer
+                        {t('Déléguer')}
                     </Button>
                 </div>
             </form>

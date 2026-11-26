@@ -1,11 +1,13 @@
 import AppLogoIcon from '@/components/app-logo-icon';
 import AppToaster from '@/components/app-toaster';
 import ConfirmDialogHost from '@/components/confirm-dialog';
+import LanguageSwitcher from '@/components/language-switcher';
 import Notifications from '@/components/Notifications';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useBrand } from '@/lib/brand';
+import { applyLocale, t, useLocale } from '@/lib/i18n';
 import { usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
@@ -68,6 +70,8 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
               .toUpperCase()
         : 'U';
     const can = usePermissions();
+    // Language of this page for t() and the page direction (Arabic: right to left).
+    applyLocale(useLocale());
     const brand = useBrand();
     const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -82,17 +86,17 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
             {/* First thing keyboard users reach: jump over the menu. */}
             <a
                 href="#contenu"
-                className="bg-background focus-visible:ring-ring sr-only z-[60] rounded-md border px-3 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus-visible:ring-2 focus-visible:outline-none"
+                className="bg-background focus-visible:ring-ring sr-only z-[60] rounded-md border px-3 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus-visible:ring-2 focus-visible:outline-none"
             >
-                Aller au contenu
+                {t('Aller au contenu')}
             </a>
 
             {/* Mobile menu button */}
             <button
                 type="button"
-                aria-label={sidebarOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+                aria-label={sidebarOpen ? t('Fermer le menu') : t('Ouvrir le menu')}
                 aria-expanded={sidebarOpen}
-                className="bg-background fixed top-4 left-4 z-50 rounded-md border p-2 lg:hidden"
+                className="bg-background fixed start-4 top-4 z-50 rounded-md border p-2 lg:hidden"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
             >
                 {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -100,9 +104,9 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
 
             {/* Sidebar */}
             <aside
-                className={`fixed inset-y-0 left-0 z-40 w-64 transform transition-transform duration-200 ease-in-out lg:static lg:inset-auto lg:translate-x-0 ${
+                className={`fixed inset-y-0 start-0 z-40 w-64 transform transition-transform duration-200 ease-in-out lg:static lg:inset-auto lg:translate-x-0 ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                } bg-background flex h-screen flex-col justify-between border-r`}
+                } bg-background flex h-screen flex-col justify-between border-e`}
             >
                 <div>
                     {/* Logo/title */}
@@ -117,53 +121,53 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                                 >
                                     {brand.name}
                                 </span>
-                                <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">Congés & RH</span>
+                                <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">{t('Congés & RH')}</span>
                             </span>
                         ) : (
                             <span
                                 className="flex flex-col text-lg leading-tight font-extrabold tracking-wide text-(--brand) uppercase dark:text-white"
                                 style={{ '--brand': brand.color } as CSSProperties}
                             >
-                                <span>Gestion des</span>
-                                <span>congés</span>
+                                <span>{t('Gestion des')}</span>
+                                <span>{t('congés')}</span>
                             </span>
                         )}
                     </div>
                     {/* Main navigation */}
-                    <nav className="mt-4 px-4" aria-label="Menu principal">
-                        <div className="text-muted-foreground mb-2 pl-2 text-xs">Menu</div>
+                    <nav className="mt-4 px-4" aria-label={t('Menu principal')}>
+                        <div className="text-muted-foreground mb-2 ps-2 text-xs">{t('Menu')}</div>
                         <ul className="space-y-1">
                             <li>
                                 <NavLink href="/dashboard" onNavigate={() => setSidebarOpen(false)}>
-                                    <LayoutDashboard className="h-4 w-4" /> Espace employé
+                                    <LayoutDashboard className="h-4 w-4" /> {t('Espace employé')}
                                 </NavLink>
                             </li>
                             <li>
                                 <NavLink href="/calendrier" onNavigate={() => setSidebarOpen(false)}>
-                                    <CalendarRange className="h-4 w-4" /> Calendrier
+                                    <CalendarRange className="h-4 w-4" /> {t('Calendrier')}
                                 </NavLink>
                             </li>
                             <li>
                                 <NavLink href="/organigramme" onNavigate={() => setSidebarOpen(false)}>
-                                    <Network className="h-4 w-4" /> Organigramme
+                                    <Network className="h-4 w-4" /> {t('Organigramme')}
                                 </NavLink>
                             </li>
                             <li>
                                 <NavLink href="/pointage" onNavigate={() => setSidebarOpen(false)}>
-                                    <Clock className="h-4 w-4" /> Mes pointages
+                                    <Clock className="h-4 w-4" /> {t('Mes pointages')}
                                 </NavLink>
                             </li>
                             {user.is_manager && (
                                 <li>
                                     <NavLink href="/equipe" onNavigate={() => setSidebarOpen(false)}>
-                                        <UsersRound className="h-4 w-4" /> Mon équipe
+                                        <UsersRound className="h-4 w-4" /> {t('Mon équipe')}
                                     </NavLink>
                                 </li>
                             )}
                             {(user.is_manager || can.manage_hr) && (
                                 <li>
                                     <NavLink href="/pointage/corrections" onNavigate={() => setSidebarOpen(false)}>
-                                        <ClockAlert className="h-4 w-4" /> Corrections de pointage
+                                        <ClockAlert className="h-4 w-4" /> {t('Corrections de pointage')}
                                     </NavLink>
                                 </li>
                             )}
@@ -171,69 +175,69 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                                 <>
                                     <li>
                                         <NavLink href="/admin/overview" onNavigate={() => setSidebarOpen(false)}>
-                                            <Gauge className="h-4 w-4" /> Vue d'ensemble
+                                            <Gauge className="h-4 w-4" /> {t("Vue d'ensemble")}
                                         </NavLink>
                                     </li>
                                     <li>
                                         <NavLink href="/demandes" onNavigate={() => setSidebarOpen(false)}>
-                                            <FileText className="h-4 w-4" /> Gérer les demandes
+                                            <FileText className="h-4 w-4" /> {t('Gérer les demandes')}
                                         </NavLink>
                                     </li>
                                     <li>
                                         <NavLink href="/admin/users" onNavigate={() => setSidebarOpen(false)}>
-                                            <Settings className="h-4 w-4" /> Gérer les employés
+                                            <Settings className="h-4 w-4" /> {t('Gérer les employés')}
                                         </NavLink>
                                     </li>
                                     {can.manage_hr && (
                                         <li>
                                             <NavLink href="/admin/departments" onNavigate={() => setSidebarOpen(false)}>
-                                                <Building2 className="h-4 w-4" /> Départements
+                                                <Building2 className="h-4 w-4" /> {t('Départements')}
                                             </NavLink>
                                         </li>
                                     )}
                                     <li>
                                         <NavLink href="/admin/attestations" onNavigate={() => setSidebarOpen(false)}>
-                                            <FileBadge className="h-4 w-4" /> Attestations
+                                            <FileBadge className="h-4 w-4" /> {t('Attestations')}
                                         </NavLink>
                                     </li>
                                     {can.manage_hr && (
                                         <li>
                                             <NavLink href="/admin/company" onNavigate={() => setSidebarOpen(false)}>
-                                                <Landmark className="h-4 w-4" /> Entreprise
+                                                <Landmark className="h-4 w-4" /> {t('Entreprise')}
                                             </NavLink>
                                         </li>
                                     )}
                                     <li>
                                         <NavLink href="/admin/indicators" onNavigate={() => setSidebarOpen(false)}>
-                                            <ChartColumn className="h-4 w-4" /> Indicateurs RH
+                                            <ChartColumn className="h-4 w-4" /> {t('Indicateurs RH')}
                                         </NavLink>
                                     </li>
                                     <li>
                                         <NavLink href="/admin/attendance" onNavigate={() => setSidebarOpen(false)}>
-                                            <Clock className="h-4 w-4" /> Pointage
+                                            <Clock className="h-4 w-4" /> {t('Pointage')}
                                         </NavLink>
                                     </li>
                                     <li>
                                         <NavLink href="/admin/payslips" onNavigate={() => setSidebarOpen(false)}>
-                                            <Wallet className="h-4 w-4" /> Bulletins de paie
+                                            <Wallet className="h-4 w-4" /> {t('Bulletins de paie')}
                                         </NavLink>
                                     </li>
                                     <li>
                                         <NavLink href="/admin/payroll" onNavigate={() => setSidebarOpen(false)}>
-                                            <FileSpreadsheet className="h-4 w-4" /> Export paie
+                                            <FileSpreadsheet className="h-4 w-4" /> {t('Export paie')}
                                         </NavLink>
                                     </li>
                                     {can.manage_hr && (
                                         <li>
                                             <NavLink href="/admin/holidays" onNavigate={() => setSidebarOpen(false)}>
-                                                <CalendarDays className="h-4 w-4" /> Jours fériés
+                                                <CalendarDays className="h-4 w-4" /> {t('Jours fériés')}
                                             </NavLink>
                                         </li>
                                     )}
                                     {can.manage_roles && (
                                         <li>
                                             <NavLink href="/admin/privacy" onNavigate={() => setSidebarOpen(false)}>
-                                                <ShieldCheck className="h-4 w-4" /> Protection des données
+                                                <ShieldCheck className="h-4 w-4" /> {t('Protection des données')}
                                             </NavLink>
                                         </li>
                                     )}
@@ -250,8 +254,8 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                             {/* A real button: reachable with the keyboard and announced as a menu. */}
                             <button
                                 type="button"
-                                aria-label={`Menu du compte de ${user.name || 'Utilisateur'}`}
-                                className="hover:bg-accent focus-visible:ring-ring flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 text-left select-none focus-visible:ring-2 focus-visible:outline-none"
+                                aria-label={t('Menu du compte de :name', { name: user.name || t('Utilisateur') })}
+                                className="hover:bg-accent focus-visible:ring-ring flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 text-start select-none focus-visible:ring-2 focus-visible:outline-none"
                             >
                                 <span
                                     aria-hidden="true"
@@ -259,42 +263,42 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                                 >
                                     {initials}
                                 </span>
-                                <span className="truncate text-sm font-medium">{user.name || 'Utilisateur'}</span>
-                                <ChevronDown aria-hidden="true" className="text-muted-foreground ml-auto h-4 w-4" />
+                                <span className="truncate text-sm font-medium">{user.name || t('Utilisateur')}</span>
+                                <ChevronDown aria-hidden="true" className="text-muted-foreground ms-auto h-4 w-4" />
                             </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="mb-2 w-56" align="end">
                             <DropdownMenuItem asChild>
                                 <Link href="/settings/profile" onClick={() => setSidebarOpen(false)}>
-                                    Mon profil
+                                    {t('Mon profil')}
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Link href="/settings/personal-data" onClick={() => setSidebarOpen(false)}>
-                                    Données personnelles
+                                    {t('Données personnelles')}
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Link href="/settings/attestations" onClick={() => setSidebarOpen(false)}>
-                                    Mes attestations
+                                    {t('Mes attestations')}
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Link href="/protection-des-donnees" onClick={() => setSidebarOpen(false)}>
-                                    Protection des données
+                                    {t('Protection des données')}
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Link href="/settings/password" onClick={() => setSidebarOpen(false)}>
-                                    Mot de passe
+                                    {t('Mot de passe')}
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Link href="/settings/appearance" onClick={() => setSidebarOpen(false)}>
-                                    Apparence
+                                    {t('Apparence')}
                                 </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setLogoutDialogOpen(true)}>Déconnexion</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setLogoutDialogOpen(true)}>{t('Déconnexion')}</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
@@ -303,7 +307,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
             {/* Main content */}
             <main className="flex w-full min-w-0 flex-1 flex-col">
                 {/* Header */}
-                <header className="flex h-16 items-center justify-between border-b pr-4 pl-16 lg:pl-4">
+                <header className="flex h-16 items-center justify-between border-b ps-16 pe-4 lg:ps-4">
                     <div className="flex items-center gap-2">
                         {breadcrumbs && breadcrumbs.length > 0 && (
                             <nav className="flex items-center space-x-1 overflow-x-auto text-sm">
@@ -318,7 +322,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                                                     : 'text-muted-foreground hover:text-foreground'
                                             }`}
                                         >
-                                            {item.title}
+                                            {t(item.title)}
                                         </Link>
                                     </div>
                                 ))}
@@ -326,9 +330,10 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                         )}
                     </div>
                     <div className="flex items-center gap-4">
+                        <LanguageSwitcher className="hidden sm:inline-flex" />
                         <Notifications />
                         <Link href="/logout" method="post" className="text-muted-foreground hover:text-foreground text-sm">
-                            Déconnexion
+                            {t('Déconnexion')}
                         </Link>
                     </div>
                 </header>
@@ -345,13 +350,13 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
 
             <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
                 <DialogContent>
-                    <DialogHeader>Êtes-vous sûr de vouloir vous déconnecter&nbsp;?</DialogHeader>
+                    <DialogHeader>{t('Êtes-vous sûr de vouloir vous déconnecter ?')}</DialogHeader>
                     <DialogFooter>
                         <Button variant="secondary" onClick={() => setLogoutDialogOpen(false)}>
-                            Annuler
+                            {t('Annuler')}
                         </Button>
                         <Button variant="destructive" onClick={handleLogout}>
-                            Oui, déconnexion
+                            {t('Oui, déconnexion')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

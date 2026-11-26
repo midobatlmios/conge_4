@@ -2,6 +2,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { intlLocale, t } from '@/lib/i18n';
 import { STATUS_COLORS, STATUS_LABELS, TYPE_CONGE_LABELS, TypeConge, formatDays, halfDayNote } from '@/lib/leave';
 import { Demande } from '@/types';
 import { ColumnDef } from '@tanstack/react-table';
@@ -33,7 +34,7 @@ export const columns = (
                 <div
                     className={`font-medium ${remainingDays <= 5 ? 'text-red-700 dark:text-red-400' : remainingDays <= 10 ? 'text-yellow-700 dark:text-yellow-400' : 'text-green-700 dark:text-green-400'}`}
                 >
-                    {formatDays(remainingDays)} jours
+                    {formatDays(remainingDays)} {t('jours')}
                 </div>
             );
         },
@@ -43,7 +44,7 @@ export const columns = (
         header: 'Date de demande',
         cell: ({ row }) => {
             const date = new Date(row.getValue('date_demande'));
-            return date.toLocaleDateString('fr-FR');
+            return date.toLocaleDateString(intlLocale());
         },
     },
     {
@@ -51,7 +52,7 @@ export const columns = (
         header: 'Date de début',
         cell: ({ row }) => {
             const date = new Date(row.getValue('date_debut'));
-            return date.toLocaleDateString('fr-FR') + halfDayNote(row.original.start_half, 'start');
+            return date.toLocaleDateString(intlLocale()) + halfDayNote(row.original.start_half, 'start');
         },
     },
     {
@@ -59,7 +60,7 @@ export const columns = (
         header: 'Date de fin',
         cell: ({ row }) => {
             const date = new Date(row.getValue('date_fin'));
-            return date.toLocaleDateString('fr-FR') + halfDayNote(row.original.end_half, 'end');
+            return date.toLocaleDateString(intlLocale()) + halfDayNote(row.original.end_half, 'end');
         },
     },
     {
@@ -73,9 +74,13 @@ export const columns = (
                     <div className="font-medium">{TYPE_CONGE_LABELS[type] ?? type}</div>
                     {type === 'maladie' && (
                         <div className="text-muted-foreground text-xs">
-                            {demande.calendar_days} jour{demande.calendar_days > 1 ? 's' : ''} calendaire{demande.calendar_days > 1 ? 's' : ''}
+                            {demande.calendar_days} {t('jour')}
+                            {demande.calendar_days > 1 ? 's' : ''} {t('calendaire')}
+                            {demande.calendar_days > 1 ? 's' : ''}
                             {demande.cnss_filed_on
-                                ? ` · CNSS déposé le ${new Date(`${demande.cnss_filed_on}T00:00:00`).toLocaleDateString('fr-FR')}`
+                                ? t(' · CNSS déposé le :date', {
+                                      date: new Date(`${demande.cnss_filed_on}T00:00:00`).toLocaleDateString(intlLocale()),
+                                  })
                                 : ''}
                         </div>
                     )}
@@ -89,8 +94,9 @@ export const columns = (
         cell: ({ row }) => {
             const nbr_jours = parseFloat(row.getValue('nbr_jours'));
             return (
-                <div className="text-right font-medium">
-                    {formatDays(nbr_jours)} jour{nbr_jours > 1 ? 's' : ''}
+                <div className="text-end font-medium">
+                    {formatDays(nbr_jours)} {t('jour')}
+                    {nbr_jours > 1 ? 's' : ''}
                 </div>
             );
         },
@@ -134,7 +140,7 @@ export const columns = (
             return (
                 <div className="flex flex-wrap gap-2">
                     <Button variant="outline" size="sm" onClick={() => onHistory(demande.id)}>
-                        Historique
+                        {t('Historique')}
                     </Button>
                     <DocumentsButton demande={demande} onClick={() => onDocuments(demande.id)} />
                     {isAdmin && cnssMinDays !== null && needsCnssFiling(demande, cnssMinDays) && !['refusée', 'annulée'].includes(demande.etat) && (
@@ -144,7 +150,7 @@ export const columns = (
                             className={demande.cnss_filed_on ? '' : 'text-orange-700 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400'}
                             onClick={() => recordCnss(demande)}
                         >
-                            {demande.cnss_filed_on ? 'Dossier CNSS ✓' : 'Dossier CNSS à déposer'}
+                            {demande.cnss_filed_on ? t('Dossier CNSS ✓') : t('Dossier CNSS à déposer')}
                         </Button>
                     )}
                     {isAdmin && demande.etat === 'annulation demandée' && (
@@ -155,10 +161,10 @@ export const columns = (
                                 className="text-orange-700 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400"
                                 onClick={() => cancelLeave(demande, true)}
                             >
-                                Approuver l'annulation
+                                {t("Approuver l'annulation")}
                             </Button>
                             <Button variant="outline" size="sm" onClick={() => keepLeave(demande)}>
-                                Maintenir le congé
+                                {t('Maintenir le congé')}
                             </Button>
                         </>
                     )}
@@ -169,7 +175,7 @@ export const columns = (
                             className="text-orange-700 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400"
                             onClick={() => requestCancellation(demande)}
                         >
-                            Demander l'annulation
+                            {t("Demander l'annulation")}
                         </Button>
                     )}
                     {isAdmin && demande.etat === 'acceptée' && (
@@ -179,7 +185,7 @@ export const columns = (
                             className="text-orange-700 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400"
                             onClick={() => cancelLeave(demande, false)}
                         >
-                            Annuler le congé
+                            {t('Annuler le congé')}
                         </Button>
                     )}
                     {!hideEdit && (
@@ -192,7 +198,7 @@ export const columns = (
                                 onEdit(true);
                             }}
                         >
-                            Modifier
+                            {t('Modifier')}
                         </Button>
                     )}
                     {(isAdmin || ownPending) && (
@@ -202,7 +208,7 @@ export const columns = (
                             className="text-red-700 hover:bg-red-50 hover:text-red-700 dark:text-red-400"
                             onClick={() => onDelete(demande.id)}
                         >
-                            Supprimer
+                            {t('Supprimer')}
                         </Button>
                     )}
                 </div>

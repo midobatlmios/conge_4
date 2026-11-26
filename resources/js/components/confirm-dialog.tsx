@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { t } from '@/lib/i18n';
 import { FormEvent, useEffect, useState } from 'react';
 
 type ConfirmOptions = {
@@ -113,10 +114,10 @@ export default function ConfirmDialogHost() {
                     )}
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => close(false)}>
-                            {options?.cancelLabel ?? 'Annuler'}
+                            {options?.cancelLabel ?? t('Annuler')}
                         </Button>
                         <Button type="submit" variant={options?.destructive ? 'destructive' : 'default'} disabled={blocked} autoFocus={!prompt}>
-                            {options?.confirmLabel ?? 'Confirmer'}
+                            {options?.confirmLabel ?? t('Confirmer')}
                         </Button>
                     </DialogFooter>
                 </form>

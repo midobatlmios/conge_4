@@ -121,7 +121,7 @@ export default function Attendance({ month, departmentId, departmentOptions, sch
                         </select>
                         <Button variant="outline" asChild>
                             <a href={exportUrl}>
-                                <Download className="mr-2 h-4 w-4" /> Excel
+                                <Download className="me-2 h-4 w-4" /> Excel
                             </a>
                         </Button>
                     </div>
@@ -179,14 +179,14 @@ export default function Attendance({ month, departmentId, departmentOptions, sch
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Employé</TableHead>
-                                        <TableHead className="text-right">Prévu</TableHead>
-                                        <TableHead className="text-right">Travaillé</TableHead>
-                                        <TableHead className="text-right">Absences</TableHead>
-                                        <TableHead className="text-right">Retards</TableHead>
-                                        <TableHead className="text-right">Départs non pointés</TableHead>
-                                        <TableHead className="text-right">H. sup. +25 %</TableHead>
-                                        <TableHead className="text-right">+50 %</TableHead>
-                                        <TableHead className="text-right">+100 %</TableHead>
+                                        <TableHead className="text-end">Prévu</TableHead>
+                                        <TableHead className="text-end">Travaillé</TableHead>
+                                        <TableHead className="text-end">Absences</TableHead>
+                                        <TableHead className="text-end">Retards</TableHead>
+                                        <TableHead className="text-end">Départs non pointés</TableHead>
+                                        <TableHead className="text-end">H. sup. +25 %</TableHead>
+                                        <TableHead className="text-end">+50 %</TableHead>
+                                        <TableHead className="text-end">+100 %</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -198,28 +198,28 @@ export default function Attendance({ month, departmentId, departmentOptions, sch
                                                 </Link>
                                                 {row.department && <span className="text-muted-foreground block text-xs">{row.department}</span>}
                                             </TableCell>
-                                            <TableCell className="text-right tabular-nums">{hours(row.expected)}</TableCell>
-                                            <TableCell className="text-right tabular-nums">{hours(row.worked)}</TableCell>
-                                            <TableCell className="text-right tabular-nums">
+                                            <TableCell className="text-end tabular-nums">{hours(row.expected)}</TableCell>
+                                            <TableCell className="text-end tabular-nums">{hours(row.worked)}</TableCell>
+                                            <TableCell className="text-end tabular-nums">
                                                 {row.absent_days > 0 ? <Badge variant="destructive">{row.absent_days} j</Badge> : '—'}
                                             </TableCell>
-                                            <TableCell className="text-right tabular-nums">
+                                            <TableCell className="text-end tabular-nums">
                                                 {row.late_days > 0 ? `${row.late_days} (${row.late_minutes} min)` : '—'}
                                             </TableCell>
-                                            <TableCell className="text-right tabular-nums">{row.missing_out || '—'}</TableCell>
-                                            <TableCell className="text-right tabular-nums">{hours(row.overtime_25)}</TableCell>
-                                            <TableCell className="text-right tabular-nums">{hours(row.overtime_50)}</TableCell>
-                                            <TableCell className="text-right tabular-nums">{hours(row.overtime_100)}</TableCell>
+                                            <TableCell className="text-end tabular-nums">{row.missing_out || '—'}</TableCell>
+                                            <TableCell className="text-end tabular-nums">{hours(row.overtime_25)}</TableCell>
+                                            <TableCell className="text-end tabular-nums">{hours(row.overtime_50)}</TableCell>
+                                            <TableCell className="text-end tabular-nums">{hours(row.overtime_100)}</TableCell>
                                         </TableRow>
                                     ))}
                                     <TableRow className="font-semibold">
                                         <TableCell>Total</TableCell>
-                                        <TableCell className="text-right tabular-nums">{hours(sum('expected'))}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{hours(sum('worked'))}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{sum('absent_days')} j</TableCell>
-                                        <TableCell className="text-right tabular-nums">{sum('late_days')}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{sum('missing_out')}</TableCell>
-                                        <TableCell className="text-right tabular-nums" colSpan={3}>
+                                        <TableCell className="text-end tabular-nums">{hours(sum('expected'))}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{hours(sum('worked'))}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{sum('absent_days')} j</TableCell>
+                                        <TableCell className="text-end tabular-nums">{sum('late_days')}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{sum('missing_out')}</TableCell>
+                                        <TableCell className="text-end tabular-nums" colSpan={3}>
                                             {hours(
                                                 overtimeTotal({
                                                     overtime_25: sum('overtime_25'),

@@ -70,7 +70,7 @@ export default function Payroll({ month, rows }: { month: string; rows: PayrollR
                         <Button asChild className="bg-green-700 text-white hover:bg-green-800">
                             {/* A plain link: the browser downloads the file. */}
                             <a href={`/admin/payroll/export?month=${month}`}>
-                                <Download className="mr-1 h-4 w-4" /> Télécharger Excel
+                                <Download className="me-1 h-4 w-4" /> Télécharger Excel
                             </a>
                         </Button>
                     </div>
@@ -96,11 +96,11 @@ export default function Payroll({ month, rows }: { month: string; rows: PayrollR
                                     <TableHead>Nom</TableHead>
                                     <TableHead>Département</TableHead>
                                     {DAY_COLUMNS.map((column) => (
-                                        <TableHead key={column.key} className="text-right">
+                                        <TableHead key={column.key} className="text-end">
                                             {column.label}
                                         </TableHead>
                                     ))}
-                                    <TableHead className="text-right">Solde fin de mois</TableHead>
+                                    <TableHead className="text-end">Solde fin de mois</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -115,12 +115,12 @@ export default function Payroll({ month, rows }: { month: string; rows: PayrollR
                                         {DAY_COLUMNS.map((column) => (
                                             <TableCell
                                                 key={column.key}
-                                                className={`text-right tabular-nums ${column.key === 'unpaid' && row.unpaid > 0 ? 'font-bold text-red-700 dark:text-red-400' : ''} ${column.key === 'total' ? 'font-medium' : ''}`}
+                                                className={`text-end tabular-nums ${column.key === 'unpaid' && row.unpaid > 0 ? 'font-bold text-red-700 dark:text-red-400' : ''} ${column.key === 'total' ? 'font-medium' : ''}`}
                                             >
                                                 {row[column.key] ? formatDays(row[column.key] as number) : dash}
                                             </TableCell>
                                         ))}
-                                        <TableCell className="text-right tabular-nums">{formatDays(row.balance)}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{formatDays(row.balance)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -130,7 +130,7 @@ export default function Payroll({ month, rows }: { month: string; rows: PayrollR
                                         Total
                                     </TableCell>
                                     {DAY_COLUMNS.map((column) => (
-                                        <TableCell key={column.key} className="text-right font-bold tabular-nums">
+                                        <TableCell key={column.key} className="text-end font-bold tabular-nums">
                                             {formatDays(rows.reduce((sum, row) => sum + (row[column.key] as number), 0))}
                                         </TableCell>
                                     ))}

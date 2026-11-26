@@ -1,5 +1,7 @@
 import AppLogoIcon from '@/components/app-logo-icon';
+import LanguageSwitcher from '@/components/language-switcher';
 import { useBrand } from '@/lib/brand';
+import { applyLocale, t, useLocale } from '@/lib/i18n';
 import { Link } from '@inertiajs/react';
 import { type CSSProperties, type PropsWithChildren } from 'react';
 
@@ -12,6 +14,7 @@ interface AuthLayoutProps {
 /** Sign-in and password pages, under the company's logo and name. */
 export default function AuthSimpleLayout({ children, title, description }: PropsWithChildren<AuthLayoutProps>) {
     const brand = useBrand();
+    applyLocale(useLocale());
 
     return (
         <div className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
@@ -26,16 +29,17 @@ export default function AuthSimpleLayout({ children, title, description }: Props
                                 className="text-center text-sm font-semibold text-(--brand) dark:text-white"
                                 style={{ '--brand': brand.color } as CSSProperties}
                             >
-                                {brand.name ? `${brand.name} · Congés & RH` : 'Gestion des congés'}
+                                {brand.name ? `${brand.name} · ${t('Congés & RH')}` : t('Gestion des congés')}
                             </span>
                         </Link>
 
                         <div className="space-y-2 text-center">
-                            <h1 className="text-xl font-medium">{title}</h1>
-                            <p className="text-muted-foreground text-center text-sm">{description}</p>
+                            <h1 className="text-xl font-medium">{title && t(title)}</h1>
+                            <p className="text-muted-foreground text-center text-sm">{description && t(description)}</p>
                         </div>
                     </div>
                     {children}
+                    <LanguageSwitcher className="justify-center" />
                 </div>
             </div>
         </div>

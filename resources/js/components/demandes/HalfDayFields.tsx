@@ -1,6 +1,7 @@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { t } from '@/lib/i18n';
 
 interface HalfDayFieldsProps {
     start: string; // YYYY-MM-DD
@@ -23,7 +24,7 @@ export default function HalfDayFields({ start, end, startHalf, endHalf, onChange
         const value: SingleDay = endHalf ? 'morning' : startHalf ? 'afternoon' : 'full';
         return (
             <div className="space-y-1">
-                <Label htmlFor="half_day">Durée</Label>
+                <Label htmlFor="half_day">{t('Durée')}</Label>
                 <Select
                     value={value}
                     onValueChange={(choice: SingleDay) => onChange({ start_half: choice === 'afternoon', end_half: choice === 'morning' })}
@@ -32,9 +33,9 @@ export default function HalfDayFields({ start, end, startHalf, endHalf, onChange
                         <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="full">Journée entière</SelectItem>
-                        <SelectItem value="morning">Matin (demi-journée)</SelectItem>
-                        <SelectItem value="afternoon">Après-midi (demi-journée)</SelectItem>
+                        <SelectItem value="full">{t('Journée entière')}</SelectItem>
+                        <SelectItem value="morning">{t('Matin (demi-journée)')}</SelectItem>
+                        <SelectItem value="afternoon">{t('Après-midi (demi-journée)')}</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -50,7 +51,7 @@ export default function HalfDayFields({ start, end, startHalf, endHalf, onChange
                     onCheckedChange={(checked) => onChange({ start_half: checked === true, end_half: endHalf })}
                 />
                 <Label htmlFor="start_half" className="font-normal">
-                    Commencer l'après-midi
+                    {t("Commencer l'après-midi")}
                 </Label>
             </div>
             <div className="flex items-center gap-2">
@@ -60,7 +61,7 @@ export default function HalfDayFields({ start, end, startHalf, endHalf, onChange
                     onCheckedChange={(checked) => onChange({ start_half: startHalf, end_half: checked === true })}
                 />
                 <Label htmlFor="end_half" className="font-normal">
-                    Terminer à midi
+                    {t('Terminer à midi')}
                 </Label>
             </div>
         </div>

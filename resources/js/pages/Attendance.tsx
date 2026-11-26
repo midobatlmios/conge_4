@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/app-layout';
+import { intlLocale, t } from '@/lib/i18n';
 import { TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
@@ -38,7 +39,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Mes pointages', href: '/pointage' },
 ];
 
-const frDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('fr-FR');
+const frDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale());
 
 function Stat({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
     return (
@@ -64,24 +65,26 @@ function CorrectionForm({ day, onDone }: { day: AttendanceDay; onDone: () => voi
 
     return (
         <form onSubmit={submit} className="space-y-3 rounded-md border border-dashed p-4">
-            <h3 className="text-sm font-semibold">Corriger le {frDate(day.date)}</h3>
+            <h3 className="text-sm font-semibold">
+                {t('Corriger le')} {frDate(day.date)}
+            </h3>
             <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                    <Label htmlFor="fix-in">Arrivée</Label>
+                    <Label htmlFor="fix-in">{t('Arrivée')}</Label>
                     <Input id="fix-in" type="time" value={form.data.clock_in} onChange={(e) => form.setData('clock_in', e.target.value)} required />
                     {error('clock_in')}
                 </div>
                 <div className="space-y-1">
-                    <Label htmlFor="fix-out">Départ</Label>
+                    <Label htmlFor="fix-out">{t('Départ')}</Label>
                     <Input id="fix-out" type="time" value={form.data.clock_out} onChange={(e) => form.setData('clock_out', e.target.value)} />
                     {error('clock_out')}
                 </div>
                 <div className="space-y-1 sm:col-span-2">
-                    <Label htmlFor="fix-reason">Motif</Label>
+                    <Label htmlFor="fix-reason">{t('Motif')}</Label>
                     <Textarea
                         id="fix-reason"
                         rows={2}
-                        placeholder="Oubli de pointage, réunion chez un client…"
+                        placeholder={t('Oubli de pointage, réunion chez un client…')}
                         value={form.data.reason}
                         onChange={(e) => form.setData('reason', e.target.value)}
                         required
@@ -92,10 +95,10 @@ function CorrectionForm({ day, onDone }: { day: AttendanceDay; onDone: () => voi
             </div>
             <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={onDone} disabled={form.processing}>
-                    Annuler
+                    {t('Annuler')}
                 </Button>
                 <Button type="submit" disabled={form.processing}>
-                    Envoyer la correction
+                    {t('Envoyer la correction')}
                 </Button>
             </div>
         </form>
@@ -112,19 +115,19 @@ export default function Attendance({ month, today, days, totals, schedule, corre
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Mes pointages" />
+            <Head title={t('Mes pointages')} />
             <div className="container mx-auto max-w-5xl space-y-6 px-4 py-10">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Mes pointages</h1>
+                        <h1 className="text-2xl font-bold">{t('Mes pointages')}</h1>
                         <p className="text-muted-foreground mt-1 text-sm">
-                            Horaires : {schedule.start}–{schedule.lunch_start} et {schedule.lunch_end}–{schedule.end}. Retard compté après{' '}
-                            {schedule.tolerance} min.
+                            {t('Horaires :')} {schedule.start}–{schedule.lunch_start} {t('et')} {schedule.lunch_end}–{schedule.end}
+                            {t('. Retard compté après')} {schedule.tolerance} {t('min.')}
                         </p>
                     </div>
                     <Input
                         type="month"
-                        aria-label="Mois"
+                        aria-label={t('Mois')}
                         className="w-auto"
                         value={month}
                         onChange={(e) => e.target.value && router.get('/pointage', { month: e.target.value }, { preserveScroll: true })}
@@ -135,21 +138,29 @@ export default function Attendance({ month, today, days, totals, schedule, corre
                     <ClockCard state={today} />
                 ) : (
                     <p className="text-muted-foreground rounded-md border px-4 py-3 text-sm">
-                        Le pointage n'est pas encore activé par le service RH
-                        {schedule.since ? ` (il commence le ${frDate(schedule.since)})` : ''}.
+                        {t("Le pointage n'est pas encore activé par le service RH")}
+                        {schedule.since ? t(' (il commence le :date)', { date: frDate(schedule.since) }) : ''}.
                     </p>
                 )}
 
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <Stat label="Heures travaillées" value={hours(totals.worked)} hint={`sur ${hours(totals.expected)} prévues`} />
-                    <Stat label="Retards" value={totals.late_days} hint={totals.late_minutes ? `${totals.late_minutes} min au total` : undefined} />
                     <Stat
-                        label="Absences non justifiées"
-                        value={totals.absent_days}
-                        hint={totals.missing_out ? `${totals.missing_out} départ(s) non pointé(s)` : undefined}
+                        label={t('Heures travaillées')}
+                        value={hours(totals.worked)}
+                        hint={t('sur :hours prévues', { hours: hours(totals.expected) })}
                     />
                     <Stat
-                        label="Heures supplémentaires"
+                        label={t('Retards')}
+                        value={totals.late_days}
+                        hint={totals.late_minutes ? t(':minutes min au total', { minutes: totals.late_minutes }) : undefined}
+                    />
+                    <Stat
+                        label={t('Absences non justifiées')}
+                        value={totals.absent_days}
+                        hint={totals.missing_out ? t(':count départ(s) non pointé(s)', { count: totals.missing_out }) : undefined}
+                    />
+                    <Stat
+                        label={t('Heures supplémentaires')}
                         value={hours(overtime)}
                         hint={
                             overtime
@@ -161,26 +172,26 @@ export default function Attendance({ month, today, days, totals, schedule, corre
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Jour par jour</CardTitle>
+                        <CardTitle>{t('Jour par jour')}</CardTitle>
                         <CardDescription>
-                            Un oubli ou une erreur ? Demandez une correction : votre responsable ou le service RH la valide.
+                            {t('Un oubli ou une erreur ? Demandez une correction : votre responsable ou le service RH la valide.')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {fixing && <CorrectionForm key={fixing.date} day={fixing} onDone={() => setFixing(null)} />}
                         {visibleDays.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">Aucun jour à afficher pour ce mois.</p>
+                            <p className="text-muted-foreground text-sm">{t('Aucun jour à afficher pour ce mois.')}</p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Jour</TableHead>
-                                            <TableHead>Arrivée</TableHead>
-                                            <TableHead>Départ</TableHead>
-                                            <TableHead className="text-right">Travaillé</TableHead>
-                                            <TableHead>Remarque</TableHead>
-                                            <TableHead className="sr-only">Action</TableHead>
+                                            <TableHead>{t('Jour')}</TableHead>
+                                            <TableHead>{t('Arrivée')}</TableHead>
+                                            <TableHead>{t('Départ')}</TableHead>
+                                            <TableHead className="text-end">{t('Travaillé')}</TableHead>
+                                            <TableHead>{t('Remarque')}</TableHead>
+                                            <TableHead className="sr-only">{t('Action')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -188,9 +199,9 @@ export default function Attendance({ month, today, days, totals, schedule, corre
                                             const ot = day.overtime['25'] + day.overtime['50'] + day.overtime['100'];
                                             const notes = [
                                                 day.status === 'leave' || day.leave_part
-                                                    ? `${TYPE_CONGE_LABELS[day.leave as TypeConge] ?? 'Congé'}${day.leave_part && day.leave_part !== 'full' ? ' (demi-journée)' : ''}`
+                                                    ? `${TYPE_CONGE_LABELS[day.leave as TypeConge] ?? t('Congé')}${day.leave_part && day.leave_part !== 'full' ? ' (demi-journée)' : ''}`
                                                     : null,
-                                                day.late ? `Retard ${day.late} min` : null,
+                                                day.late ? t('Retard :minutes min', { minutes: day.late }) : null,
                                                 ot ? `H. sup. ${hours(ot)}` : null,
                                                 day.source === 'correction' ? 'Corrigé' : null,
                                             ].filter(Boolean);
@@ -201,24 +212,24 @@ export default function Attendance({ month, today, days, totals, schedule, corre
                                                     <TableCell className="whitespace-nowrap first-letter:uppercase">{shortDay(day.date)}</TableCell>
                                                     <TableCell className="tabular-nums">{day.clock_in ?? '—'}</TableCell>
                                                     <TableCell className="tabular-nums">{day.clock_out ?? '—'}</TableCell>
-                                                    <TableCell className="text-right tabular-nums">{hours(day.worked)}</TableCell>
+                                                    <TableCell className="text-end tabular-nums">{hours(day.worked)}</TableCell>
                                                     <TableCell className="text-sm">
                                                         {STATUS_LABELS[day.status] && day.status !== 'present' && day.status !== 'leave' && (
-                                                            <span className={`mr-2 ${STATUS_CLASSES[day.status] ?? ''}`}>
+                                                            <span className={`me-2 ${STATUS_CLASSES[day.status] ?? ''}`}>
                                                                 {STATUS_LABELS[day.status]}
                                                             </span>
                                                         )}
                                                         <span className="text-muted-foreground">{notes.join(' · ')}</span>
                                                         {pendingDates.has(day.date) && (
-                                                            <Badge variant="outline" className="ml-2">
-                                                                Correction en attente
+                                                            <Badge variant="outline" className="ms-2">
+                                                                {t('Correction en attente')}
                                                             </Badge>
                                                         )}
                                                     </TableCell>
-                                                    <TableCell className="text-right">
+                                                    <TableCell className="text-end">
                                                         {canFix && (
                                                             <Button variant="ghost" size="sm" onClick={() => setFixing(day)}>
-                                                                Corriger
+                                                                {t('Corriger')}
                                                             </Button>
                                                         )}
                                                     </TableCell>
@@ -235,7 +246,7 @@ export default function Attendance({ month, today, days, totals, schedule, corre
                 {corrections.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Mes demandes de correction</CardTitle>
+                            <CardTitle>{t('Mes demandes de correction')}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <ul className="divide-y">
@@ -246,7 +257,7 @@ export default function Attendance({ month, today, days, totals, schedule, corre
                                             {c.clock_out ? `–${c.clock_out}` : ''} · <span className="text-muted-foreground">{c.reason}</span>
                                             {c.refusal_reason && (
                                                 <span className="block text-xs text-red-700 dark:text-red-400">
-                                                    Motif du refus : {c.refusal_reason}
+                                                    {t('Motif du refus :')} {c.refusal_reason}
                                                 </span>
                                             )}
                                         </span>

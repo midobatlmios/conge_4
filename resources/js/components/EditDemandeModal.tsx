@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { t } from '@/lib/i18n';
 import { TypeConge, endAfterWorkingDays, formatDays, leaveDays, useLeaveRules } from '@/lib/leave';
 import { Demande } from '@/types';
 import { useForm } from '@inertiajs/react';
@@ -107,75 +108,79 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="flex max-h-[90vh] w-[95vw] flex-col sm:w-[85vw] md:w-[75vw] lg:w-[60vw] xl:w-[50vw]">
                 <DialogHeader>
-                    <DialogTitle>Modifier la demande de congé</DialogTitle>
-                    <DialogDescription>Modifiez les informations de la demande de congé ci-dessous.</DialogDescription>
+                    <DialogTitle>{t('Modifier la demande de congé')}</DialogTitle>
+                    <DialogDescription>{t('Modifiez les informations de la demande de congé ci-dessous.')}</DialogDescription>
                 </DialogHeader>
-                <div className="-mr-4 flex-1 overflow-y-auto pr-4">
+                <div className="-me-4 flex-1 overflow-y-auto pe-4">
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {succeeded && <div className="rounded bg-green-200 p-2 text-green-800">Demande mise à jour avec succès</div>}
+                        {succeeded && <div className="rounded bg-green-200 p-2 text-green-800">{t('Demande mise à jour avec succès')}</div>}
                         {errorList.length > 0 && <div className="rounded bg-red-200 p-2 text-red-800">{errorList.join(', ')}</div>}
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-1">
                                 <label htmlFor="type_conge" className="text-sm font-medium">
-                                    Type de congé
+                                    {t('Type de congé')}
                                 </label>
                                 <Select value={data.type_conge} onValueChange={(value: TypeConge) => updateDates({ type_conge: value })}>
                                     <SelectTrigger id="type_conge">
-                                        <SelectValue placeholder="Sélectionner un type de congé" />
+                                        <SelectValue placeholder={t('Sélectionner un type de congé')} />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="annuel">Congé annuel</SelectItem>
-                                        <SelectItem value="mariage">Congé de Mariage (4 jours max)</SelectItem>
-                                        <SelectItem value="naissance">Congé de Naissance (3 jours max)</SelectItem>
-                                        <SelectItem value="deces">Congé de Décès (3 jours max)</SelectItem>
-                                        <SelectItem value="sans_solde">Congé sans solde</SelectItem>
-                                        <SelectItem value="recuperation">Récupération</SelectItem>
-                                        <SelectItem value="maladie">Congé maladie (arrêt de travail)</SelectItem>
+                                        <SelectItem value="annuel">{t('Congé annuel')}</SelectItem>
+                                        <SelectItem value="mariage">{t('Congé de Mariage (4 jours max)')}</SelectItem>
+                                        <SelectItem value="naissance">{t('Congé de Naissance (3 jours max)')}</SelectItem>
+                                        <SelectItem value="deces">{t('Congé de Décès (3 jours max)')}</SelectItem>
+                                        <SelectItem value="sans_solde">{t('Congé sans solde')}</SelectItem>
+                                        <SelectItem value="recuperation">{t('Récupération')}</SelectItem>
+                                        <SelectItem value="maladie">{t('Congé maladie (arrêt de travail)')}</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 {data.type_conge === 'annuel' && (
                                     <p className="text-muted-foreground text-sm">
-                                        Déduit des jours acquis : {formatDays(rules.maxDaysPerYear / 12)} jour par mois travaillé (plus l'ancienneté)
+                                        {t('Déduit des jours acquis :')} {formatDays(rules.maxDaysPerYear / 12)}{' '}
+                                        {t("jour par mois travaillé (plus l'ancienneté)")}
                                     </p>
                                 )}
                                 {data.type_conge === 'mariage' && (
                                     <p className="text-muted-foreground text-sm">
-                                        4 jours dont deux jours payés et deux jours déduits automatiquement du congé
+                                        {t('4 jours dont deux jours payés et deux jours déduits automatiquement du congé')}
                                     </p>
                                 )}
                                 {data.type_conge === 'naissance' && (
                                     <p className="text-muted-foreground text-sm">
-                                        3 jours - à prendre dans un délai de un mois à compter de la date de la naissance
+                                        {t('3 jours - à prendre dans un délai de un mois à compter de la date de la naissance')}
                                     </p>
                                 )}
                                 {data.type_conge === 'deces' && (
                                     <p className="text-muted-foreground text-sm">
-                                        3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours
-                                        déduits automatiquement du congé
+                                        {t(
+                                            "3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours déduits automatiquement du congé",
+                                        )}
                                     </p>
                                 )}
                                 {data.type_conge === 'sans_solde' && (
-                                    <p className="text-muted-foreground text-sm">Ce congé sera déduit automatiquement de votre salaire</p>
+                                    <p className="text-muted-foreground text-sm">{t('Ce congé sera déduit automatiquement de votre salaire')}</p>
                                 )}
                                 {data.type_conge === 'recuperation' && (
-                                    <p className="text-muted-foreground text-sm">La journée à récupérer doit se faire dans un délai de 2 mois</p>
+                                    <p className="text-muted-foreground text-sm">
+                                        {t('La journée à récupérer doit se faire dans un délai de 2 mois')}
+                                    </p>
                                 )}
                             </div>
 
                             <div className="space-y-1">
                                 <label htmlFor="nbr_jours" className="text-sm font-medium">
-                                    Nombre de jours
+                                    {t('Nombre de jours')}
                                 </label>
                                 <Input id="nbr_jours" type="text" name="nbr_jours" value={formatDays(nbrJours)} className="w-full" readOnly />
-                                <p className="text-muted-foreground text-xs">Jours ouvrés, hors week-ends et jours fériés</p>
+                                <p className="text-muted-foreground text-xs">{t('Jours ouvrés, hors week-ends et jours fériés')}</p>
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-1">
                                 <label htmlFor="date_debut" className="text-sm font-medium">
-                                    Date de début
+                                    {t('Date de début')}
                                 </label>
                                 <Input
                                     id="date_debut"
@@ -191,7 +196,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
 
                             <div className="space-y-1">
                                 <label htmlFor="date_fin" className="text-sm font-medium">
-                                    Date de fin
+                                    {t('Date de fin')}
                                 </label>
                                 <Input
                                     id="date_fin"
@@ -206,7 +211,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                 {errors.date_fin && <p className="text-xs text-red-700 dark:text-red-400">{errors.date_fin}</p>}
                                 {fixedLength && (
                                     <p className="text-muted-foreground text-sm">
-                                        La date de fin est automatiquement calculée en fonction de la date de début
+                                        {t('La date de fin est automatiquement calculée en fonction de la date de début')}
                                     </p>
                                 )}
                             </div>
@@ -227,7 +232,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
 
                         <div className="space-y-1">
                             <label htmlFor="comment" className="text-sm font-medium">
-                                Commentaire
+                                {t('Commentaire')}
                             </label>
                             <Textarea
                                 id="comment"
@@ -237,7 +242,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     setData('comment', e.target.value);
                                     clearErrors('comment');
                                 }}
-                                placeholder="Entrez la raison de votre demande..."
+                                placeholder={t('Entrez la raison de votre demande...')}
                                 className={`min-h-[100px] ${errors.comment ? 'border-red-500' : ''}`}
                             />
                             {errors.comment && <p className="text-xs text-red-700 dark:text-red-400">{errors.comment}</p>}
@@ -247,7 +252,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                         {isAdmin ? (
                             <div className="space-y-1">
                                 <label htmlFor="etat" className="text-sm font-medium">
-                                    État
+                                    {t('État')}
                                 </label>
                                 <select
                                     id="etat"
@@ -260,17 +265,17 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     className={`w-full rounded border p-2 ${errors.etat ? 'border-red-500' : ''}`}
                                     required
                                 >
-                                    <option value="en attente">En attente</option>
-                                    <option value="validée manager">Validée par le responsable (décision RH attendue)</option>
-                                    <option value="acceptée">Acceptée</option>
-                                    <option value="refusée">Refusée</option>
+                                    <option value="en attente">{t('En attente')}</option>
+                                    <option value="validée manager">{t('Validée par le responsable (décision RH attendue)')}</option>
+                                    <option value="acceptée">{t('Acceptée')}</option>
+                                    <option value="refusée">{t('Refusée')}</option>
                                 </select>
                                 {errors.etat && <p className="text-xs text-red-700 dark:text-red-400">{errors.etat}</p>}
                             </div>
                         ) : (
                             <div className="space-y-1">
                                 <label htmlFor="etat" className="text-sm font-medium">
-                                    État
+                                    {t('État')}
                                 </label>
                                 <Input id="etat" type="text" value={data.etat} readOnly className="cursor-not-allowed bg-gray-100" />
                             </div>
@@ -280,10 +285,10 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
 
                 <DialogFooter className="mt-4 flex-col gap-2 sm:flex-row">
                     <Button variant="outline" type="button" onClick={onClose} disabled={processing} className="w-full sm:w-auto">
-                        Annuler
+                        {t('Annuler')}
                     </Button>
                     <Button type="submit" disabled={processing} onClick={handleSubmit} className="w-full sm:w-auto">
-                        {processing ? 'Mise à jour...' : 'Modifier demande'}
+                        {processing ? t('Mise à jour...') : t('Modifier demande')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

@@ -6,6 +6,7 @@ import DemandeHistoryModal from '@/components/demandes/DemandeHistoryModal';
 import DocumentsModal from '@/components/demandes/DocumentsModal';
 import EditDemandeModal from '@/components/EditDemandeModal';
 import AppLayout from '@/layouts/app-layout';
+import { t } from '@/lib/i18n';
 import { usePermissions } from '@/lib/roles';
 import { Demande, type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
@@ -42,9 +43,9 @@ export default function Demandes({ demandes, users, cnssMinDays }: DemandesProps
 
     const handleDelete = async (id: number) => {
         const ok = await confirmAction({
-            title: 'Supprimer cette demande ?',
-            description: 'Elle sera définitivement supprimée.',
-            confirmLabel: 'Supprimer',
+            title: t('Supprimer cette demande ?'),
+            description: t('Elle sera définitivement supprimée.'),
+            confirmLabel: t('Supprimer'),
             destructive: true,
         });
         if (ok) router.delete(`/demandes/${id}`, { preserveScroll: true, onError: toastErrors });
@@ -52,7 +53,7 @@ export default function Demandes({ demandes, users, cnssMinDays }: DemandesProps
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Gestion des demandes" />
+            <Head title={t('Gestion des demandes')} />
             <div className="container mx-auto py-10">
                 <DataTable
                     columns={columns(handleDelete, setEditModelOpen, setSelectedDemande, isAdmin, setHistoryId, setDocumentsId, user.id, cnssMinDays)}

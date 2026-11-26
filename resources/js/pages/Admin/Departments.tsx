@@ -109,7 +109,7 @@ const Departments = ({ departments }: { departments: Department[] }) => {
                                         'Enregistrer'
                                     ) : (
                                         <>
-                                            <Plus className="mr-1 h-4 w-4" /> Ajouter
+                                            <Plus className="me-1 h-4 w-4" /> Ajouter
                                         </>
                                     )}
                                 </Button>

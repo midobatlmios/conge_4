@@ -152,7 +152,7 @@ export default function Employee({
                                     href={`/admin/users/${employee.id}/data-export`}
                                     title="Droit d'accès (loi 09-08) : toutes ses données et ses documents"
                                 >
-                                    <Download className="mr-2 h-4 w-4" /> Exporter ses données
+                                    <Download className="me-2 h-4 w-4" /> Exporter ses données
                                 </a>
                             </Button>
                         )}
@@ -174,7 +174,7 @@ export default function Employee({
                         </div>
                         {canManageAccount(can, employee.role) && (
                             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                                <Pencil className="mr-2 h-4 w-4" /> Modifier
+                                <Pencil className="me-2 h-4 w-4" /> Modifier
                             </Button>
                         )}
                     </CardHeader>
@@ -206,7 +206,7 @@ export default function Employee({
                         </div>
                         {canEditData && contractForm === null && (
                             <Button variant="outline" size="sm" onClick={() => setContractForm('new')}>
-                                <Plus className="mr-2 h-4 w-4" /> Nouveau contrat
+                                <Plus className="me-2 h-4 w-4" /> Nouveau contrat
                             </Button>
                         )}
                     </CardHeader>
@@ -248,7 +248,7 @@ export default function Employee({
                         </div>
                         {canEditData && !careerFormOpen && (
                             <Button variant="outline" size="sm" onClick={() => setCareerFormOpen(true)}>
-                                <Plus className="mr-2 h-4 w-4" /> Nouveau changement
+                                <Plus className="me-2 h-4 w-4" /> Nouveau changement
                             </Button>
                         )}
                     </CardHeader>

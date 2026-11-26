@@ -1,3 +1,4 @@
+import { translated } from '@/lib/i18n';
 import type { SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 
@@ -7,12 +8,12 @@ import { usePage } from '@inertiajs/react';
  */
 export type Role = 'admin' | 'rh' | 'paie' | 'user';
 
-export const ROLE_LABELS: Record<Role, string> = {
+export const ROLE_LABELS: Record<Role, string> = translated({
     admin: 'Administrateur',
     rh: 'RH',
     paie: 'Paie (lecture seule)',
     user: 'Employé',
-};
+});
 
 /** A role the signed-in user may give (sent by the server). */
 export type RoleOption = { value: Role; label: string };

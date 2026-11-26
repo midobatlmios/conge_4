@@ -68,10 +68,10 @@ export default function AttendanceCorrections({ pending, recent }: { pending: Co
                                         {c.can_decide && (
                                             <div className="flex gap-2">
                                                 <Button size="sm" onClick={() => approve(c)}>
-                                                    <Check className="mr-1 h-4 w-4" /> Accepter
+                                                    <Check className="me-1 h-4 w-4" /> Accepter
                                                 </Button>
                                                 <Button size="sm" variant="outline" onClick={() => refuse(c)}>
-                                                    <X className="mr-1 h-4 w-4" /> Refuser
+                                                    <X className="me-1 h-4 w-4" /> Refuser
                                                 </Button>
                                             </div>
                                         )}

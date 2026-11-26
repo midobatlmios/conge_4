@@ -2,6 +2,7 @@ import EmptyState from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
+import { intlLocale, t } from '@/lib/i18n';
 import { TYPE_CONGE_LABELS, TypeConge, isWorkingDay, toISODate, todayISO, useLeaveRules } from '@/lib/leave';
 import { usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem } from '@/types';
@@ -76,27 +77,31 @@ export default function Calendar({ month, departmentId, departments, departmentN
     // People with accepted leave on each working day, to spot days when too many are away.
     const awayCount = (iso: string) => people.filter((person) => leavesOn(person, iso).some((leave) => !leave.pending)).length;
 
-    const title = new Date(year, monthNumber - 1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    const title = new Date(year, monthNumber - 1, 1).toLocaleDateString(intlLocale(), { month: 'long', year: 'numeric' });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Calendrier des absences" />
+            <Head title={t('Calendrier des absences')} />
             <div className="mx-auto w-full max-w-7xl space-y-4 px-4 py-10">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h1 className="text-2xl font-bold">Calendrier des absences</h1>
+                        <h1 className="text-2xl font-bold">{t('Calendrier des absences')}</h1>
                         <p className="text-muted-foreground text-sm">
-                            {isAdmin ? 'Tous les employés actifs.' : departmentName ? `Département ${departmentName}.` : 'Vos congés.'}
+                            {isAdmin
+                                ? t('Tous les employés actifs.')
+                                : departmentName
+                                  ? t('Département :name.', { name: departmentName })
+                                  : t('Vos congés.')}
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         {departments.length > 0 && (
                             <Select value={departmentId ? String(departmentId) : ALL} onValueChange={(value) => visit({ department: value })}>
-                                <SelectTrigger className="w-48" aria-label="Département">
+                                <SelectTrigger className="w-48" aria-label={t('Département')}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={ALL}>Tous les départements</SelectItem>
+                                    <SelectItem value={ALL}>{t('Tous les départements')}</SelectItem>
                                     {departments.map((d) => (
                                         <SelectItem key={d.id} value={String(d.id)}>
                                             {d.name}
@@ -105,44 +110,49 @@ export default function Calendar({ month, departmentId, departments, departmentN
                                 </SelectContent>
                             </Select>
                         )}
-                        <Button variant="outline" size="icon" aria-label="Mois précédent" onClick={() => visit({ month: shiftMonth(month, -1) })}>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            aria-label={t('Mois précédent')}
+                            onClick={() => visit({ month: shiftMonth(month, -1) })}
+                        >
                             <ChevronLeft className="h-4 w-4" />
                         </Button>
                         <span className="w-36 text-center font-medium capitalize">{title}</span>
-                        <Button variant="outline" size="icon" aria-label="Mois suivant" onClick={() => visit({ month: shiftMonth(month, 1) })}>
+                        <Button variant="outline" size="icon" aria-label={t('Mois suivant')} onClick={() => visit({ month: shiftMonth(month, 1) })}>
                             <ChevronRight className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" onClick={() => visit({ month: today.slice(0, 7) })}>
-                            Aujourd'hui
+                            {t("Aujourd'hui")}
                         </Button>
                     </div>
                 </div>
 
                 <div className="text-muted-foreground flex flex-wrap gap-4 text-xs">
                     <span className="flex items-center gap-1.5">
-                        <span className="inline-block h-3 w-5 rounded-sm bg-green-600" /> Congé accepté
+                        <span className="inline-block h-3 w-5 rounded-sm bg-green-600" /> {t('Congé accepté')}
                     </span>
                     <span className="flex items-center gap-1.5">
                         <span className="inline-block h-3 w-5 rounded-sm border border-amber-500 bg-[repeating-linear-gradient(45deg,var(--color-amber-300)_0_3px,transparent_3px_6px)]" />{' '}
-                        En attente
+                        {t('En attente')}
                     </span>
                     <span className="flex items-center gap-1.5">
-                        <span className="bg-muted inline-block h-3 w-5 rounded-sm" /> Week-end ou jour férié
+                        <span className="bg-muted inline-block h-3 w-5 rounded-sm" /> {t('Week-end ou jour férié')}
                     </span>
                 </div>
 
                 {people.length === 0 ? (
                     <EmptyState
                         icon={Users}
-                        title="Aucun employé à afficher"
-                        description="Choisissez un autre département, ou rattachez les employés à un département dans leur dossier."
+                        title={t('Aucun employé à afficher')}
+                        description={t('Choisissez un autre département, ou rattachez les employés à un département dans leur dossier.')}
                     />
                 ) : (
-                    <div className="overflow-x-auto rounded-md border" tabIndex={0} role="region" aria-label="Calendrier des absences">
+                    <div className="overflow-x-auto rounded-md border" tabIndex={0} role="region" aria-label={t('Calendrier des absences')}>
                         <table className="w-full border-collapse text-sm">
                             <thead>
                                 <tr className="border-b">
-                                    <th className="bg-background sticky left-0 z-10 min-w-40 px-3 py-2 text-left font-medium">Employé</th>
+                                    <th className="bg-background sticky start-0 z-10 min-w-40 px-3 py-2 text-start font-medium">{t('Employé')}</th>
                                     {days.map((day) => {
                                         const iso = toISODate(day);
                                         return (
@@ -160,7 +170,7 @@ export default function Calendar({ month, departmentId, departments, departmentN
                             <tbody>
                                 {people.map((person) => (
                                     <tr key={person.id} className="border-b last:border-b-0">
-                                        <td className="bg-background sticky left-0 z-10 px-3 py-1.5">
+                                        <td className="bg-background sticky start-0 z-10 px-3 py-1.5">
                                             <div className="truncate font-medium">{person.name}</div>
                                             {(person.job_title || (isAdmin && person.department)) && (
                                                 <div className="text-muted-foreground truncate text-xs">
@@ -197,9 +207,9 @@ export default function Calendar({ month, departmentId, departments, departmentN
                                                                         aria-label={labels[i]}
                                                                         className={`absolute inset-y-0 rounded-sm ${
                                                                             part === 'morning'
-                                                                                ? 'left-0 w-1/2'
+                                                                                ? 'start-0 w-1/2'
                                                                                 : part === 'afternoon'
-                                                                                  ? 'right-0 w-1/2'
+                                                                                  ? 'end-0 w-1/2'
                                                                                   : 'inset-x-0'
                                                                         } ${
                                                                             leave.pending
@@ -219,7 +229,7 @@ export default function Calendar({ month, departmentId, departments, departmentN
                             </tbody>
                             <tfoot>
                                 <tr className="border-t">
-                                    <td className="bg-background text-muted-foreground sticky left-0 z-10 px-3 py-1.5 text-xs">Absents</td>
+                                    <td className="bg-background text-muted-foreground sticky start-0 z-10 px-3 py-1.5 text-xs">{t('Absents')}</td>
                                     {days.map((day) => {
                                         const iso = toISODate(day);
                                         const count = isWorkingDay(day, rules) ? awayCount(iso) : 0;

@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/layouts/app-layout';
+import { t } from '@/lib/i18n';
 import { usePermissions } from '@/lib/roles';
 import { cn } from '@/lib/utils';
 import { type BreadcrumbItem, type SharedData } from '@/types';
@@ -74,8 +75,8 @@ function PersonBox({ node, view }: { node: Node; view: ViewProps }) {
         >
             <PersonName person={node} canOpenFiles={view.canOpenFiles} />
             {node.id === view.selfId && (
-                <Badge variant="secondary" className="ml-1 align-middle text-[10px]">
-                    Vous
+                <Badge variant="secondary" className="ms-1 align-middle text-[10px]">
+                    {t('Vous')}
                 </Badge>
             )}
             {node.job_title && <p className="text-muted-foreground truncate text-xs">{node.job_title}</p>}
@@ -88,7 +89,8 @@ function PersonBox({ node, view }: { node: Node; view: ViewProps }) {
                     className="text-muted-foreground hover:text-foreground mt-1 inline-flex items-center gap-1 text-xs"
                 >
                     {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                    {node.size} personne{node.size > 1 ? 's' : ''}
+                    {node.size} {t('personne')}
+                    {node.size > 1 ? 's' : ''}
                 </button>
             )}
         </div>
@@ -99,7 +101,7 @@ function PersonBox({ node, view }: { node: Node; view: ViewProps }) {
 function TeamCard({ members, view }: { members: Node[]; view: ViewProps }) {
     return (
         // Divs, not a list: list items inside the chart would get its connector lines.
-        <div role="list" className="bg-muted/40 w-52 divide-y rounded-lg border text-left text-sm">
+        <div role="list" className="bg-muted/40 w-52 divide-y rounded-lg border text-start text-sm">
             {members.map((member) => (
                 <div
                     role="listitem"
@@ -109,8 +111,8 @@ function TeamCard({ members, view }: { members: Node[]; view: ViewProps }) {
                 >
                     <PersonName person={member} canOpenFiles={view.canOpenFiles} />
                     {member.id === view.selfId && (
-                        <Badge variant="secondary" className="ml-1 align-middle text-[10px]">
-                            Vous
+                        <Badge variant="secondary" className="ms-1 align-middle text-[10px]">
+                            {t('Vous')}
                         </Badge>
                     )}
                     {member.job_title && <p className="text-muted-foreground truncate text-xs">{member.job_title}</p>}
@@ -160,19 +162,19 @@ function Outline({ nodes, view }: { nodes: Node[]; view: ViewProps }) {
                                 className="mt-0.5"
                             >
                                 {view.collapsed.has(node.id) ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                <span className="sr-only">Afficher ou masquer l'équipe</span>
+                                <span className="sr-only">{t("Afficher ou masquer l'équipe")}</span>
                             </button>
                         ) : (
                             <span className="w-4 shrink-0" />
                         )}
                         <div>
                             <PersonName person={node} canOpenFiles={view.canOpenFiles} />
-                            {node.id === view.selfId && <span className="text-muted-foreground"> (vous)</span>}
+                            {node.id === view.selfId && <span className="text-muted-foreground"> {t('(vous)')}</span>}
                             <p className="text-muted-foreground text-xs">{[node.job_title, node.department].filter(Boolean).join(' · ')}</p>
                         </div>
                     </div>
                     {node.reports.length > 0 && !view.collapsed.has(node.id) && (
-                        <div className="ml-3 border-l pl-2">
+                        <div className="ms-3 border-s ps-2">
                             <Outline nodes={node.reports} view={view} />
                         </div>
                     )}
@@ -248,48 +250,50 @@ export default function OrgChart({ people }: { people: Person[] }) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Organigramme" />
+            <Head title={t('Organigramme')} />
             <div className="space-y-6 px-4 py-10">
                 <div className="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Organigramme</h1>
+                        <h1 className="text-2xl font-bold">{t('Organigramme')}</h1>
                         <p className="text-muted-foreground mt-1 text-sm">
-                            {people.length} personnes, {managers} responsable{managers > 1 ? 's' : ''} d'équipe.
+                            {people.length} {t('personnes,')} {managers} {t('responsable')}
+                            {managers > 1 ? 's' : ''} {t("d'équipe.")}
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <div className="relative">
-                            <Search className="text-muted-foreground absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2" />
+                            <Search className="text-muted-foreground absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2" />
                             <Input
                                 type="search"
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Nom, poste, département…"
-                                aria-label="Rechercher une personne"
-                                className="w-64 pl-8"
+                                placeholder={t('Nom, poste, département…')}
+                                aria-label={t('Rechercher une personne')}
+                                className="w-64 ps-8"
                             />
                         </div>
                         {query.trim().length >= 2 && (
                             <span className="text-muted-foreground text-sm" role="status">
-                                {matches.size} résultat{matches.size > 1 ? 's' : ''}
+                                {matches.size} {t('résultat')}
+                                {matches.size > 1 ? 's' : ''}
                             </span>
                         )}
                         <Button variant="outline" size="sm" onClick={() => setCollapsed(new Set())}>
-                            Tout déplier
+                            {t('Tout déplier')}
                         </Button>
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setCollapsed(new Set(allManagers.filter((id) => !trees.some((t) => t.id === id))))}
                         >
-                            Replier les équipes
+                            {t('Replier les équipes')}
                         </Button>
                     </div>
                 </div>
 
                 {trees.length === 0 ? (
                     <p className="text-muted-foreground mx-auto max-w-6xl text-sm">
-                        Aucun lien responsable/équipe pour l'instant : le service RH les renseigne dans le dossier de chaque employé.
+                        {t("Aucun lien responsable/équipe pour l'instant : le service RH les renseigne dans le dossier de chaque employé.")}
                     </p>
                 ) : (
                     <>
@@ -308,11 +312,11 @@ export default function OrgChart({ people }: { people: Person[] }) {
 
                 {alone.length > 0 && (
                     <section className="mx-auto max-w-6xl space-y-2">
-                        <h2 className="text-sm font-semibold">Sans responsable ni équipe</h2>
+                        <h2 className="text-sm font-semibold">{t('Sans responsable ni équipe')}</h2>
                         <p className="text-muted-foreground text-xs">
                             {canOpenFiles
-                                ? 'Indiquez leur responsable dans leur dossier pour les placer dans l’organigramme.'
-                                : 'Rattachement en cours.'}
+                                ? t('Indiquez leur responsable dans leur dossier pour les placer dans l’organigramme.')
+                                : t('Rattachement en cours.')}
                         </p>
                         <div className="flex flex-wrap gap-2">
                             {alone.map((person) => (

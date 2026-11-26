@@ -10,6 +10,20 @@ return [
     // Legal monthly hours (44 h × 52 weeks ÷ 12): hourly rate = monthly salary ÷ this.
     'monthly_hours' => 191,
 
+    // Value of one day of unpaid leave or unjustified absence: monthly salary ÷ this
+    // (usual practice: 26 working days, 6-day basis); also the CNSS days of a full month.
+    'days_per_month' => 26,
+
+    // Lines Paie can add to a payslip; "taxable" lines enter the gross (CNSS, AMO, IR).
+    // Transport and panier allowances are exempt only within legal caps: Paie enters
+    // any part above the cap as a taxable line.
+    'bonus_presets' => [
+        ['label' => 'Prime de rendement', 'taxable' => true],
+        ['label' => 'Prime exceptionnelle', 'taxable' => true],
+        ['label' => 'Indemnité de transport', 'taxable' => false],
+        ['label' => 'Prime de panier', 'taxable' => false],
+    ],
+
     // Overtime premiums (Code du travail, art. 201): +25 % day, +50 % night or rest day, +100 % rest-day night.
     'overtime_rates' => ['25' => 1.25, '50' => 1.50, '100' => 2.00],
 

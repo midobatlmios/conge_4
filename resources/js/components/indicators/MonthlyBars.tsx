@@ -33,7 +33,7 @@ export default function MonthlyBars({ bars, title, format }: MonthlyBarsProps) {
         <figure className="relative" aria-label={title}>
             <div className="flex">
                 {/* Axis: zero and the maximum only. */}
-                <div className="text-muted-foreground flex w-10 shrink-0 flex-col justify-between pr-2 text-right text-xs" style={{ height: HEIGHT }}>
+                <div className="text-muted-foreground flex w-10 shrink-0 flex-col justify-between pe-2 text-end text-xs" style={{ height: HEIGHT }}>
                     <span>{format(top)}</span>
                     <span>{format(0)}</span>
                 </div>

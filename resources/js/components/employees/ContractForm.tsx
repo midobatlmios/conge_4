@@ -97,7 +97,7 @@ export default function ContractForm({ employeeId, contract, options, onDone }: 
                     {suggestion && suggestion !== data.trial_end && (
                         <button
                             type="button"
-                            className="text-left text-xs text-blue-700 underline dark:text-blue-400"
+                            className="text-start text-xs text-blue-700 underline dark:text-blue-400"
                             onClick={() => setData('trial_end', suggestion)}
                         >
                             Durée légale : jusqu'au {formatDate(suggestion)} — appliquer

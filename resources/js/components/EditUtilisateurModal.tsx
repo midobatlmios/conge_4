@@ -119,7 +119,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                                     type="button"
                                     variant="ghost"
                                     size="sm"
-                                    className="absolute top-1/2 right-2 -translate-y-1/2"
+                                    className="absolute end-2 top-1/2 -translate-y-1/2"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
                                     {showPassword ? 'Masquer' : 'Afficher'}

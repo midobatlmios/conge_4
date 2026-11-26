@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { t } from '@/lib/i18n';
 import {
     ColumnDef,
     ColumnFiltersState,
@@ -60,24 +61,24 @@ export function DataTable<TData, TValue>({ columns, data, isAdmin = false, users
                     value={statusFilter}
                     onValueChange={(value) => table.getColumn('etat')?.setFilterValue(value === ALL_STATUSES ? undefined : value)}
                 >
-                    <SelectTrigger className="w-48" aria-label="Filtrer par état">
-                        <SelectValue placeholder="Filtrer par état" />
+                    <SelectTrigger className="w-48" aria-label={t('Filtrer par état')}>
+                        <SelectValue placeholder={t('Filtrer par état')} />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value={ALL_STATUSES}>Tous les états</SelectItem>
-                        <SelectItem value="en attente">En attente</SelectItem>
-                        <SelectItem value="validée manager">Validées par le responsable</SelectItem>
-                        <SelectItem value="acceptée">Acceptées</SelectItem>
-                        <SelectItem value="refusée">Refusées</SelectItem>
-                        <SelectItem value="annulation demandée">Annulation demandée</SelectItem>
-                        <SelectItem value="annulée">Annulées</SelectItem>
+                        <SelectItem value={ALL_STATUSES}>{t('Tous les états')}</SelectItem>
+                        <SelectItem value="en attente">{t('En attente')}</SelectItem>
+                        <SelectItem value="validée manager">{t('Validées par le responsable')}</SelectItem>
+                        <SelectItem value="acceptée">{t('Acceptées')}</SelectItem>
+                        <SelectItem value="refusée">{t('Refusées')}</SelectItem>
+                        <SelectItem value="annulation demandée">{t('Annulation demandée')}</SelectItem>
+                        <SelectItem value="annulée">{t('Annulées')}</SelectItem>
                     </SelectContent>
                 </Select>
-                <Button onClick={() => setIsAddOpen(true)}>Nouvelle demande</Button>
+                <Button onClick={() => setIsAddOpen(true)}>{t('Nouvelle demande')}</Button>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="ml-auto">
-                            Colonnes
+                        <Button variant="outline" className="ms-auto">
+                            {t('Colonnes')}
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -123,11 +124,13 @@ export function DataTable<TData, TValue>({ columns, data, isAdmin = false, users
                                 <TableCell colSpan={columns.length} className="p-4">
                                     <EmptyState
                                         icon={Inbox}
-                                        title={statusFilter && statusFilter !== ALL_STATUSES ? 'Aucune demande dans cet état' : 'Aucune demande'}
+                                        title={
+                                            statusFilter && statusFilter !== ALL_STATUSES ? t('Aucune demande dans cet état') : t('Aucune demande')
+                                        }
                                         description={
                                             statusFilter && statusFilter !== ALL_STATUSES
-                                                ? 'Choisissez « Tous les états » dans le filtre pour tout afficher.'
-                                                : "Les demandes de congé apparaîtront ici dès qu'elles seront déposées."
+                                                ? t('Choisissez « Tous les états » dans le filtre pour tout afficher.')
+                                                : t("Les demandes de congé apparaîtront ici dès qu'elles seront déposées.")
                                         }
                                         className="border-0"
                                     />
@@ -138,14 +141,14 @@ export function DataTable<TData, TValue>({ columns, data, isAdmin = false, users
                 </Table>
             </div>
             <div className="flex items-center justify-end gap-2 py-4">
-                <span className="text-muted-foreground mr-2 text-sm">
-                    Page {table.getState().pagination.pageIndex + 1} sur {Math.max(table.getPageCount(), 1)}
+                <span className="text-muted-foreground me-2 text-sm">
+                    {t('Page')} {table.getState().pagination.pageIndex + 1} {t('sur')} {Math.max(table.getPageCount(), 1)}
                 </span>
                 <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-                    Précédent
+                    {t('Précédent')}
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-                    Suivant
+                    {t('Suivant')}
                 </Button>
             </div>
             <AddDemandeModal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} isAdmin={isAdmin} users={users} />

@@ -3,6 +3,7 @@ import { formatDate } from '@/components/employees/personal-data';
 import EmptyState from '@/components/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { t } from '@/lib/i18n';
 import { Download, FileBadge } from 'lucide-react';
 
 /** Attestations of one employee: status, number and PDF download. */
@@ -11,8 +12,8 @@ export default function AttestationList({ attestations }: { attestations: Attest
         return (
             <EmptyState
                 icon={FileBadge}
-                title="Aucune attestation pour le moment"
-                description="Les attestations demandées et délivrées apparaîtront ici, prêtes à télécharger."
+                title={t('Aucune attestation pour le moment')}
+                description={t('Les attestations demandées et délivrées apparaîtront ici, prêtes à télécharger.')}
             />
         );
     }
@@ -31,18 +32,20 @@ export default function AttestationList({ attestations }: { attestations: Attest
                         </div>
                         <p className="text-muted-foreground text-xs">
                             {attestation.status === 'delivree'
-                                ? `Délivrée le ${formatDate(attestation.issued_at)}${attestation.handled_by ? ` par ${attestation.handled_by}` : ''}`
-                                : `Demandée le ${formatDate(attestation.requested_at)}`}
+                                ? `${t('Délivrée le :date', { date: formatDate(attestation.issued_at) })}${attestation.handled_by ? t(' par :name', { name: attestation.handled_by }) : ''}`
+                                : t('Demandée le :date', { date: formatDate(attestation.requested_at) })}
                             {attestation.purpose ? ` · ${attestation.purpose}` : ''}
                         </p>
                         {attestation.refusal_reason && (
-                            <p className="text-xs text-red-700 dark:text-red-400">Motif du refus : {attestation.refusal_reason}</p>
+                            <p className="text-xs text-red-700 dark:text-red-400">
+                                {t('Motif du refus :')} {attestation.refusal_reason}
+                            </p>
                         )}
                     </div>
                     {attestation.status === 'delivree' && (
                         <Button variant="outline" size="sm" asChild className="self-start sm:self-center">
                             <a href={pdfUrl(attestation)} target="_blank" rel="noopener">
-                                <Download className="mr-2 h-4 w-4" /> PDF
+                                <Download className="me-2 h-4 w-4" /> {t('PDF')}
                             </a>
                         </Button>
                     )}

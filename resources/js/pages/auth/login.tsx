@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n';
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
@@ -37,15 +38,15 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
     return (
         <AuthLayout
-            title="Connectez-vous à votre compte"
-            description="Entrez votre adresse e-mail et votre mot de passe ci-dessous pour vous connecter"
+            title={t('Connectez-vous à votre compte')}
+            description={t('Entrez votre adresse e-mail et votre mot de passe ci-dessous pour vous connecter')}
         >
-            <Head title="Connectez-vous" />
+            <Head title={t('Connectez-vous')} />
 
             <form className="flex flex-col gap-6" onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Adresse e-mail</Label>
+                        <Label htmlFor="email">{t('Adresse e-mail')}</Label>
                         <Input
                             id="email"
                             type="email"
@@ -62,10 +63,10 @@ export default function Login({ status, canResetPassword }: LoginProps) {
 
                     <div className="grid gap-2">
                         <div className="flex items-center">
-                            <Label htmlFor="password">Mot de passe</Label>
+                            <Label htmlFor="password">{t('Mot de passe')}</Label>
                             {canResetPassword && (
-                                <TextLink href={route('password.request')} className="ml-auto text-sm" tabIndex={5}>
-                                    Mot de passe oublié ?
+                                <TextLink href={route('password.request')} className="ms-auto text-sm" tabIndex={5}>
+                                    {t('Mot de passe oublié ?')}
                                 </TextLink>
                             )}
                         </div>
@@ -77,7 +78,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             autoComplete="current-password"
                             value={data.password}
                             onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Mot de passe"
+                            placeholder={t('Mot de passe')}
                         />
                         <InputError message={errors.password} />
                     </div>
@@ -90,16 +91,16 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             onClick={() => setData('remember', !data.remember)}
                             tabIndex={3}
                         />
-                        <Label htmlFor="remember">Se souvenir de moi </Label>
+                        <Label htmlFor="remember">{t('Se souvenir de moi')} </Label>
                     </div>
 
                     <Button type="submit" className="mt-4 w-full" tabIndex={4} disabled={processing}>
                         {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
-                        Se connecter
+                        {t('Se connecter')}
                     </Button>
                 </div>
 
-                <div className="text-muted-foreground text-center text-sm">Pas de compte ? Demandez-en un à votre administrateur.</div>
+                <div className="text-muted-foreground text-center text-sm">{t('Pas de compte ? Demandez-en un à votre administrateur.')}</div>
             </form>
 
             {status && <div className="mb-4 text-center text-sm font-medium text-green-700 dark:text-green-400">{status}</div>}

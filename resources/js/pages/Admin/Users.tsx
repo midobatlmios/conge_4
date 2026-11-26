@@ -101,12 +101,12 @@ const Users = ({ users: initialUsers, departments, managers, roles }: UsersProps
                         <div className="flex flex-wrap gap-2">
                             <Button variant="outline" asChild>
                                 <Link href="/admin/import">
-                                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                    <FileSpreadsheet className="me-2 h-4 w-4" />
                                     Importer depuis Excel
                                 </Link>
                             </Button>
                             <Button onClick={() => setAddModalOpen(true)} className="bg-green-700 text-white hover:bg-green-800">
-                                <Plus className="mr-2 h-4 w-4" />
+                                <Plus className="me-2 h-4 w-4" />
                                 Ajouter un employé
                             </Button>
                         </div>

@@ -367,10 +367,10 @@ export default function Overview({
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Département</TableHead>
-                                    <TableHead className="text-right">Employés</TableHead>
-                                    <TableHead className="text-right">Jours décomptés</TableHead>
-                                    <TableHead className="text-right">Moyenne / employé</TableHead>
-                                    <TableHead className="text-right">Sans solde</TableHead>
+                                    <TableHead className="text-end">Employés</TableHead>
+                                    <TableHead className="text-end">Jours décomptés</TableHead>
+                                    <TableHead className="text-end">Moyenne / employé</TableHead>
+                                    <TableHead className="text-end">Sans solde</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -379,12 +379,10 @@ export default function Overview({
                                         <TableCell className={row.name ? 'font-medium' : 'text-muted-foreground italic'}>
                                             {row.name ?? 'Sans département'}
                                         </TableCell>
-                                        <TableCell className="text-right tabular-nums">{row.employees}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{formatDays(row.usedDays)}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{formatDays(row.averageDays)}</TableCell>
-                                        <TableCell
-                                            className={`text-right tabular-nums ${row.unpaidDays > 0 ? 'text-red-700 dark:text-red-400' : ''}`}
-                                        >
+                                        <TableCell className="text-end tabular-nums">{row.employees}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{formatDays(row.usedDays)}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{formatDays(row.averageDays)}</TableCell>
+                                        <TableCell className={`text-end tabular-nums ${row.unpaidDays > 0 ? 'text-red-700 dark:text-red-400' : ''}`}>
                                             {formatDays(row.unpaidDays)}
                                         </TableCell>
                                     </TableRow>

@@ -156,12 +156,12 @@ export default function Indicators({ year, until, summary, months, departments, 
                         </select>
                         <Button variant="outline" asChild>
                             <a href={exportUrl}>
-                                <Download className="mr-2 h-4 w-4" /> Bilan (Excel)
+                                <Download className="me-2 h-4 w-4" /> Bilan (Excel)
                             </a>
                         </Button>
                         <Button variant="outline" asChild>
                             <a href={pdfUrl}>
-                                <FileText className="mr-2 h-4 w-4" /> Bilan (PDF)
+                                <FileText className="me-2 h-4 w-4" /> Bilan (PDF)
                             </a>
                         </Button>
                     </div>
@@ -288,22 +288,22 @@ export default function Indicators({ year, until, summary, months, departments, 
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Département</TableHead>
-                                        <TableHead className="text-right">Effectif</TableHead>
-                                        <TableHead className="text-right">Maladie</TableHead>
-                                        <TableHead className="text-right">Sans solde</TableHead>
-                                        <TableHead className="text-right">Absentéisme</TableHead>
-                                        <TableHead className="text-right">Masse salariale</TableHead>
+                                        <TableHead className="text-end">Effectif</TableHead>
+                                        <TableHead className="text-end">Maladie</TableHead>
+                                        <TableHead className="text-end">Sans solde</TableHead>
+                                        <TableHead className="text-end">Absentéisme</TableHead>
+                                        <TableHead className="text-end">Masse salariale</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {departments.map((d) => (
                                         <TableRow key={d.name ?? 'none'}>
                                             <TableCell>{d.name ?? <span className="text-muted-foreground">Sans département</span>}</TableCell>
-                                            <TableCell className="text-right tabular-nums">{d.headcount}</TableCell>
-                                            <TableCell className="text-right tabular-nums">{days(d.sick_days)}</TableCell>
-                                            <TableCell className="text-right tabular-nums">{days(d.unpaid_days)}</TableCell>
-                                            <TableCell className="text-right font-medium tabular-nums">{percent(d.absenteeism)}</TableCell>
-                                            <TableCell className="text-right tabular-nums">{dh(d.payroll)}</TableCell>
+                                            <TableCell className="text-end tabular-nums">{d.headcount}</TableCell>
+                                            <TableCell className="text-end tabular-nums">{days(d.sick_days)}</TableCell>
+                                            <TableCell className="text-end tabular-nums">{days(d.unpaid_days)}</TableCell>
+                                            <TableCell className="text-end font-medium tabular-nums">{percent(d.absenteeism)}</TableCell>
+                                            <TableCell className="text-end tabular-nums">{dh(d.payroll)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -327,7 +327,7 @@ export default function Indicators({ year, until, summary, months, departments, 
                                     <TableRow>
                                         <TableHead>Employé</TableHead>
                                         <TableHead>Département</TableHead>
-                                        <TableHead className="text-right">Jours restants</TableHead>
+                                        <TableHead className="text-end">Jours restants</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -339,7 +339,7 @@ export default function Indicators({ year, until, summary, months, departments, 
                                                 </Link>
                                             </TableCell>
                                             <TableCell className="text-muted-foreground">{row.department ?? '—'}</TableCell>
-                                            <TableCell className="text-right font-medium tabular-nums">
+                                            <TableCell className="text-end font-medium tabular-nums">
                                                 {days(row.remaining)}
                                                 {row.carry_left > 0 && (
                                                     <span className="text-muted-foreground block text-xs">dont {days(row.carry_left)} reportés</span>
@@ -366,30 +366,30 @@ export default function Indicators({ year, until, summary, months, departments, 
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Mois</TableHead>
-                                    <TableHead className="text-right">Effectif</TableHead>
-                                    <TableHead className="text-right">Embauches</TableHead>
-                                    <TableHead className="text-right">Départs</TableHead>
-                                    <TableHead className="text-right">Jours théoriques</TableHead>
-                                    <TableHead className="text-right">Maladie</TableHead>
-                                    <TableHead className="text-right">Sans solde</TableHead>
-                                    <TableHead className="text-right">Absentéisme</TableHead>
-                                    <TableHead className="text-right">Congés planifiés</TableHead>
-                                    <TableHead className="text-right">Masse salariale</TableHead>
+                                    <TableHead className="text-end">Effectif</TableHead>
+                                    <TableHead className="text-end">Embauches</TableHead>
+                                    <TableHead className="text-end">Départs</TableHead>
+                                    <TableHead className="text-end">Jours théoriques</TableHead>
+                                    <TableHead className="text-end">Maladie</TableHead>
+                                    <TableHead className="text-end">Sans solde</TableHead>
+                                    <TableHead className="text-end">Absentéisme</TableHead>
+                                    <TableHead className="text-end">Congés planifiés</TableHead>
+                                    <TableHead className="text-end">Masse salariale</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {months.map((m) => (
                                     <TableRow key={m.month}>
                                         <TableCell>{m.label}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{m.headcount}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{m.hires}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{m.departures}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{m.theoretical_days}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{days(m.sick_days)}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{days(m.unpaid_days)}</TableCell>
-                                        <TableCell className="text-right font-medium tabular-nums">{percent(m.absenteeism)}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{days(m.planned_days)}</TableCell>
-                                        <TableCell className="text-right tabular-nums">{dh(m.payroll)}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{m.headcount}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{m.hires}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{m.departures}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{m.theoretical_days}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{days(m.sick_days)}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{days(m.unpaid_days)}</TableCell>
+                                        <TableCell className="text-end font-medium tabular-nums">{percent(m.absenteeism)}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{days(m.planned_days)}</TableCell>
+                                        <TableCell className="text-end tabular-nums">{dh(m.payroll)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

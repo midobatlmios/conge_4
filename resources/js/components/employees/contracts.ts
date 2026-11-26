@@ -1,4 +1,5 @@
 import { formatDate } from '@/components/employees/personal-data';
+import { t, translated } from '@/lib/i18n';
 
 /** A contract as EmploymentContractController::present() sends it. */
 export type Contract = {
@@ -31,20 +32,20 @@ export type ContractAlert = {
 export type Option = { value: string; label: string };
 export type ContractOptions = { types: Option[]; categories: Option[] };
 
-export const STATUS_LABELS: Record<Contract['status'], string> = {
+export const STATUS_LABELS: Record<Contract['status'], string> = translated({
     upcoming: 'À venir',
     active: 'En cours',
     ended: 'Terminé',
-};
+});
 
 export function alertText(alert: ContractAlert): string {
     switch (alert.kind) {
         case 'ended':
-            return `${alert.contract} terminé le ${formatDate(alert.date)}, sans nouveau contrat`;
+            return t(':contract terminé le :date, sans nouveau contrat', { contract: alert.contract, date: formatDate(alert.date) });
         case 'contract_end':
-            return `${alert.contract} se termine le ${formatDate(alert.date)}`;
+            return t(':contract se termine le :date', { contract: alert.contract, date: formatDate(alert.date) });
         case 'trial_end':
-            return `Fin de période d'essai le ${formatDate(alert.date)}`;
+            return t("Fin de période d'essai le :date", { date: formatDate(alert.date) });
     }
 }
 

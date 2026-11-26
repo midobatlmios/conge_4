@@ -4,6 +4,7 @@ import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { t } from '@/lib/i18n';
 import { TYPE_CONGE_LABELS, useLeaveRules } from '@/lib/leave';
 import { Demande } from '@/types';
 import { router, useForm } from '@inertiajs/react';
@@ -33,10 +34,11 @@ export function DocumentsButton({ demande, onClick }: { demande: Demande; onClic
             size="sm"
             onClick={onClick}
             className={missing ? 'border-orange-500 text-orange-700 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300' : ''}
-            title={missing ? 'Justificatif manquant : nécessaire avant acceptation' : undefined}
+            title={missing ? t('Justificatif manquant : nécessaire avant acceptation') : undefined}
         >
-            <FileText className="mr-1 h-4 w-4" />
-            Justificatifs{count > 0 ? ` (${count})` : missing ? ' manquant' : ''}
+            <FileText className="me-1 h-4 w-4" />
+            {t('Justificatifs')}
+            {count > 0 ? ` (${count})` : missing ? t(' manquant') : ''}
         </Button>
     );
 }
@@ -65,9 +67,9 @@ export default function DocumentsModal({ demande, canManage, onClose }: Document
 
     const remove = async (id: number, name: string) => {
         const ok = await confirmAction({
-            title: 'Supprimer ce justificatif ?',
-            description: `« ${name} » sera définitivement supprimé.`,
-            confirmLabel: 'Supprimer',
+            title: t('Supprimer ce justificatif ?'),
+            description: t('« :name » sera définitivement supprimé.', { name }),
+            confirmLabel: t('Supprimer'),
             destructive: true,
         });
         if (ok) router.delete(`/documents/${id}`, { preserveScroll: true, preserveState: true, onError: toastErrors });
@@ -86,18 +88,20 @@ export default function DocumentsModal({ demande, canManage, onClose }: Document
         >
             <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>Justificatifs</DialogTitle>
+                    <DialogTitle>{t('Justificatifs')}</DialogTitle>
                     <DialogDescription>
                         {demande && TYPE_CONGE_LABELS[demande.type_conge]}
                         {needed
-                            ? ' : un justificatif (acte de mariage, de naissance ou de décès) est nécessaire avant que les RH puissent accepter la demande.'
-                            : ' : un justificatif est facultatif pour ce type de congé.'}
+                            ? t(
+                                  ' : un justificatif (acte de mariage, de naissance ou de décès) est nécessaire avant que les RH puissent accepter la demande.',
+                              )
+                            : t(' : un justificatif est facultatif pour ce type de congé.')}
                     </DialogDescription>
                 </DialogHeader>
 
                 {documents.length === 0 ? (
                     <p className={`text-sm ${needed ? 'text-orange-700 dark:text-orange-400' : 'text-muted-foreground'}`}>
-                        Aucun justificatif joint.
+                        {t('Aucun justificatif joint.')}
                     </p>
                 ) : (
                     <ul className="divide-y rounded-md border">
@@ -134,11 +138,11 @@ export default function DocumentsModal({ demande, canManage, onClose }: Document
                                 onChange={(e) => form.setData('document', e.target.files?.[0] ?? null)}
                             />
                             <Button type="submit" disabled={!form.data.document || form.processing}>
-                                <Upload className="mr-1 h-4 w-4" /> Ajouter
+                                <Upload className="me-1 h-4 w-4" /> {t('Ajouter')}
                             </Button>
                         </div>
                         <p className="text-muted-foreground text-xs">
-                            PDF, JPG ou PNG, {rules.documentMaxKb / 1024} Mo maximum. Visible uniquement par vous et les RH.
+                            {t('PDF, JPG ou PNG,')} {rules.documentMaxKb / 1024} {t('Mo maximum. Visible uniquement par vous et les RH.')}
                         </p>
                         <InputError message={form.errors.document} />
                     </form>

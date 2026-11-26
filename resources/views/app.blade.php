@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+@php($uiLocale = \App\Http\Controllers\LocaleController::current(request()))
+<html lang="{{ $uiLocale }}" dir="{{ $uiLocale === 'ar' ? 'rtl' : 'ltr' }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
     <head>
         <meta charset="utf-8">
         <link rel="icon" type="image/x-icon" href="/favicon.ico">

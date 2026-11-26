@@ -108,7 +108,7 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                                 ))}
                             </ul>
                             <Button onClick={() => invite(imported.created.map((user) => user.id))} disabled={inviting}>
-                                <Mail className="mr-2 h-4 w-4" /> Envoyer les invitations
+                                <Mail className="me-2 h-4 w-4" /> Envoyer les invitations
                             </Button>
                         </CardContent>
                     </Card>
@@ -125,7 +125,7 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                         <CardContent>
                             <Button variant="outline" asChild>
                                 <a href="/admin/import/modele">
-                                    <FileSpreadsheet className="mr-2 h-4 w-4" /> Modèle Excel
+                                    <FileSpreadsheet className="me-2 h-4 w-4" /> Modèle Excel
                                 </a>
                             </Button>
                         </CardContent>
@@ -146,7 +146,7 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                                     required
                                 />
                                 <Button type="submit" disabled={upload.processing}>
-                                    <Upload className="mr-2 h-4 w-4" /> Vérifier
+                                    <Upload className="me-2 h-4 w-4" /> Vérifier
                                 </Button>
                             </form>
                             <InputError message={upload.errors.file} className="mt-2" />
@@ -178,7 +178,7 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                                 {check.errors > 0 && (
                                     <Button variant="outline" asChild>
                                         <a href={`/admin/import/${token}/erreurs`}>
-                                            <Download className="mr-2 h-4 w-4" /> Rapport d'erreurs
+                                            <Download className="me-2 h-4 w-4" /> Rapport d'erreurs
                                         </a>
                                     </Button>
                                 )}

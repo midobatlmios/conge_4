@@ -1,8 +1,9 @@
+import { intlLocale, translated } from '@/lib/i18n';
 import { usePage } from '@inertiajs/react';
 
 export type TypeConge = 'annuel' | 'mariage' | 'naissance' | 'deces' | 'sans_solde' | 'recuperation' | 'maladie';
 
-export const TYPE_CONGE_LABELS: Record<TypeConge, string> = {
+export const TYPE_CONGE_LABELS: Record<TypeConge, string> = translated({
     annuel: 'Congé annuel',
     mariage: 'Congé de Mariage',
     naissance: 'Congé de Naissance',
@@ -10,19 +11,19 @@ export const TYPE_CONGE_LABELS: Record<TypeConge, string> = {
     sans_solde: 'Congé sans solde',
     recuperation: 'Récupération',
     maladie: 'Congé maladie',
-};
+});
 
 /** Mirrors App\Enums\LeaveStatus (the values the database stores). */
 export type LeaveStatus = 'en attente' | 'validée manager' | 'acceptée' | 'refusée' | 'annulation demandée' | 'annulée';
 
-export const STATUS_LABELS: Record<LeaveStatus, string> = {
+export const STATUS_LABELS: Record<LeaveStatus, string> = translated({
     'en attente': 'En attente',
     'validée manager': 'Validée par le responsable',
     acceptée: 'Acceptée',
     refusée: 'Refusée',
     'annulation demandée': 'Annulation demandée',
     annulée: 'Annulée',
-};
+});
 
 export const STATUS_COLORS: Record<LeaveStatus, string> = {
     'en attente': 'text-yellow-700 dark:text-yellow-400',
@@ -75,7 +76,7 @@ export function availableBy(date: string, balance: LeaveBalance): number {
 }
 
 /** Formats a number of days the French way: 16,5. */
-export const formatDays = (days: number) => days.toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+export const formatDays = (days: number) => days.toLocaleString(intlLocale(), { maximumFractionDigits: 1 });
 
 /**
  * Days earned this year by a YYYY-MM-DD date in the current year. Mirrors

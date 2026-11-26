@@ -1,6 +1,7 @@
 import { toastErrors } from '@/components/app-toaster';
 import { confirmAction } from '@/components/confirm-dialog';
 import EmptyState from '@/components/empty-state';
+import PayslipEditor, { PayslipInputs } from '@/components/payroll/PayslipEditor';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,20 +11,23 @@ import AppLayout from '@/layouts/app-layout';
 import { usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { AlertTriangle, CheckCircle2, Download, Lock, RefreshCw, Send, Undo2, Wallet } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Lock, Pencil, RefreshCw, Send, Undo2, Wallet } from 'lucide-react';
 import { useState } from 'react';
 
-type Hours = { '25': number; '50': number; '100': number };
 type Row = {
     id: number;
     user_id: number;
     name: string;
-    overtime_hours: Hours;
-    overtime_from_attendance: Hours;
-    overtime_adjusted: boolean;
+    inputs: PayslipInputs;
+    /** What Paie changed by hand: 'overtime', 'unpaid', 'absent'. */
+    adjusted: string[];
     base: number;
+    absence_deduction: number;
     seniority: number;
     overtime: number;
+    taxable_bonuses: number;
+    exempt_allowances: number;
+    advances: number;
     gross: number;
     cnss: number;
     amo: number;
@@ -51,6 +55,7 @@ interface PayslipsProps {
     payslips: Row[];
     missing: { id: number; name: string }[];
     runs: { month: string; status_label: string }[];
+    bonusPresets: { label: string; taxable: boolean }[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -70,51 +75,9 @@ const statusClass: Record<Run['status'], string> = {
     locked: 'border-green-600 text-green-700 dark:text-green-400',
 };
 
-/** Overtime hours of one payslip, editable while the month is in preparation. */
-function OvertimeCell({ row, editable }: { row: Row; editable: boolean }) {
-    const [hours, setHours] = useState<Hours>(row.overtime_hours);
-    const changed = (['25', '50', '100'] as const).some((k) => Number(hours[k]) !== row.overtime_hours[k]);
-    const total = row.overtime_hours['25'] + row.overtime_hours['50'] + row.overtime_hours['100'];
-
-    if (!editable) return <span className="tabular-nums">{total ? `${dh(total)} h` : '—'}</span>;
-
-    return (
-        <div className="flex items-center gap-1">
-            {(['25', '50', '100'] as const).map((k) => (
-                <Input
-                    key={k}
-                    aria-label={`Heures à +${k} % pour ${row.name}`}
-                    title={`+${k} % (pointage : ${row.overtime_from_attendance[k]} h)`}
-                    type="number"
-                    min={0}
-                    step="0.25"
-                    className="h-8 w-16 px-1 text-right"
-                    value={hours[k]}
-                    onChange={(e) => setHours({ ...hours, [k]: e.target.value === '' ? 0 : Number(e.target.value) })}
-                />
-            ))}
-            {changed && (
-                <Button
-                    size="sm"
-                    className="h-8"
-                    onClick={() =>
-                        router.put(`/admin/payslips/${row.id}/overtime`, { overtime_hours: hours }, { preserveScroll: true, onError: toastErrors })
-                    }
-                >
-                    OK
-                </Button>
-            )}
-            {row.overtime_adjusted && !changed && (
-                <Badge variant="outline" title="Modifié par rapport au pointage">
-                    modifié
-                </Badge>
-            )}
-        </div>
-    );
-}
-
 /** Monthly payroll: prepare, adjust overtime, send for validation, validate (RH / Admin), payslip PDFs. */
-export default function Payslips({ month, run, payslips, missing, runs }: PayslipsProps) {
+export default function Payslips({ month, run, payslips, missing, runs, bonusPresets }: PayslipsProps) {
+    const [editing, setEditing] = useState<Row | null>(null);
     const can = usePermissions();
     const { auth } = usePage<SharedData>().props;
     const draft = run?.status === 'draft';
@@ -197,25 +160,30 @@ export default function Payslips({ month, run, payslips, missing, runs }: Paysli
                                     {draft && (
                                         <>
                                             <Button variant="outline" onClick={() => put(`/admin/payroll-runs/${run.id}/recalculate`)}>
-                                                <RefreshCw className="mr-2 h-4 w-4" /> Recalculer
+                                                <RefreshCw className="me-2 h-4 w-4" /> Recalculer
                                             </Button>
                                             <Button onClick={() => put(`/admin/payroll-runs/${run.id}/submit`)}>
-                                                <Send className="mr-2 h-4 w-4" /> Envoyer pour validation
+                                                <Send className="me-2 h-4 w-4" /> Envoyer pour validation
                                             </Button>
                                         </>
                                     )}
                                     {run.status === 'ready' && (
                                         <>
                                             <Button variant="outline" onClick={() => put(`/admin/payroll-runs/${run.id}/reopen`)}>
-                                                <Undo2 className="mr-2 h-4 w-4" /> Rouvrir
+                                                <Undo2 className="me-2 h-4 w-4" /> Rouvrir
                                             </Button>
                                             {can.manage_hr && run.prepared_by_id !== auth.user.id && (
                                                 <Button onClick={lock}>
-                                                    <Lock className="mr-2 h-4 w-4" /> Valider la paie
+                                                    <Lock className="me-2 h-4 w-4" /> Valider la paie
                                                 </Button>
                                             )}
                                         </>
                                     )}
+                                    <Button variant="outline" asChild>
+                                        <a href={`/admin/payroll-runs/${run.id}/journal`}>
+                                            <FileSpreadsheet className="me-2 h-4 w-4" /> Journal + CNSS (Excel)
+                                        </a>
+                                    </Button>
                                     {run.status === 'locked' && (
                                         <span className="flex items-center gap-1 text-sm text-green-700 dark:text-green-400">
                                             <CheckCircle2 className="h-4 w-4" /> Bulletins définitifs, visibles par les employés
@@ -262,7 +230,8 @@ export default function Payslips({ month, run, payslips, missing, runs }: Paysli
                                 </CardTitle>
                                 <CardDescription>
                                     Net total {dh(total('net'))} DH · brut {dh(total('gross'))} DH · coût employeur {dh(total('cost'))} DH.
-                                    {draft && ' Heures supplémentaires (+25 / +50 / +100 %) reprises du pointage, modifiables.'}
+                                    {draft &&
+                                        ' Jours non payés et heures supplémentaires repris des congés et du pointage ; ajustez chaque bulletin avec le crayon (primes, avances…).'}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="overflow-x-auto">
@@ -270,13 +239,16 @@ export default function Payslips({ month, run, payslips, missing, runs }: Paysli
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Employé</TableHead>
-                                            <TableHead className="text-right">Base</TableHead>
-                                            <TableHead className="text-right">Ancienneté</TableHead>
-                                            <TableHead>H. sup.</TableHead>
-                                            <TableHead className="text-right">Brut</TableHead>
-                                            <TableHead className="text-right">CNSS + AMO</TableHead>
-                                            <TableHead className="text-right">IR</TableHead>
-                                            <TableHead className="text-right">Net</TableHead>
+                                            <TableHead className="text-end">Base</TableHead>
+                                            <TableHead className="text-end">Absences</TableHead>
+                                            <TableHead className="text-end">Ancienneté</TableHead>
+                                            <TableHead className="text-end">H. sup.</TableHead>
+                                            <TableHead className="text-end">Primes</TableHead>
+                                            <TableHead className="text-end">Brut</TableHead>
+                                            <TableHead className="text-end">CNSS + AMO</TableHead>
+                                            <TableHead className="text-end">IR</TableHead>
+                                            <TableHead className="text-end">Avances</TableHead>
+                                            <TableHead className="text-end">Net</TableHead>
                                             <TableHead className="sr-only">PDF</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -293,19 +265,44 @@ export default function Payslips({ month, run, payslips, missing, runs }: Paysli
                                                         </span>
                                                     )}
                                                 </TableCell>
-                                                <TableCell className="text-right tabular-nums">{dh(row.base)}</TableCell>
-                                                <TableCell className="text-right tabular-nums">{row.seniority ? dh(row.seniority) : '—'}</TableCell>
-                                                <TableCell>
-                                                    <OvertimeCell key={JSON.stringify(row.overtime_hours)} row={row} editable={draft} />
-                                                    {row.overtime > 0 && (
-                                                        <span className="text-muted-foreground block text-xs">{dh(row.overtime)} DH</span>
+                                                <TableCell className="text-end tabular-nums">{dh(row.base)}</TableCell>
+                                                <TableCell className="text-end tabular-nums">
+                                                    {row.absence_deduction ? (
+                                                        <span className="text-red-700 dark:text-red-400">−{dh(row.absence_deduction)}</span>
+                                                    ) : (
+                                                        '—'
                                                     )}
                                                 </TableCell>
-                                                <TableCell className="text-right font-medium tabular-nums">{dh(row.gross)}</TableCell>
-                                                <TableCell className="text-right tabular-nums">{dh(row.cnss + row.amo)}</TableCell>
-                                                <TableCell className="text-right tabular-nums">{dh(row.ir)}</TableCell>
-                                                <TableCell className="text-right font-semibold tabular-nums">{dh(row.net)}</TableCell>
-                                                <TableCell className="text-right">
+                                                <TableCell className="text-end tabular-nums">{row.seniority ? dh(row.seniority) : '—'}</TableCell>
+                                                <TableCell className="text-end tabular-nums">
+                                                    {row.overtime ? dh(row.overtime) : '—'}
+                                                    {row.adjusted.length > 0 && (
+                                                        <Badge variant="outline" className="ms-1" title="Modifié à la main">
+                                                            modifié
+                                                        </Badge>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell className="text-end tabular-nums">
+                                                    {row.taxable_bonuses + row.exempt_allowances
+                                                        ? dh(row.taxable_bonuses + row.exempt_allowances)
+                                                        : '—'}
+                                                </TableCell>
+                                                <TableCell className="text-end font-medium tabular-nums">{dh(row.gross)}</TableCell>
+                                                <TableCell className="text-end tabular-nums">{dh(row.cnss + row.amo)}</TableCell>
+                                                <TableCell className="text-end tabular-nums">{dh(row.ir)}</TableCell>
+                                                <TableCell className="text-end tabular-nums">{row.advances ? dh(row.advances) : '—'}</TableCell>
+                                                <TableCell className="text-end font-semibold tabular-nums">{dh(row.net)}</TableCell>
+                                                <TableCell className="text-end whitespace-nowrap">
+                                                    {draft && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={() => setEditing(row)}
+                                                            aria-label={`Ajuster le bulletin de ${row.name}`}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    )}
                                                     <Button variant="ghost" size="sm" asChild>
                                                         <a href={`/bulletins/${row.id}/pdf`} aria-label={`Bulletin de ${row.name} (PDF)`}>
                                                             <Download className="h-4 w-4" />
@@ -321,6 +318,16 @@ export default function Payslips({ month, run, payslips, missing, runs }: Paysli
                     </>
                 )}
             </div>
+            {editing && (
+                <PayslipEditor
+                    key={editing.id}
+                    payslipId={editing.id}
+                    name={editing.name}
+                    inputs={editing.inputs}
+                    presets={bonusPresets}
+                    onClose={() => setEditing(null)}
+                />
+            )}
         </AppLayout>
     );
 }

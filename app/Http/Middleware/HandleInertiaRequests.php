@@ -45,6 +45,8 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // Interface language (fr, ar, en); server messages and PDFs stay in French for now.
+            'locale' => \App\Http\Controllers\LocaleController::current($request),
             // One-off messages after an action, shown as toasts (components/app-toaster.tsx).
             'flash' => fn (): array => [
                 'success' => $request->session()->get('success'),

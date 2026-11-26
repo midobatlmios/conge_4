@@ -141,7 +141,7 @@ export default function Attestations({ attestations }: { attestations: Attestati
                                                 {attestation.status === 'delivree' && (
                                                     <Button variant="outline" size="sm" asChild>
                                                         <a href={pdfUrl(attestation)} target="_blank" rel="noopener">
-                                                            <Download className="mr-2 h-4 w-4" /> PDF
+                                                            <Download className="me-2 h-4 w-4" /> PDF
                                                         </a>
                                                     </Button>
                                                 )}

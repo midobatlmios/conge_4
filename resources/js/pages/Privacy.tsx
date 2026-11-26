@@ -44,7 +44,7 @@ export default function Privacy({ notice, acknowledgedAt }: { notice: NoticeFact
                 <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <Button variant="outline" asChild>
                         <a href="/protection-des-donnees/export">
-                            <Download className="mr-2 h-4 w-4" /> Télécharger mes données (ZIP)
+                            <Download className="me-2 h-4 w-4" /> Télécharger mes données (ZIP)
                         </a>
                     </Button>
                     {acknowledgedAt ? (
