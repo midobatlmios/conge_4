@@ -1,5 +1,7 @@
 import { AddDemandeModal } from '@/components/AddDemandeModal';
 import { toastErrors } from '@/components/app-toaster';
+import { TodayState } from '@/components/attendance/attendance';
+import ClockCard from '@/components/attendance/ClockCard';
 import { confirmAction } from '@/components/confirm-dialog';
 import { canRequestCancellation, requestCancellation } from '@/components/demandes/cancellation';
 import DemandeHistoryModal from '@/components/demandes/DemandeHistoryModal';
@@ -29,9 +31,10 @@ interface DashboardProps extends PageProps {
         };
     };
     demandes: Demande[];
+    attendance: TodayState;
 }
 
-export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
+export default function Dashboard({ auth, demandes = [], attendance }: DashboardProps) {
     const rules = useLeaveRules();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -70,6 +73,7 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
         <AppLayout>
             <Head title="Tableau de bord" />
             <div className="flex h-full flex-1 flex-col gap-4 rounded-xl p-4">
+                {attendance && <ClockCard state={attendance} />}
                 <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                     <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-4">
                         <h2 className="mb-2 text-xl font-bold">Bienvenue, {auth.user.name}</h2>

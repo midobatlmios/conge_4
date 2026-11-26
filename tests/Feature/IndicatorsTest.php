@@ -113,3 +113,44 @@ test('Admin, RH and Paie see the page and download the Excel report; employees d
 
     $this->actingAs(staffMember())->get('/admin/indicators')->assertForbidden();
 });
+
+test('payroll cost: monthly gross salaries of those employed at month end, raises included', function () {
+    $finance = Department::create(['name' => 'Finance']);
+    $sara = staffMember(['department_id' => $finance->id]);
+    $sara->contracts()->create(['type' => 'cdi', 'start_date' => '2020-01-01', 'gross_salary' => '10000']);
+    // Raised to 12 000 on 1 July: the contract now holds 12 000, the change knows the 10 000.
+    App\Models\CareerChange::create([
+        'user_id' => $sara->id, 'contract_id' => $sara->contracts()->value('id'), 'effective_date' => '2025-07-01',
+        'kind' => 'augmentation', 'previous_gross_salary' => '10000', 'gross_salary' => '12000',
+    ]);
+    $sara->contracts()->update(['gross_salary' => encrypt('12000', false)]);
+
+    $omar = staffMember(['hire_date' => '2025-10-15']);
+    $omar->contracts()->create(['type' => 'cdi', 'start_date' => '2025-10-15', 'gross_salary' => '6000']);
+    staffMember(); // no contract: no known salary
+
+    $data = app(HrIndicators::class)->compute(2025);
+
+    expect($data['months'][0]['payroll'])->toEqual(10000)      // January
+        ->and($data['months'][6]['payroll'])->toEqual(12000)   // July
+        ->and($data['months'][9]['payroll'])->toEqual(18000)   // October: Omar hired mid-month
+        ->and($data['months'][9]['missing_salaries'])->toBe(1)
+        ->and($data['summary']['payroll'])->toEqual(6 * 10000 + 6 * 12000 + 3 * 6000)
+        ->and($data['summary']['average_payroll'])->toEqual(round((6 * 10000 + 6 * 12000 + 3 * 6000) / 12, 2))
+        ->and($data['summary']['missing_salaries'])->toBe(1)
+        ->and(collect($data['departments'])->firstWhere('name', 'Finance')['payroll'])->toEqual(6 * 10000 + 6 * 12000);
+});
+
+test('the year-end report downloads as a PDF', function () {
+    staffMember(['name' => 'Sara Bennani']);
+
+    $response = $this->actingAs(User::factory()->create(['role' => Role::Payroll]))
+        ->get('/admin/indicators/export-pdf?year=2025')
+        ->assertOk();
+
+    expect($response->headers->get('content-type'))->toBe('application/pdf')
+        ->and($response->headers->get('content-disposition'))->toContain('bilan-rh-2025.pdf')
+        ->and(substr($response->getContent(), 0, 5))->toBe('%PDF-');
+
+    $this->actingAs(staffMember())->get('/admin/indicators/export-pdf')->assertForbidden();
+});

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\CompanySetting;
+use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
@@ -44,18 +46,22 @@ class HrIndicatorsReport
             ['Jours de congé non pris (fin de période)', $b['total_remaining']],
             ['Moyenne de jours non pris par employé', $b['average_remaining']],
             ['Jours reportés expirant le 31 mars', $b['carry_expiring']],
+            ['Masse salariale brute de la période (DH)', $s['payroll']],
+            ['Masse salariale brute mensuelle moyenne (DH)', $s['average_payroll']],
+            ['Salaire brut mensuel moyen (DH)', $s['average_salary']],
+            ['Employés sans salaire renseigné (fin de période)', $s['missing_salaries']],
         ]);
 
         $months = $spreadsheet->createSheet()->setTitle('Mensuel');
         $this->title($months, "Effectifs et absentéisme par mois — {$data['year']}", $scope);
-        $this->table($months, 4, ['Mois', 'Effectif fin de mois', 'Embauches', 'Départs', 'Jours théoriques', 'Jours maladie', 'Arrêts maladie', 'Jours sans solde', 'Absentéisme (%)', 'Congés planifiés (j)'], array_map(fn (array $m) => [
-            $m['label'], $m['headcount'], $m['hires'], $m['departures'], $m['theoretical_days'], $m['sick_days'], $m['sick_stops'], $m['unpaid_days'], $m['absenteeism'], $m['planned_days'],
+        $this->table($months, 4, ['Mois', 'Effectif fin de mois', 'Embauches', 'Départs', 'Jours théoriques', 'Jours maladie', 'Arrêts maladie', 'Jours sans solde', 'Absentéisme (%)', 'Congés planifiés (j)', 'Masse salariale brute (DH)'], array_map(fn (array $m) => [
+            $m['label'], $m['headcount'], $m['hires'], $m['departures'], $m['theoretical_days'], $m['sick_days'], $m['sick_stops'], $m['unpaid_days'], $m['absenteeism'], $m['planned_days'], $m['payroll'],
         ], $data['months']));
 
         $departments = $spreadsheet->createSheet()->setTitle('Départements');
-        $this->title($departments, "Absentéisme par département — {$data['year']}", 'Maladie + sans solde ÷ jours ouvrés théoriques.');
-        $this->table($departments, 4, ['Département', 'Effectif', 'Jours théoriques', 'Jours maladie', 'Jours sans solde', 'Absentéisme (%)'], array_map(fn (array $d) => [
-            $d['name'] ?? 'Sans département', $d['headcount'], $d['theoretical_days'], $d['sick_days'], $d['unpaid_days'], $d['absenteeism'],
+        $this->title($departments, "Absentéisme et masse salariale par département — {$data['year']}", 'Maladie + sans solde ÷ jours ouvrés théoriques. Masse salariale brute de la période.');
+        $this->table($departments, 4, ['Département', 'Effectif', 'Jours théoriques', 'Jours maladie', 'Jours sans solde', 'Absentéisme (%)', 'Masse salariale brute (DH)'], array_map(fn (array $d) => [
+            $d['name'] ?? 'Sans département', $d['headcount'], $d['theoretical_days'], $d['sick_days'], $d['unpaid_days'], $d['absenteeism'], $d['payroll'],
         ], $data['departments']));
 
         $balances = $spreadsheet->createSheet()->setTitle('Soldes de congés');
@@ -71,9 +77,29 @@ class HrIndicatorsReport
         return $path;
     }
 
-    public static function fileName(int $year, ?string $departmentName): string
+    /**
+     * The same report as a printable PDF (landscape A4), with the company letterhead.
+     *
+     * @param  array<string, mixed>  $data  HrIndicators::compute()
+     */
+    public function toPdf(array $data, ?string $departmentName): \Barryvdh\DomPDF\PDF
     {
-        return 'bilan-rh-'.$year.($departmentName ? '-'.str($departmentName)->slug() : '').'.xlsx';
+        $company = CompanySetting::current();
+
+        return Pdf::loadView('pdf.indicators', [
+            'd' => $data,
+            'department' => $departmentName,
+            'company' => $company,
+            'logo' => $company->logoDataUri(),
+        ])
+            ->setPaper('a4', 'landscape')
+            // Embed only the characters used, as for attestations.
+            ->setOption('isFontSubsettingEnabled', true);
+    }
+
+    public static function fileName(int $year, ?string $departmentName, string $extension = 'xlsx'): string
+    {
+        return 'bilan-rh-'.$year.($departmentName ? '-'.str($departmentName)->slug() : '').'.'.$extension;
     }
 
     private function title(Worksheet $sheet, string $title, string $subtitle): void

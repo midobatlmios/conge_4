@@ -8,7 +8,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatDays, LeaveStatus, parseISODate, STATUS_LABELS, TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Cake } from 'lucide-react';
 import { ReactNode } from 'react';
 
 interface Absence {
@@ -61,6 +61,10 @@ interface OverviewProps {
     contractAlerts: ContractAlert[];
     /** Folder documents expired or expiring within 30 days. */
     expiringDocuments: { id: number; user_id: number; name: string; label: string; expires_on: string; expiry: 'expired' | 'soon' | null }[];
+    /** Birthdays today and in the next 30 days, soonest first (with the age they turn). */
+    birthdays: { user_id: number; name: string; department: string | null; date: string; age: number }[];
+    /** Today's clocking; null while attendance tracking has not started. */
+    attendance: { present: number; late: number; on_leave: number; expected: number; not_yet: { id: number; name: string }[] } | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -115,6 +119,8 @@ export default function Overview({
     expiringDocuments,
     contractAlerts,
     cnssPending,
+    birthdays,
+    attendance,
 }: OverviewProps) {
     const todayLabel = parseISODate(today)?.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -146,6 +152,23 @@ export default function Overview({
                         }
                     />
                 </div>
+
+                {attendance && (
+                    <Card className="gap-2 py-4">
+                        <CardContent className="flex flex-col gap-2 px-4 text-sm sm:flex-row sm:items-center sm:justify-between">
+                            <p>
+                                <span className="font-semibold">Pointage du jour :</span> {attendance.present} présent
+                                {attendance.present > 1 ? 's' : ''} sur {attendance.expected} attendus
+                                {attendance.late > 0 && <span className="text-orange-700 dark:text-orange-400"> · {attendance.late} en retard</span>}
+                                {attendance.not_yet.length > 0 &&
+                                    ` · ${attendance.not_yet.length} pas encore pointé${attendance.not_yet.length > 1 ? 's' : ''}`}
+                            </p>
+                            <Link href="/admin/attendance" className="text-sm underline">
+                                Voir le pointage
+                            </Link>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {cnssPending.length > 0 && (
                     <Card>
@@ -298,6 +321,38 @@ export default function Overview({
                         </CardContent>
                     </Card>
                 </div>
+
+                {birthdays.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Cake className="h-4 w-4" /> Anniversaires
+                            </CardTitle>
+                            <CardDescription>Aujourd'hui et dans les 30 prochains jours.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="grid gap-x-8 sm:grid-cols-2">
+                                {birthdays.map((birthday) => (
+                                    <li key={birthday.user_id} className="flex items-center justify-between gap-3 border-b py-2 text-sm">
+                                        <div className="min-w-0">
+                                            <Link href={`/admin/users/${birthday.user_id}`} className="block truncate font-medium hover:underline">
+                                                {birthday.name}
+                                            </Link>
+                                            <div className="text-muted-foreground truncate text-xs">
+                                                {[`${birthday.age} ans`, birthday.department].filter(Boolean).join(' · ')}
+                                            </div>
+                                        </div>
+                                        {birthday.date === today ? (
+                                            <Badge>Aujourd'hui</Badge>
+                                        ) : (
+                                            <span className="text-muted-foreground shrink-0 text-xs">{shortDate(birthday.date)}</span>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                )}
 
                 <Card>
                     <CardHeader>

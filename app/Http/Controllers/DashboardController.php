@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AttendanceCalculator;
 use App\Services\LeaveCalculator;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -26,6 +27,8 @@ class DashboardController extends Controller
                 ],
             ],
             'demandes' => $user->demandes()->with('documents')->latest()->get(),
+            // The clock-in / clock-out card.
+            'attendance' => AttendanceController::todayState($user, app(AttendanceCalculator::class)),
         ]);
     }
 }

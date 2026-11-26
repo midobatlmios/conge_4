@@ -16,6 +16,8 @@ import {
     ChartColumn,
     ChevronDown,
     ChevronRight,
+    Clock,
+    ClockAlert,
     FileBadge,
     FileSpreadsheet,
     FileText,
@@ -27,6 +29,7 @@ import {
     Settings,
     ShieldCheck,
     UsersRound,
+    Wallet,
     X,
 } from 'lucide-react';
 import { CSSProperties, PropsWithChildren, useState } from 'react';
@@ -145,10 +148,22 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                                     <Network className="h-4 w-4" /> Organigramme
                                 </NavLink>
                             </li>
+                            <li>
+                                <NavLink href="/pointage" onNavigate={() => setSidebarOpen(false)}>
+                                    <Clock className="h-4 w-4" /> Mes pointages
+                                </NavLink>
+                            </li>
                             {user.is_manager && (
                                 <li>
                                     <NavLink href="/equipe" onNavigate={() => setSidebarOpen(false)}>
                                         <UsersRound className="h-4 w-4" /> Mon équipe
+                                    </NavLink>
+                                </li>
+                            )}
+                            {(user.is_manager || can.manage_hr) && (
+                                <li>
+                                    <NavLink href="/pointage/corrections" onNavigate={() => setSidebarOpen(false)}>
+                                        <ClockAlert className="h-4 w-4" /> Corrections de pointage
                                     </NavLink>
                                 </li>
                             )}
@@ -191,6 +206,16 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                                     <li>
                                         <NavLink href="/admin/indicators" onNavigate={() => setSidebarOpen(false)}>
                                             <ChartColumn className="h-4 w-4" /> Indicateurs RH
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink href="/admin/attendance" onNavigate={() => setSidebarOpen(false)}>
+                                            <Clock className="h-4 w-4" /> Pointage
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink href="/admin/payslips" onNavigate={() => setSidebarOpen(false)}>
+                                            <Wallet className="h-4 w-4" /> Bulletins de paie
                                         </NavLink>
                                     </li>
                                     <li>

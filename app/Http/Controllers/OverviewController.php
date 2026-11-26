@@ -7,9 +7,11 @@ use App\Enums\LeaveType;
 use App\Models\Demande;
 use App\Models\EmployeeDocument;
 use App\Models\User;
+use App\Services\AttendanceCalculator;
 use App\Services\HrTodo;
 use App\Services\LeaveCalculator;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -22,13 +24,16 @@ class OverviewController extends Controller
     /** How many days ahead "coming up" looks. */
     private const UPCOMING_DAYS = 7;
 
+    /** How many days ahead birthdays are listed. */
+    private const BIRTHDAY_DAYS = 30;
+
     public function __construct(private readonly LeaveCalculator $calculator) {}
 
     public function index(): Response
     {
         $today = today();
         $year = $today->year;
-        $employees = User::active()->with(['department:id,name', 'contracts'])->orderBy('name')->get();
+        $employees = User::active()->with(['department:id,name', 'contracts', 'profile:id,user_id,birth_date'])->orderBy('name')->get();
         $absences = $this->absences($employees, $today);
 
         return Inertia::render('Admin/Overview', [
@@ -60,6 +65,9 @@ class OverviewController extends Controller
                     'expiry' => EmployeeDocumentController::expiry($document),
                 ]),
             ...$absences,
+            'birthdays' => $this->birthdays($employees, $today),
+            // Who clocked in today (null while attendance tracking has not started).
+            'attendance' => AttendanceReportController::today(app(AttendanceCalculator::class)),
             'waiting' => Demande::with('user:id,name')
                 ->whereIn('etat', [...LeaveStatus::awaiting(), LeaveStatus::CancellationRequested])
                 ->orderBy('date_debut')
@@ -110,6 +118,46 @@ class OverviewController extends Controller
             'offToday' => $offToday->map($entry)->values()->all(),
             'upcoming' => $leaves->diff($offToday)->map($entry)->values()->all(),
         ];
+    }
+
+    /**
+     * Active employees whose birthday falls today or within the next days, soonest
+     * first. Someone born on 29 February celebrates on 28 February in other years.
+     *
+     * @return list<array{user_id: int, name: string, department: ?string, date: string, age: int}>
+     */
+    private function birthdays($employees, Carbon $today): array
+    {
+        $horizon = $today->copy()->addDays(self::BIRTHDAY_DAYS);
+
+        return $employees
+            ->filter(fn (User $employee) => $employee->profile?->birth_date)
+            ->map(function (User $employee) use ($today) {
+                $born = $employee->profile->birth_date;
+                $next = $this->birthdayIn($born, $today->year);
+                if ($next->lt($today)) {
+                    $next = $this->birthdayIn($born, $today->year + 1);
+                }
+
+                return [
+                    'user_id' => $employee->id,
+                    'name' => $employee->name,
+                    'department' => $employee->department?->name,
+                    'date' => $next->toDateString(),
+                    'age' => $next->year - $born->year,
+                ];
+            })
+            ->filter(fn (array $row) => $row['date'] <= $horizon->toDateString())
+            ->sortBy(fn (array $row) => [$row['date'], $row['name']])
+            ->values()
+            ->all();
+    }
+
+    private function birthdayIn(CarbonInterface $born, int $year): Carbon
+    {
+        $day = $born->month === 2 && $born->day === 29 && ! Carbon::create($year)->isLeapYear() ? 28 : $born->day;
+
+        return Carbon::create($year, $born->month, $day)->startOfDay();
     }
 
     /**

@@ -90,3 +90,33 @@ test('employees cannot see the overview', function () {
         ->get('/admin/overview')
         ->assertForbidden();
 });
+
+test('it lists birthdays in the next 30 days, soonest first, with the age they turn', function () {
+    $admin = overviewAdmin();
+    $born = fn (string $name, string $date, array $attributes = []) => User::factory()->create(['name' => $name, ...$attributes])
+        ->profile()->create(['birth_date' => $date]);
+
+    $born('Today', '1990-03-04');
+    $born('Soon', '1985-03-20');
+    $born('Passed', '1992-03-01');           // three days ago: next year
+    $born('Far', '1980-05-10');              // more than 30 days away
+    $born('Gone', '1990-03-05', ['deactivated_at' => now()]);
+    User::factory()->create(['name' => 'Unknown']);
+
+    $this->actingAs($admin)->get('/admin/overview')->assertInertia(fn (Assert $page) => $page
+        ->has('birthdays', 2)
+        ->where('birthdays.0.name', 'Today')
+        ->where('birthdays.0.date', '2026-03-04')
+        ->where('birthdays.0.age', 36)
+        ->where('birthdays.1.name', 'Soon')
+        ->where('birthdays.1.age', 41));
+});
+
+test('a 29 February birthday is shown on 28 February in other years', function () {
+    $this->travelTo('2026-02-10');
+    User::factory()->create(['name' => 'Leap'])->profile()->create(['birth_date' => '2000-02-29']);
+
+    $this->actingAs(overviewAdmin())->get('/admin/overview')->assertInertia(fn (Assert $page) => $page
+        ->where('birthdays.0.date', '2026-02-28')
+        ->where('birthdays.0.age', 26));
+});

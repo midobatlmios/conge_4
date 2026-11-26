@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AttestationType;
+use App\Enums\CareerChangeKind;
 use App\Enums\DocumentCategory;
 use App\Enums\LeaveStatus;
 use App\Enums\LeaveType;
@@ -45,6 +46,8 @@ class EmployeeController extends Controller
             'contracts' => $user->contracts->map(EmploymentContractController::present(...))->all(),
             'contractAlerts' => EmploymentContractController::alerts(collect([$user])),
             'contractOptions' => EmploymentContractController::options(),
+            'careerChanges' => $user->careerChanges()->with('author:id,name')->get()->map->present(),
+            'careerKinds' => CareerChangeKind::options(),
             'sickDays' => $this->sickDays($user),
             // Delegation of their approvals, when they manage a team.
             'isManager' => $user->isManager(),
@@ -116,6 +119,7 @@ class EmployeeController extends Controller
         return Inertia::render('settings/personal-data', [
             'profile' => $request->user()->profile?->makeHidden(['updated_by', 'user_id']),
             'contracts' => $request->user()->contracts->map(EmploymentContractController::present(...))->all(),
+            'careerChanges' => $request->user()->careerChanges()->get()->map->present(),
         ]);
     }
 }

@@ -20,6 +20,10 @@ use Illuminate\Support\Collection;
  * - Absenteeism (unplanned): sick + unpaid leave days ÷ theoretical working days.
  *   Planned leave (annual, recovery, family events) is reported apart.
  * - Turnover: departures ÷ average month-end headcount.
+ * - Payroll cost (masse salariale brute): for each month, the monthly gross
+ *   salary of everyone employed on its last day (today for the current
+ *   month), from the contract in force and the raises recorded since. Unpaid
+ *   days, bonuses and employer contributions are not included.
  * Only booked leave counts (accepted, or accepted with a cancellation pending).
  * The current year stops today.
  */
@@ -42,7 +46,7 @@ class HrIndicators
         $start = Carbon::create($year, 1, 1)->startOfDay();
         $end = Carbon::create($year, 12, 31)->startOfDay()->min(today());
 
-        $people = User::with('department:id,name')
+        $people = User::with(['department:id,name', 'contracts', 'careerChanges'])
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
             ->get();
 
@@ -85,10 +89,13 @@ class HrIndicators
             $unpaid = $this->leaveDaysIn($leaves->where('type_conge', LeaveType::Unpaid), $from, $to);
             $planned = $this->leaveDaysIn($leaves->reject(fn (Demande $leave) => in_array($leave->type_conge, self::UNPLANNED, true)), $from, $to);
 
+            $employed = $people->filter(fn (User $user) => $this->employedOn($user, $to));
+            $salaries = $employed->map(fn (User $user) => $user->salaryOn($to));
+
             $rows[] = [
                 'month' => $month,
                 'label' => self::MONTHS[$month - 1],
-                'headcount' => $people->filter(fn (User $user) => $this->employedOn($user, $to))->count(),
+                'headcount' => $employed->count(),
                 'hires' => $people->filter(fn (User $user) => $user->hire_date?->betweenIncluded($from, $to))->count(),
                 'departures' => $people->filter(fn (User $user) => $user->deactivated_at?->copy()->startOfDay()->betweenIncluded($from, $to))->count(),
                 'theoretical_days' => $theoretical,
@@ -98,6 +105,8 @@ class HrIndicators
                 'sick_stops' => $leaves->where('type_conge', LeaveType::Sick)
                     ->filter(fn (Demande $leave) => Carbon::parse($leave->date_debut)->betweenIncluded($from, $to))->count(),
                 'absenteeism' => $this->rate($sick + $unpaid, $theoretical),
+                'payroll' => round($salaries->sum(), 2),
+                'missing_salaries' => $salaries->filter(fn (?float $salary) => $salary === null)->count(),
             ];
         }
 
@@ -130,14 +139,25 @@ class HrIndicators
             'planned_days' => $months->sum('planned_days'),
             'sick_stops' => $months->sum('sick_stops'),
             'absenteeism' => $this->rate($unplanned, $theoretical),
+            'payroll' => round($months->sum('payroll'), 2),
+            'average_payroll' => round($months->avg('payroll') ?? 0, 2),
+            // Gross salary per employee and month, over the months with a salary bill.
+            'average_salary' => $this->average($months->sum('payroll'), $months->sum(fn (array $m) => $m['headcount'] - $m['missing_salaries'])),
+            // Employed at the end of the period without a known salary: the bill is understated.
+            'missing_salaries' => $months->last()['missing_salaries'] ?? 0,
         ];
     }
 
     /** @return list<array<string, mixed>> */
     private function byDepartment(Carbon $start, Carbon $end, Collection $people, array $workingDays, Collection $leaves): array
     {
+        $monthEnds = [];
+        for ($month = 1; $month <= $end->month; $month++) {
+            $monthEnds[] = Carbon::create($start->year, $month, 1)->endOfMonth()->startOfDay()->min($end);
+        }
+
         return $people->groupBy(fn (User $user) => $user->department?->name ?? '')
-            ->map(function (Collection $members, string $name) use ($start, $end, $workingDays, $leaves) {
+            ->map(function (Collection $members, string $name) use ($start, $end, $workingDays, $leaves, $monthEnds) {
                 $ids = $members->modelKeys();
                 $theoretical = $members->sum(fn (User $user) => $this->employedWorkingDays($user, $start, $end, $workingDays));
                 $mine = $leaves->whereIn('user_id', $ids);
@@ -151,6 +171,9 @@ class HrIndicators
                     'sick_days' => $sick,
                     'unpaid_days' => $unpaid,
                     'absenteeism' => $this->rate($sick + $unpaid, $theoretical),
+                    'payroll' => round(collect($monthEnds)->sum(fn (Carbon $day) => $members
+                        ->filter(fn (User $user) => $this->employedOn($user, $day))
+                        ->sum(fn (User $user) => $user->salaryOn($day) ?? 0)), 2),
                 ];
             })
             // Departments by name, employees without one last.
@@ -236,6 +259,12 @@ class HrIndicators
         return (float) $leaves->sum(fn (Demande $leave) => $this->calculator->leaveDays(
             $leave->date_debut, $leave->date_fin, (bool) $leave->start_half, (bool) $leave->end_half, $from, $to
         ));
+    }
+
+    /** An amount with two decimals, or null when there is nothing to divide by. */
+    private function average(float $total, float $count): ?float
+    {
+        return $count > 0 ? round($total / $count, 2) : null;
     }
 
     /** A percentage with one decimal, or null when there is nothing to divide by. */

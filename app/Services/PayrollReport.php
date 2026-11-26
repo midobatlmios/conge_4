@@ -32,6 +32,11 @@ class PayrollReport
         'sick' => 'Maladie (j)',
         'total' => 'Total absences (j)',
         'balance' => 'Solde fin de mois (j)',
+        // From attendance (empty while tracking has not started).
+        'absent_days' => 'Absences non justifiées (j)',
+        'overtime_25' => 'H. sup. +25 % (h)',
+        'overtime_50' => 'H. sup. +50 % (h)',
+        'overtime_100' => 'H. sup. +100 % (h)',
     ];
 
     /** Which column each leave type is counted in. */
@@ -45,7 +50,10 @@ class PayrollReport
         'maladie' => 'sick',
     ];
 
-    public function __construct(private readonly LeaveCalculator $calculator) {}
+    public function __construct(
+        private readonly LeaveCalculator $calculator,
+        private readonly AttendanceCalculator $attendance,
+    ) {}
 
     /**
      * One row per employee on the payroll that month: active then, and hired by
@@ -72,7 +80,11 @@ class PayrollReport
             ->get()
             ->groupBy('user_id');
 
-        return $employees->map(function (User $employee) use ($leaves, $start, $end) {
+        $attendance = $this->attendance->isTracking($end) && $start->lte(today())
+            ? $this->attendance->days($employees, $start, $end->copy()->min(today()))
+            : null;
+
+        return $employees->map(function (User $employee) use ($leaves, $start, $end, $attendance) {
             $days = ['annual' => 0, 'exceptional' => 0, 'unpaid' => 0, 'recovery' => 0, 'sick' => 0];
 
             foreach ($leaves[$employee->id] ?? [] as $leave) {
@@ -91,8 +103,31 @@ class PayrollReport
                 'total' => array_sum($days),
                 'balance' => $this->calculator->availableDays($employee, $end->year, $end)
                     - $this->calculator->usedDaysUntil($employee->id, $end->year, $end),
+                ...$this->attendanceColumns($attendance === null ? null : ($attendance[$employee->id] ?? [])),
             ];
         })->values();
+    }
+
+    /**
+     * Unjustified absences and overtime hours (by legal rate) of the month.
+     *
+     * @param  list<array<string, mixed>>|null  $days  null while attendance is not tracked
+     * @return array<string, float|int|null>
+     */
+    private function attendanceColumns(?array $days): array
+    {
+        if ($days === null) {
+            return ['absent_days' => null, 'overtime_25' => null, 'overtime_50' => null, 'overtime_100' => null];
+        }
+
+        $totals = $this->attendance->totals($days);
+
+        return [
+            'absent_days' => $totals['absent_days'],
+            'overtime_25' => round($totals['overtime_25'] / 60, 2),
+            'overtime_50' => round($totals['overtime_50'] / 60, 2),
+            'overtime_100' => round($totals['overtime_100'] / 60, 2),
+        ];
     }
 
     /** The month's report as an Excel workbook, saved to a temporary file whose path is returned. */

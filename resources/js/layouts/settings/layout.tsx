@@ -28,6 +28,11 @@ const sidebarNavItems: NavItem[] = [
         icon: null,
     },
     {
+        title: 'Mes bulletins',
+        href: '/settings/payslips',
+        icon: null,
+    },
+    {
         title: 'Calendrier',
         href: '/settings/calendar',
         icon: null,

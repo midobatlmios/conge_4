@@ -1,3 +1,5 @@
+import { CareerChange } from '@/components/employees/career';
+import CareerHistory from '@/components/employees/CareerHistory';
 import ContractList from '@/components/employees/ContractList';
 import { Contract } from '@/components/employees/contracts';
 import { EmployeeProfile } from '@/components/employees/personal-data';
@@ -12,7 +14,15 @@ import { Lock } from 'lucide-react';
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Données personnelles', href: '/settings/personal-data' }];
 
 /** The employee's own personal data. Only HR can change it. */
-export default function PersonalData({ profile, contracts }: { profile: EmployeeProfile | null; contracts: Contract[] }) {
+export default function PersonalData({
+    profile,
+    contracts,
+    careerChanges,
+}: {
+    profile: EmployeeProfile | null;
+    contracts: Contract[];
+    careerChanges: CareerChange[];
+}) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Données personnelles" />
@@ -42,6 +52,13 @@ export default function PersonalData({ profile, contracts }: { profile: Employee
                         <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Mes contrats</h3>
                         <ContractList contracts={contracts} />
                     </section>
+
+                    {careerChanges.length > 0 && (
+                        <section className="space-y-2">
+                            <h3 className="text-muted-foreground text-sm font-semibold tracking-wide uppercase">Mon évolution</h3>
+                            <CareerHistory changes={careerChanges} />
+                        </section>
+                    )}
                 </div>
             </SettingsLayout>
         </AppLayout>

@@ -8,6 +8,7 @@ use App\Enums\LeaveStatus;
 use App\Enums\LeaveType;
 use App\Enums\Role;
 use App\Models\Attestation;
+use App\Models\CareerChange;
 use App\Models\CompanySetting;
 use App\Models\Demande;
 use App\Models\DemandeDocument;
@@ -69,6 +70,53 @@ class DemoSeeder extends Seeder
 
         $this->showcaseCases();
         $this->attestations();
+        $this->careerChanges();
+        $this->call(DemoAttendanceSeeder::class);
+    }
+
+    /**
+     * A few promotions, raises, a transfer and a reclassification. The staff
+     * list holds today's job, department and salary, so each change records
+     * what it was before; the payroll cost chart shows the steps.
+     */
+    private function careerChanges(): void
+    {
+        $january = now()->startOfYear();
+        $changes = [
+            // The demo employee account: sees it in Paramètres → Données personnelles.
+            ['sara', 'promotion', now()->subMonthsNoOverflow(8)->startOfMonth(), ['job_title' => 'Commerciale', 'gross_salary' => '10000'], 'Avenant signé après l\'entretien annuel.'],
+            ['comptable', 'augmentation', $january, ['gross_salary' => '10700'], 'Augmentation annuelle.'],
+            ['support', 'augmentation', $january, ['gross_salary' => '7850'], 'Augmentation annuelle.'],
+            ['cariste', 'augmentation', $january, ['gross_salary' => '4400'], 'Augmentation annuelle.'],
+            ['ghita', 'mutation', now()->subMonthsNoOverflow(5)->startOfMonth(), ['job_title' => 'Assistante logistique', 'department' => 'Logistique'], 'À sa demande, poste ouvert au service commercial.'],
+            ['comptable2', 'reclassement', now()->subMonthsNoOverflow(3)->startOfMonth(), ['job_title' => 'Contrôleuse de gestion junior', 'category' => 'employe', 'gross_salary' => '16000'], null],
+        ];
+
+        foreach ($changes as [$key, $kind, $date, $before, $notes]) {
+            $person = $this->people[$key];
+            $contract = $person->currentContract();
+            $previousDepartment = isset($before['department']) ? Department::where('name', $before['department'])->first() : null;
+
+            CareerChange::create([
+                'user_id' => $person->id,
+                'contract_id' => $contract->id,
+                'effective_date' => $this->nextWorkingDay($date->copy()->max(Carbon::parse($person->hire_date)))->min(today())->toDateString(),
+                'kind' => $kind,
+                'previous_job_title' => $before['job_title'] ?? null,
+                'job_title' => isset($before['job_title']) ? $person->job_title : null,
+                'department_changed' => $previousDepartment !== null,
+                'previous_department_id' => $previousDepartment?->id,
+                'previous_department' => $previousDepartment?->name,
+                'department_id' => $previousDepartment ? $person->department_id : null,
+                'department' => $previousDepartment ? $person->department?->name : null,
+                'previous_category' => $before['category'] ?? null,
+                'category' => isset($before['category']) ? $contract->category : null,
+                'previous_gross_salary' => $before['gross_salary'] ?? null,
+                'gross_salary' => isset($before['gross_salary']) ? $contract->gross_salary : null,
+                'notes' => $notes,
+                'created_by' => $this->hr->id,
+            ]);
+        }
     }
 
     private function company(): void

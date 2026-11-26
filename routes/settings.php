@@ -4,6 +4,7 @@ use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDocumentController;
+use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\Settings\PasswordController;
 use App\Http\Controllers\Settings\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -23,6 +24,7 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/personal-data', [EmployeeController::class, 'own'])->name('personal-data');
     Route::get('settings/documents', [EmployeeDocumentController::class, 'own'])->name('my-documents');
     Route::get('settings/attestations', [AttestationController::class, 'mine'])->name('my-attestations');
+    Route::get('settings/payslips', [PayrollRunController::class, 'own'])->name('my-payslips');
 
     // Calendar subscription links (iCal) for Outlook / Google Calendar.
     Route::get('settings/calendar', [CalendarFeedController::class, 'settings'])->name('calendar-feed.settings');

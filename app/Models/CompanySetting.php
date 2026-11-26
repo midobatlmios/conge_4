@@ -36,7 +36,13 @@ class CompanySetting extends Model
     /** Small words left out of the initials ("Société de Distribution" → SD). */
     private const NOT_INITIALS = ['de', 'du', 'des', 'la', 'le', 'les', 'et', 'l', 'd', 'sarl', 'sa', 'sas', 'sarlau'];
 
-    protected $fillable = self::FIELDS;
+    /** The company schedule and attendance tracking (Pointage page), not printed on documents. */
+    public const SCHEDULE_FIELDS = ['work_start', 'lunch_start', 'lunch_end', 'work_end', 'late_tolerance_minutes', 'attendance_started_on'];
+
+    protected $fillable = [...self::FIELDS, ...self::SCHEDULE_FIELDS];
+
+    /** @var array<string, string> */
+    protected $casts = ['attendance_started_on' => 'date:Y-m-d', 'late_tolerance_minutes' => 'integer'];
 
     protected $hidden = ['logo_path'];
 

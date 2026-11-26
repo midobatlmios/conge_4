@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Download } from 'lucide-react';
+import { Download, FileText } from 'lucide-react';
 import { ReactNode } from 'react';
 
 type Month = {
@@ -20,6 +20,9 @@ type Month = {
     planned_days: number;
     sick_stops: number;
     absenteeism: number | null;
+    /** Monthly gross salaries of those employed on the last day (DH). */
+    payroll: number;
+    missing_salaries: number;
 };
 
 type Summary = {
@@ -36,6 +39,10 @@ type Summary = {
     planned_days: number;
     sick_stops: number;
     absenteeism: number | null;
+    payroll: number;
+    average_payroll: number;
+    average_salary: number | null;
+    missing_salaries: number;
 };
 
 type DepartmentRow = {
@@ -45,6 +52,7 @@ type DepartmentRow = {
     sick_days: number;
     unpaid_days: number;
     absenteeism: number | null;
+    payroll: number;
 };
 type BalanceRow = { id: number; name: string; department: string | null; remaining: number; carry_left: number };
 
@@ -75,8 +83,19 @@ const breadcrumbs: BreadcrumbItem[] = [
 const number = (value: number, digits = 1) => value.toLocaleString('fr-FR', { maximumFractionDigits: digits });
 const percent = (value: number | null) => (value === null ? '—' : `${number(value)} %`);
 const days = (value: number) => `${number(value)} j`;
+const dh = (value: number) => `${number(value, 0)} DH`;
+/** Large amounts on the chart axis: "1,2 M", "850 k". */
+const compactDh = (value: number) =>
+    value >= 1_000_000 ? `${number(value / 1_000_000)} M` : value >= 1_000 ? `${number(value / 1_000, 0)} k` : number(value, 0);
 const frDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('fr-FR');
 const selectClass = 'border-input bg-background h-9 rounded-md border px-3 text-sm';
+
+/** "12 salaires (1 manquant)" for a month. */
+function salaryCount(m: Month) {
+    const known = m.headcount - m.missing_salaries;
+    const missing = m.missing_salaries > 0 ? ` (${m.missing_salaries} manquant${m.missing_salaries > 1 ? 's' : ''})` : '';
+    return `${known} salaire${known > 1 ? 's' : ''}${missing}`;
+}
 
 function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
     return (
@@ -96,14 +115,16 @@ export default function Indicators({ year, until, summary, months, departments, 
         const department = params.department === undefined ? departmentId : params.department;
         router.get('/admin/indicators', { year: params.year ?? year, ...(department ? { department } : {}) }, { preserveScroll: true });
     };
-    const exportUrl = `/admin/indicators/export?year=${year}${departmentId ? `&department=${departmentId}` : ''}`;
+    const query = `year=${year}${departmentId ? `&department=${departmentId}` : ''}`;
+    const exportUrl = `/admin/indicators/export?${query}`;
+    const pdfUrl = `/admin/indicators/export-pdf?${query}`;
     const isCurrentYear = until.slice(0, 4) === String(new Date().getFullYear()) && year === new Date().getFullYear();
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Indicateurs RH" />
             <div className="container mx-auto max-w-6xl space-y-6 px-4 py-10">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold">Indicateurs RH</h1>
                         <p className="text-muted-foreground mt-1 text-sm">
@@ -135,7 +156,12 @@ export default function Indicators({ year, until, summary, months, departments, 
                         </select>
                         <Button variant="outline" asChild>
                             <a href={exportUrl}>
-                                <Download className="mr-2 h-4 w-4" /> Bilan annuel (Excel)
+                                <Download className="mr-2 h-4 w-4" /> Bilan (Excel)
+                            </a>
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <a href={pdfUrl}>
+                                <FileText className="mr-2 h-4 w-4" /> Bilan (PDF)
                             </a>
                         </Button>
                     </div>
@@ -208,10 +234,53 @@ export default function Indicators({ year, until, summary, months, departments, 
                     </Card>
                 </div>
 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Masse salariale brute</CardTitle>
+                        <CardDescription>
+                            Salaires bruts mensuels des contrats en cours le dernier jour de chaque mois, augmentations comprises. Hors primes, jours
+                            sans solde et charges patronales.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <dl className="grid gap-4 sm:grid-cols-3">
+                            <div>
+                                <dt className="text-muted-foreground text-sm">Sur la période</dt>
+                                <dd className="text-2xl font-bold tabular-nums">{dh(summary.payroll)}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-muted-foreground text-sm">Par mois en moyenne</dt>
+                                <dd className="text-2xl font-bold tabular-nums">{dh(summary.average_payroll)}</dd>
+                            </div>
+                            <div>
+                                <dt className="text-muted-foreground text-sm">Salaire brut moyen</dt>
+                                <dd className="text-2xl font-bold tabular-nums">
+                                    {summary.average_salary === null ? '—' : dh(summary.average_salary)}
+                                </dd>
+                            </div>
+                        </dl>
+                        {summary.missing_salaries > 0 && (
+                            <p role="status" className="text-sm text-orange-700 dark:text-orange-400">
+                                {summary.missing_salaries} employé{summary.missing_salaries > 1 ? 's' : ''} en poste sans salaire renseigné sur leur
+                                contrat : la masse salariale est sous-estimée.
+                            </p>
+                        )}
+                        <MonthlyBars
+                            title="Masse salariale brute par mois"
+                            format={compactDh}
+                            bars={months.map((m) => ({
+                                label: m.label,
+                                value: m.payroll,
+                                details: [dh(m.payroll), salaryCount(m)],
+                            }))}
+                        />
+                    </CardContent>
+                </Card>
+
                 <div className="grid gap-6 2xl:grid-cols-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Absentéisme par département</CardTitle>
+                            <CardTitle>Par département</CardTitle>
                             <CardDescription>Sur toute la période{departmentId ? ', tous départements confondus' : ''}.</CardDescription>
                         </CardHeader>
                         <CardContent className="overflow-x-auto">
@@ -223,6 +292,7 @@ export default function Indicators({ year, until, summary, months, departments, 
                                         <TableHead className="text-right">Maladie</TableHead>
                                         <TableHead className="text-right">Sans solde</TableHead>
                                         <TableHead className="text-right">Absentéisme</TableHead>
+                                        <TableHead className="text-right">Masse salariale</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -233,6 +303,7 @@ export default function Indicators({ year, until, summary, months, departments, 
                                             <TableCell className="text-right tabular-nums">{days(d.sick_days)}</TableCell>
                                             <TableCell className="text-right tabular-nums">{days(d.unpaid_days)}</TableCell>
                                             <TableCell className="text-right font-medium tabular-nums">{percent(d.absenteeism)}</TableCell>
+                                            <TableCell className="text-right tabular-nums">{dh(d.payroll)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -303,6 +374,7 @@ export default function Indicators({ year, until, summary, months, departments, 
                                     <TableHead className="text-right">Sans solde</TableHead>
                                     <TableHead className="text-right">Absentéisme</TableHead>
                                     <TableHead className="text-right">Congés planifiés</TableHead>
+                                    <TableHead className="text-right">Masse salariale</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -317,6 +389,7 @@ export default function Indicators({ year, until, summary, months, departments, 
                                         <TableCell className="text-right tabular-nums">{days(m.unpaid_days)}</TableCell>
                                         <TableCell className="text-right font-medium tabular-nums">{percent(m.absenteeism)}</TableCell>
                                         <TableCell className="text-right tabular-nums">{days(m.planned_days)}</TableCell>
+                                        <TableCell className="text-right tabular-nums">{dh(m.payroll)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

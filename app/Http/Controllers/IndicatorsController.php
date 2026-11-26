@@ -8,12 +8,13 @@ use App\Models\User;
 use App\Services\HrIndicators;
 use App\Services\HrIndicatorsReport;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response as HttpResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * HR indicators per year and department, and the year-end report as Excel.
+ * HR indicators per year and department, and the year-end report as Excel or PDF.
  * Behind the role:admin,rh,paie middleware.
  */
 class IndicatorsController extends Controller
@@ -45,7 +46,15 @@ class IndicatorsController extends Controller
             ->deleteFileAfterSend();
     }
 
-    /** @return array{0: int, 1: ?Department} The requested year (default: this one) and department. */
+    public function exportPdf(Request $request, HrIndicatorsReport $report): HttpResponse
+    {
+        [$year, $department] = $this->filters($request);
+
+        return $report->toPdf($this->indicators->compute($year, $department?->id), $department?->name)
+            ->download(HrIndicatorsReport::fileName($year, $department?->name, 'pdf'));
+    }
+
+    /** @return array{0: int, 1: ?Department}The requested year (default: this one) and department. */
     private function filters(Request $request): array
     {
         $years = $this->years();

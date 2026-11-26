@@ -5,6 +5,9 @@ import { Attestation, TypeOption } from '@/components/attestations/attestations'
 import { confirmAction } from '@/components/confirm-dialog';
 import DelegationPanel, { Delegation } from '@/components/DelegationPanel';
 import EditUtilisateurModal from '@/components/EditUtilisateurModal';
+import { CareerChange } from '@/components/employees/career';
+import CareerChangeForm from '@/components/employees/CareerChangeForm';
+import CareerHistory from '@/components/employees/CareerHistory';
 import ContractForm from '@/components/employees/ContractForm';
 import ContractList from '@/components/employees/ContractList';
 import { alertText, Contract, ContractAlert, ContractOptions } from '@/components/employees/contracts';
@@ -21,7 +24,7 @@ import AppLayout from '@/layouts/app-layout';
 import { canManageAccount, ROLE_LABELS, RoleOption, usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { AlertTriangle, ArrowLeft, Download, FileBadge, FileSignature, FolderOpen, Lock, Pencil, Plus, UserCheck } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Download, FileBadge, FileSignature, FolderOpen, Lock, Pencil, Plus, TrendingUp, UserCheck } from 'lucide-react';
 import { useState } from 'react';
 
 interface EmployeeProps {
@@ -41,6 +44,9 @@ interface EmployeeProps {
     contracts: Contract[];
     contractAlerts: ContractAlert[];
     contractOptions: ContractOptions;
+    /** Promotions, raises and transfers, newest first. */
+    careerChanges: CareerChange[];
+    careerKinds: { value: string; label: string }[];
     attestations: Attestation[];
     attestationTypes: TypeOption[];
     /** Sick leave this year: working days off, calendar days (CNSS), number of stops. */
@@ -74,6 +80,8 @@ export default function Employee({
     contracts,
     contractAlerts,
     contractOptions,
+    careerChanges,
+    careerKinds,
     attestations,
     attestationTypes,
     sickDays,
@@ -89,6 +97,20 @@ export default function Employee({
     const canEditData = can.manage_hr && !isSelf;
     // null: no form open; 'new': adding; a contract: editing it.
     const [contractForm, setContractForm] = useState<Contract | 'new' | null>(null);
+    const [careerFormOpen, setCareerFormOpen] = useState(false);
+    // As on the server: the latest contract that has started, else the next one.
+    const today = new Date().toLocaleDateString('sv-SE');
+    const currentContract = contracts.find((c) => c.start_date <= today) ?? contracts.at(-1) ?? null;
+
+    const deleteCareerChange = async (change: CareerChange) => {
+        const ok = await confirmAction({
+            title: 'Supprimer ce changement ?',
+            description: `${change.kind_label} du ${formatDate(change.effective_date)}. À utiliser pour une erreur de saisie : le poste, le département, la catégorie et le salaire d'avant sont rétablis.`,
+            confirmLabel: 'Supprimer',
+            destructive: true,
+        });
+        if (ok) router.delete(`/admin/career-changes/${change.id}`, { preserveScroll: true, onError: toastErrors });
+    };
 
     const deleteContract = async (contract: Contract) => {
         const ok = await confirmAction({
@@ -212,6 +234,43 @@ export default function Employee({
                             contracts={contracts}
                             onEdit={canEditData ? setContractForm : undefined}
                             onDelete={canEditData ? deleteContract : undefined}
+                        />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-start justify-between gap-4">
+                        <div className="space-y-1.5">
+                            <CardTitle className="flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4" /> Évolution de carrière
+                            </CardTitle>
+                            <CardDescription>Promotions, augmentations et mutations, de la plus récente à l'embauche.</CardDescription>
+                        </div>
+                        {canEditData && !careerFormOpen && (
+                            <Button variant="outline" size="sm" onClick={() => setCareerFormOpen(true)}>
+                                <Plus className="mr-2 h-4 w-4" /> Nouveau changement
+                            </Button>
+                        )}
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {careerFormOpen && (
+                            <CareerChangeForm
+                                employeeId={employee.id}
+                                current={{
+                                    jobTitle: employee.job_title ?? null,
+                                    departmentId: employee.department_id ?? null,
+                                    contract: currentContract,
+                                }}
+                                kinds={careerKinds}
+                                categories={contractOptions.categories}
+                                departments={departments}
+                                onDone={() => setCareerFormOpen(false)}
+                            />
+                        )}
+                        <CareerHistory
+                            changes={careerChanges}
+                            hireDate={employee.hire_date}
+                            onDelete={canEditData ? deleteCareerChange : undefined}
                         />
                     </CardContent>
                 </Card>

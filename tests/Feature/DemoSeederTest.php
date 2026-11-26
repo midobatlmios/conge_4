@@ -26,7 +26,16 @@ test('the demo company has staff, managers, contracts, folders and a year of lea
         ->and(Demande::count())->toBeGreaterThan(80)
         ->and(Demande::where('type_conge', LeaveType::Sick)->count())->toBeGreaterThan(5)
         ->and(EmployeeDocument::count())->toBeGreaterThan(50)
-        ->and(Attestation::count())->toBe(6);
+        ->and(Attestation::count())->toBe(6)
+        ->and(App\Models\CareerChange::count())->toBe(6)
+        // A month and more of clocking, with corrections waiting for the sales manager.
+        ->and(App\Models\AttendanceRecord::count())->toBeGreaterThan(400)
+        ->and(App\Models\AttendanceCorrection::pending()->count())->toBe(2);
+
+    // Sara was promoted: her salary before the promotion is still known (payroll cost).
+    $sara = User::with(['contracts', 'careerChanges'])->where('email', 'employe@'.DemoSeeder::DOMAIN)->sole();
+    expect($sara->salaryOn(now()->subYear()))->toBe(10000.0)
+        ->and($sara->salaryOn(today()))->toBe(12500.0);
 
     User::all()->each(fn (User $user) => expect($user->contracts()->exists())->toBeTrue()
         ->and($user->profile)->not->toBeNull());

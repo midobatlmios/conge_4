@@ -93,6 +93,7 @@ class DataRetention
             Demande::whereIn('id', $leaveIds)->update(['comment' => null, 'manager_comment' => null]);
             DemandeEvent::where('employee_id', $person->id)->update(['changes' => null]);
             $person->contracts()->update(['notes' => null, 'job_title' => null, 'gross_salary' => null]);
+            $person->careerChanges()->update(['notes' => null, 'previous_job_title' => null, 'job_title' => null, 'previous_gross_salary' => null, 'gross_salary' => null]);
             $person->notifications()->delete();
 
             $person->forceFill([

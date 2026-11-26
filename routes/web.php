@@ -1,9 +1,13 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceCorrectionController;
+use App\Http\Controllers\AttendanceReportController;
 use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CalendarFeedController;
+use App\Http\Controllers\CareerChangeController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DelegationController;
@@ -20,6 +24,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrgChartController;
 use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\PrivacyController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
@@ -81,6 +86,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Org chart from the manager links (everyone; no personal data).
     Route::get('/organigramme', [OrgChartController::class, 'index'])->name('org-chart');
 
+    // Attendance: clock in / out, own month, corrections (asked by the employee,
+    // decided by their manager, the delegate or HR).
+    Route::get('/pointage', [AttendanceController::class, 'index'])->name('attendance.index');
+    Route::post('/pointage/arrivee', [AttendanceController::class, 'clockIn'])->name('attendance.clock-in');
+    Route::post('/pointage/depart', [AttendanceController::class, 'clockOut'])->name('attendance.clock-out');
+    Route::post('/pointage/corrections', [AttendanceController::class, 'requestCorrection'])->name('attendance.corrections.store');
+    Route::get('/pointage/corrections', [AttendanceCorrectionController::class, 'index'])->name('attendance.corrections.index');
+    Route::put('/pointage/corrections/{correction}/approve', [AttendanceCorrectionController::class, 'approve'])->name('attendance.corrections.approve');
+    Route::put('/pointage/corrections/{correction}/refuse', [AttendanceCorrectionController::class, 'refuse'])->name('attendance.corrections.refuse');
+
+    // A payslip PDF: HR / Paie / Admin, or its employee once the month is validated.
+    Route::get('/bulletins/{payslip}/pdf', [PayrollRunController::class, 'pdf'])->name('payslips.pdf');
+
     // A document of an employee's folder: HR (incl. Paie) and the employee themself.
     Route::get('/employee-documents/{document}', [EmployeeDocumentController::class, 'show'])->name('employee-documents.show');
 
@@ -108,6 +126,20 @@ Route::middleware(['auth', 'verified', 'role:admin,rh,paie'])->prefix('admin')->
     // HR indicators and the year-end report (Excel).
     Route::get('/indicators', [IndicatorsController::class, 'index'])->name('indicators.index');
     Route::get('/indicators/export', [IndicatorsController::class, 'export'])->name('indicators.export');
+
+    // Monthly payroll: Paie prepares (also RH / Admin); validation is checked in the controller.
+    Route::get('/payslips', [PayrollRunController::class, 'index'])->name('payslips.index');
+    Route::post('/payslips/prepare', [PayrollRunController::class, 'prepare'])->name('payslips.prepare');
+    Route::put('/payroll-runs/{run}/recalculate', [PayrollRunController::class, 'recalculate'])->name('payroll-runs.recalculate');
+    Route::put('/payroll-runs/{run}/submit', [PayrollRunController::class, 'submit'])->name('payroll-runs.submit');
+    Route::put('/payroll-runs/{run}/reopen', [PayrollRunController::class, 'reopen'])->name('payroll-runs.reopen');
+    Route::put('/payroll-runs/{run}/lock', [PayrollRunController::class, 'lock'])->name('payroll-runs.lock');
+    Route::put('/payslips/{payslip}/overtime', [PayrollRunController::class, 'updateOvertime'])->name('payslips.overtime');
+
+    // Attendance report per month (Excel export).
+    Route::get('/attendance', [AttendanceReportController::class, 'index'])->name('attendance.index');
+    Route::get('/attendance/export', [AttendanceReportController::class, 'export'])->name('attendance.export');
+    Route::get('/indicators/export-pdf', [IndicatorsController::class, 'exportPdf'])->name('indicators.export-pdf');
 });
 
 // Data protection register, access log and retention: Administrateur only.
@@ -136,6 +168,10 @@ Route::middleware(['auth', 'verified', 'role:admin,rh'])->prefix('admin')->name(
     Route::put('/contracts/{contract}', [EmploymentContractController::class, 'update'])->name('contracts.update');
     Route::delete('/contracts/{contract}', [EmploymentContractController::class, 'destroy'])->name('contracts.destroy');
 
+    // Career history: promotions, raises, transfers (only the latest can be removed).
+    Route::post('/users/{user}/career-changes', [CareerChangeController::class, 'store'])->name('users.career-changes.store');
+    Route::delete('/career-changes/{change}', [CareerChangeController::class, 'destroy'])->name('career-changes.destroy');
+
     // Import employees from Excel (template, check, import), then invite them.
     Route::get('/import', [EmployeeImportController::class, 'index'])->name('import.index');
     Route::get('/import/modele', [EmployeeImportController::class, 'template'])->name('import.template');
@@ -160,6 +196,9 @@ Route::middleware(['auth', 'verified', 'role:admin,rh'])->prefix('admin')->name(
     Route::put('/company', [CompanyController::class, 'update'])->name('company.update');
     Route::post('/company/logo', [CompanyController::class, 'uploadLogo'])->name('company.logo.store');
     Route::delete('/company/logo', [CompanyController::class, 'deleteLogo'])->name('company.logo.destroy');
+
+    // Company schedule and the day attendance tracking starts.
+    Route::put('/attendance/schedule', [AttendanceReportController::class, 'updateSchedule'])->name('attendance.schedule');
 
     // Public holidays (not counted as leave days).
     Route::get('/holidays', [HolidayController::class, 'index'])->name('holidays.index');

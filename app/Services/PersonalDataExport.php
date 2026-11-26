@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Attestation;
+use App\Models\CareerChange;
 use App\Models\Demande;
 use App\Models\DemandeDocument;
 use App\Models\EmployeeDocument;
@@ -88,6 +89,24 @@ class PersonalDataExport
                 'debut' => $date($c->start_date),
                 'fin' => $date($c->end_date),
                 'fin_periode_essai' => $date($c->trial_end),
+            ])->all(),
+            'evolution_de_carriere' => $user->careerChanges()->get()->map(fn (CareerChange $change) => [
+                'date_effet' => $date($change->effective_date),
+                'type' => $change->kind->label(),
+                'poste' => $change->job_title === null ? null : ['avant' => $change->previous_job_title, 'apres' => $change->job_title],
+                'departement' => $change->department_changed ? ['avant' => $change->previous_department, 'apres' => $change->department] : null,
+                'categorie' => $change->category === null ? null : ['avant' => $change->previous_category?->label(), 'apres' => $change->category->label()],
+                'salaire_brut_mensuel' => $change->gross_salary === null ? null : [
+                    'avant' => $change->previous_gross_salary === null ? null : (float) $change->previous_gross_salary,
+                    'apres' => (float) $change->gross_salary,
+                ],
+                'remarques' => $change->notes,
+            ])->all(),
+            'bulletins_de_paie' => \App\Models\Payslip::with('run')->where('user_id', $user->id)->get()->map(fn ($p) => [
+                'mois' => $p->run->month->format('Y-m'), 'statut' => $p->run->status, 'brut' => $p->figures['gross'], 'net' => $p->figures['net'],
+            ])->all(),
+            'pointages' => $user->attendanceRecords()->orderBy('date')->get()->map(fn ($r) => [
+                'jour' => $date($r->date), 'arrivee' => $r->clock_in, 'depart' => $r->clock_out, 'corrige' => $r->source === 'correction',
             ])->all(),
             'demandes_de_conge' => $user->demandes()->orderBy('date_debut')->get()->map(fn (Demande $d) => [
                 'type' => $d->type_conge->label(),

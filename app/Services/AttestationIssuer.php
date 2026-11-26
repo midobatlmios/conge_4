@@ -128,7 +128,8 @@ class AttestationIssuer
                 'cin' => $profile?->cin,
                 'cnss_number' => $profile?->cnss_number,
                 'matricule' => $employee->matricule,
-                'job_title' => $contract?->job_title ?: $employee->job_title,
+                // The record holds the current title (promotions update it); the contract the one at signing.
+                'job_title' => $employee->job_title ?: $contract?->job_title,
                 'contract' => $contract?->type->label(),
                 'category' => $contract?->category?->label(),
                 'start' => $start?->toDateString(),

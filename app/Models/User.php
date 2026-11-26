@@ -101,6 +101,48 @@ class User extends Authenticatable
             ?? $contracts->last();
     }
 
+    /** Clock-in / clock-out records, one per day. */
+    public function attendanceRecords(): HasMany
+    {
+        return $this->hasMany(AttendanceRecord::class);
+    }
+
+    /** Corrections of clocking the employee asked for. */
+    public function attendanceCorrections(): HasMany
+    {
+        return $this->hasMany(AttendanceCorrection::class);
+    }
+
+    /** Career history (promotions, raises, transfers), newest first. */
+    public function careerChanges(): HasMany
+    {
+        return $this->hasMany(CareerChange::class)->orderByDesc('effective_date')->orderByDesc('id');
+    }
+
+    /**
+     * Monthly gross salary on a given day: that of the contract in force that
+     * day, as it was before any later raise on that contract. Null without a
+     * contract that day or a salary on it. Uses the loaded relations when there are.
+     */
+    public function salaryOn(\Carbon\CarbonInterface $day): ?float
+    {
+        $contract = $this->contracts->first(fn (EmploymentContract $contract) => $contract->start_date->lte($day)
+            && ($contract->end_date === null || $contract->end_date->gte($day)));
+
+        if (! $contract) {
+            return null;
+        }
+
+        // The first raise after that day knows what the salary was until then.
+        $later = $this->careerChanges
+            ->filter(fn (CareerChange $change) => $change->contract_id === $contract->id && $change->changesSalary() && $change->effective_date->gt($day))
+            ->sortBy(fn (CareerChange $change) => [$change->effective_date->toDateString(), $change->id])
+            ->first();
+        $salary = $later ? $later->previous_gross_salary : $contract->gross_salary;
+
+        return $salary === null ? null : (float) $salary;
+    }
+
     /** Attestations de travail / de salaire asked for or issued. */
     public function attestations(): HasMany
     {
