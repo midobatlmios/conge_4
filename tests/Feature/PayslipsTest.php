@@ -198,3 +198,31 @@ test('Paie adds bonuses and advances; recalculating keeps them; advances cannot 
     $workbook = PhpOffice\PhpSpreadsheet\IOFactory::load($response->getFile()->getPathname());
     expect($workbook->getSheetNames())->toBe(['Journal de paie', 'CNSS']);
 });
+
+test('the CNSS file: 260-character lines, employees with and without a CNSS number, totals in centimes', function () {
+    App\Models\CompanySetting::create(['name' => 'Atlas Distribution', 'address' => 'Bd Zerktouni', 'city' => 'Casablanca', 'signatory_name' => 'X', 'cnss_number' => '1234567']);
+    $paie = User::factory()->create(['role' => Role::Payroll]);
+    $registered = salaried(10000);
+    $registered->profile()->create(['cnss_number' => '111222333']);
+    $newcomer = salaried(4000);
+    $newcomer->profile()->create(['cin' => 'BK123456']);
+    $this->actingAs($paie)->post('/admin/payslips/prepare', ['month' => '2026-06']);
+    $run = PayrollRun::sole();
+
+    $response = $this->actingAs($paie)->get("/admin/payroll-runs/{$run->id}/cnss")->assertOk();
+    expect($response->headers->get('content-disposition'))->toContain('BDS_1234567_202606.txt');
+
+    $lines = array_values(array_filter(explode("\r\n", $response->getContent())));
+    expect(array_map(fn ($l) => substr($l, 0, 3), $lines))->toBe(['B00', 'B01', 'B02', 'B03', 'B04', 'B05', 'B06'])
+        ->and(array_unique(array_map('strlen', $lines)))->toBe([260]);
+
+    $b02 = $lines[2];
+    expect(substr($b02, 3, 7))->toBe('1234567')
+        ->and(substr($b02, 10, 6))->toBe('202606')
+        ->and(substr($b02, 16, 9))->toBe('111222333')
+        // 26 days, real salary 11 000.00 (10 000 + 10 % seniority) and capped 6 000.00, in centimes.
+        ->and(substr($b02, 111, 2))->toBe('26')
+        ->and(substr($b02, 113, 13))->toBe('0000001100000')
+        ->and(substr($b02, 126, 9))->toBe('000600000')
+        ->and(substr($lines[4], 85, 8))->toBe('BK123456');
+});

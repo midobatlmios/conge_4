@@ -195,6 +195,16 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
                                             <FileSpreadsheet className="me-2 h-4 w-4" /> {t('Journal + CNSS (Excel)')}
                                         </a>
                                     </Button>
+                                    <Button variant="outline" asChild>
+                                        <a
+                                            href={`/admin/payroll-runs/${run.id}/cnss`}
+                                            title={t(
+                                                'Format e-BDS de Damancom, établi sans la spécification officielle : à vérifier sur Damancom avant tout envoi.',
+                                            )}
+                                        >
+                                            <FileSpreadsheet className="me-2 h-4 w-4" /> {t('Fichier CNSS (à vérifier)')}
+                                        </a>
+                                    </Button>
                                     {run.status === 'locked' && (
                                         <span className="flex items-center gap-1 text-sm text-green-700 dark:text-green-400">
                                             <CheckCircle2 className="h-4 w-4" /> {t('Bulletins définitifs, visibles par les employés')}

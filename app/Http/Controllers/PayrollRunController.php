@@ -191,6 +191,15 @@ class PayrollRunController extends Controller
         return response()->download($journal->toXlsx($run), PayrollJournal::fileName($run))->deleteFileAfterSend();
     }
 
+    /** The month's CNSS declaration file (e-BDS layout), to check on Damancom before sending. */
+    public function cnssFile(PayrollRun $run, \App\Services\CnssDeclarationFile $file): \Illuminate\Http\Response
+    {
+        return response($file->build($run), 200, [
+            'Content-Type' => 'text/plain; charset=US-ASCII',
+            'Content-Disposition' => 'attachment; filename="'.\App\Services\CnssDeclarationFile::fileName($run).'"',
+        ]);
+    }
+
     /** A payslip as PDF: HR, Paie and Admin; the employee only once the month is locked. */
     public function pdf(Request $request, Payslip $payslip)
     {

@@ -134,6 +134,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/recrutement/entretiens/{interview}', [RecruitmentController::class, 'evaluateInterview'])->name('recruitment.interviews.evaluate');
     Route::post('/recrutement/candidats/{candidate}/embaucher', [RecruitmentController::class, 'hire'])->name('recruitment.candidates.hire');
 
+    // User guide, by role (printable).
+    Route::inertia('/aide', 'Help')->name('help');
+
     // A payslip PDF: HR / Paie / Admin, or its employee once the month is validated.
     Route::get('/bulletins/{payslip}/pdf', [PayrollRunController::class, 'pdf'])->name('payslips.pdf');
 
@@ -174,6 +177,7 @@ Route::middleware(['auth', 'verified', 'role:admin,rh,paie'])->prefix('admin')->
     Route::put('/payroll-runs/{run}/lock', [PayrollRunController::class, 'lock'])->name('payroll-runs.lock');
     Route::put('/payslips/{payslip}/inputs', [PayrollRunController::class, 'updateInputs'])->name('payslips.inputs');
     Route::get('/payroll-runs/{run}/journal', [PayrollRunController::class, 'journal'])->name('payroll-runs.journal');
+    Route::get('/payroll-runs/{run}/cnss', [PayrollRunController::class, 'cnssFile'])->name('payroll-runs.cnss');
 
     // Annual review campaigns (progress, recommendations).
     Route::get('/reviews', [ReviewCampaignController::class, 'index'])->name('reviews.index');

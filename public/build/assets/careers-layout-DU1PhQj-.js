@@ -1,0 +1,6 @@
+import{c as r,u as c,A as o}from"./app-logo-icon-Cs8qe303.js";import{b as n,j as a,$ as t}from"./app-Drun2YHd.js";import{A as i}from"./app-toaster-DUJM3GYn.js";/**
+ * @license lucide-react v0.475.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const l=[["path",{d:"M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0",key:"1r0f0z"}],["circle",{cx:"12",cy:"10",r:"3",key:"ilqhr7"}]],p=r("MapPin",l);function h({children:s}){const e=c();return n("fr"),a.jsxs("div",{className:"bg-background min-h-svh",children:[a.jsx("div",{className:"h-1",style:{backgroundColor:e.color},"aria-hidden":"true"}),a.jsx("header",{className:"border-b",children:a.jsx("div",{className:"mx-auto flex max-w-4xl items-center gap-3 px-4 py-4",children:a.jsxs(t,{href:"/carrieres",className:"flex items-center gap-3",children:[a.jsx(o,{className:"h-10 w-10 text-sm"}),a.jsx("span",{className:"font-semibold text-(--brand) dark:text-white",style:{"--brand":e.color},children:e.name?`${e.name} · Carrières`:"Carrières"})]})})}),a.jsx("main",{className:"mx-auto max-w-4xl px-4 py-10",children:s}),a.jsx(i,{})]})}export{h as C,p as M};

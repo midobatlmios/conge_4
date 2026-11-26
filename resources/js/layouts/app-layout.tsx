@@ -19,6 +19,7 @@ import {
     ChartColumn,
     ChevronDown,
     ChevronRight,
+    CircleHelp,
     Clock,
     ClockAlert,
     FileBadge,
@@ -98,7 +99,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                 type="button"
                 aria-label={sidebarOpen ? t('Fermer le menu') : t('Ouvrir le menu')}
                 aria-expanded={sidebarOpen}
-                className="bg-background fixed start-4 top-4 z-50 rounded-md border p-2 lg:hidden"
+                className="bg-background fixed start-4 top-4 z-50 rounded-md border p-2 lg:hidden print:hidden"
                 onClick={() => setSidebarOpen(!sidebarOpen)}
             >
                 {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -106,7 +107,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
 
             {/* Sidebar */}
             <aside
-                className={`fixed inset-y-0 start-0 z-40 w-64 transform transition-transform duration-200 ease-in-out lg:static lg:inset-auto lg:translate-x-0 ${
+                className={`fixed inset-y-0 start-0 z-40 w-64 transform transition-transform duration-200 ease-in-out lg:static lg:inset-auto lg:translate-x-0 print:hidden ${
                     sidebarOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full lg:rtl:translate-x-0'
                 } bg-background flex h-screen flex-col justify-between border-e`}
             >
@@ -162,6 +163,11 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                             <li>
                                 <NavLink href="/evaluations" onNavigate={() => setSidebarOpen(false)}>
                                     <MessagesSquare className="h-4 w-4" /> {t('Entretiens annuels')}
+                                </NavLink>
+                            </li>
+                            <li>
+                                <NavLink href="/aide" onNavigate={() => setSidebarOpen(false)}>
+                                    <CircleHelp className="h-4 w-4" /> {t('Aide')}
                                 </NavLink>
                             </li>
                             {can.recruitment && (
@@ -333,7 +339,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
             {/* Main content */}
             <main className="flex w-full min-w-0 flex-1 flex-col">
                 {/* Header */}
-                <header className="flex h-16 items-center justify-between border-b ps-16 pe-4 lg:ps-4">
+                <header className="flex h-16 items-center justify-between border-b ps-16 pe-4 lg:ps-4 print:hidden">
                     <div className="flex items-center gap-2">
                         {breadcrumbs && breadcrumbs.length > 0 && (
                             <nav className="flex items-center space-x-1 overflow-x-auto text-sm">
