@@ -1,4 +1,6 @@
 import AppLogoIcon from '@/components/app-logo-icon';
+import AppToaster from '@/components/app-toaster';
+import ConfirmDialogHost from '@/components/confirm-dialog';
 import Notifications from '@/components/Notifications';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader } from '@/components/ui/dialog';
@@ -23,6 +25,7 @@ import {
     Menu,
     Network,
     Settings,
+    ShieldCheck,
     UsersRound,
     X,
 } from 'lucide-react';
@@ -30,6 +33,25 @@ import { CSSProperties, PropsWithChildren, useState } from 'react';
 
 interface AppLayoutProps extends PropsWithChildren {
     breadcrumbs?: BreadcrumbItem[];
+}
+
+/** A sidebar link: highlighted, and announced as the current page, on its page and the pages under it. */
+function NavLink({ href, onNavigate, children }: PropsWithChildren<{ href: string; onNavigate: () => void }>) {
+    const path = usePage().url.split('?')[0];
+    const current = path === href || path.startsWith(`${href}/`);
+
+    return (
+        <Link
+            href={href}
+            aria-current={current ? 'page' : undefined}
+            className={`hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:outline-none ${
+                current ? 'bg-accent text-accent-foreground' : ''
+            }`}
+            onClick={onNavigate}
+        >
+            {children}
+        </Link>
+    );
 }
 
 export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
@@ -54,8 +76,22 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
 
     return (
         <div className="bg-background flex min-h-screen">
+            {/* First thing keyboard users reach: jump over the menu. */}
+            <a
+                href="#contenu"
+                className="bg-background focus-visible:ring-ring sr-only z-[60] rounded-md border px-3 py-2 text-sm font-medium focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus-visible:ring-2 focus-visible:outline-none"
+            >
+                Aller au contenu
+            </a>
+
             {/* Mobile menu button */}
-            <button className="bg-background fixed top-4 left-4 z-50 rounded-md border p-2 lg:hidden" onClick={() => setSidebarOpen(!sidebarOpen)}>
+            <button
+                type="button"
+                aria-label={sidebarOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+                aria-expanded={sidebarOpen}
+                className="bg-background fixed top-4 left-4 z-50 rounded-md border p-2 lg:hidden"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+            >
                 {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
 
@@ -82,7 +118,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                             </span>
                         ) : (
                             <span
-                                className="flex flex-col text-lg leading-tight font-extrabold tracking-wide text-(--brand) uppercase"
+                                className="flex flex-col text-lg leading-tight font-extrabold tracking-wide text-(--brand) uppercase dark:text-white"
                                 style={{ '--brand': brand.color } as CSSProperties}
                             >
                                 <span>Gestion des</span>
@@ -91,134 +127,89 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                         )}
                     </div>
                     {/* Main navigation */}
-                    <nav className="mt-4 px-4">
+                    <nav className="mt-4 px-4" aria-label="Menu principal">
                         <div className="text-muted-foreground mb-2 pl-2 text-xs">Menu</div>
                         <ul className="space-y-1">
                             <li>
-                                <Link
-                                    href="/dashboard"
-                                    className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                    onClick={() => setSidebarOpen(false)}
-                                >
+                                <NavLink href="/dashboard" onNavigate={() => setSidebarOpen(false)}>
                                     <LayoutDashboard className="h-4 w-4" /> Espace employé
-                                </Link>
+                                </NavLink>
                             </li>
                             <li>
-                                <Link
-                                    href="/calendrier"
-                                    className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                    onClick={() => setSidebarOpen(false)}
-                                >
+                                <NavLink href="/calendrier" onNavigate={() => setSidebarOpen(false)}>
                                     <CalendarRange className="h-4 w-4" /> Calendrier
-                                </Link>
+                                </NavLink>
                             </li>
                             <li>
-                                <Link
-                                    href="/organigramme"
-                                    className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                    onClick={() => setSidebarOpen(false)}
-                                >
+                                <NavLink href="/organigramme" onNavigate={() => setSidebarOpen(false)}>
                                     <Network className="h-4 w-4" /> Organigramme
-                                </Link>
+                                </NavLink>
                             </li>
                             {user.is_manager && (
                                 <li>
-                                    <Link
-                                        href="/equipe"
-                                        className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                        onClick={() => setSidebarOpen(false)}
-                                    >
+                                    <NavLink href="/equipe" onNavigate={() => setSidebarOpen(false)}>
                                         <UsersRound className="h-4 w-4" /> Mon équipe
-                                    </Link>
+                                    </NavLink>
                                 </li>
                             )}
                             {can.view_hr && (
                                 <>
                                     <li>
-                                        <Link
-                                            href="/admin/overview"
-                                            className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                            onClick={() => setSidebarOpen(false)}
-                                        >
+                                        <NavLink href="/admin/overview" onNavigate={() => setSidebarOpen(false)}>
                                             <Gauge className="h-4 w-4" /> Vue d'ensemble
-                                        </Link>
+                                        </NavLink>
                                     </li>
                                     <li>
-                                        <Link
-                                            href="/demandes"
-                                            className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                            onClick={() => setSidebarOpen(false)}
-                                        >
+                                        <NavLink href="/demandes" onNavigate={() => setSidebarOpen(false)}>
                                             <FileText className="h-4 w-4" /> Gérer les demandes
-                                        </Link>
+                                        </NavLink>
                                     </li>
                                     <li>
-                                        <Link
-                                            href="/admin/users"
-                                            className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                            onClick={() => setSidebarOpen(false)}
-                                        >
+                                        <NavLink href="/admin/users" onNavigate={() => setSidebarOpen(false)}>
                                             <Settings className="h-4 w-4" /> Gérer les employés
-                                        </Link>
+                                        </NavLink>
                                     </li>
                                     {can.manage_hr && (
                                         <li>
-                                            <Link
-                                                href="/admin/departments"
-                                                className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                                onClick={() => setSidebarOpen(false)}
-                                            >
+                                            <NavLink href="/admin/departments" onNavigate={() => setSidebarOpen(false)}>
                                                 <Building2 className="h-4 w-4" /> Départements
-                                            </Link>
+                                            </NavLink>
                                         </li>
                                     )}
                                     <li>
-                                        <Link
-                                            href="/admin/attestations"
-                                            className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                            onClick={() => setSidebarOpen(false)}
-                                        >
+                                        <NavLink href="/admin/attestations" onNavigate={() => setSidebarOpen(false)}>
                                             <FileBadge className="h-4 w-4" /> Attestations
-                                        </Link>
+                                        </NavLink>
                                     </li>
                                     {can.manage_hr && (
                                         <li>
-                                            <Link
-                                                href="/admin/company"
-                                                className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                                onClick={() => setSidebarOpen(false)}
-                                            >
+                                            <NavLink href="/admin/company" onNavigate={() => setSidebarOpen(false)}>
                                                 <Landmark className="h-4 w-4" /> Entreprise
-                                            </Link>
+                                            </NavLink>
                                         </li>
                                     )}
                                     <li>
-                                        <Link
-                                            href="/admin/indicators"
-                                            className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                            onClick={() => setSidebarOpen(false)}
-                                        >
+                                        <NavLink href="/admin/indicators" onNavigate={() => setSidebarOpen(false)}>
                                             <ChartColumn className="h-4 w-4" /> Indicateurs RH
-                                        </Link>
+                                        </NavLink>
                                     </li>
                                     <li>
-                                        <Link
-                                            href="/admin/payroll"
-                                            className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                            onClick={() => setSidebarOpen(false)}
-                                        >
+                                        <NavLink href="/admin/payroll" onNavigate={() => setSidebarOpen(false)}>
                                             <FileSpreadsheet className="h-4 w-4" /> Export paie
-                                        </Link>
+                                        </NavLink>
                                     </li>
                                     {can.manage_hr && (
                                         <li>
-                                            <Link
-                                                href="/admin/holidays"
-                                                className="hover:bg-accent hover:text-accent-foreground flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors"
-                                                onClick={() => setSidebarOpen(false)}
-                                            >
+                                            <NavLink href="/admin/holidays" onNavigate={() => setSidebarOpen(false)}>
                                                 <CalendarDays className="h-4 w-4" /> Jours fériés
-                                            </Link>
+                                            </NavLink>
+                                        </li>
+                                    )}
+                                    {can.manage_roles && (
+                                        <li>
+                                            <NavLink href="/admin/privacy" onNavigate={() => setSidebarOpen(false)}>
+                                                <ShieldCheck className="h-4 w-4" /> Protection des données
+                                            </NavLink>
                                         </li>
                                     )}
                                 </>
@@ -231,11 +222,21 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                     {/* User profile dropdown */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <div className="hover:bg-accent flex cursor-pointer items-center gap-3 rounded-lg p-2 select-none">
-                                <div className="bg-muted flex h-8 w-8 items-center justify-center rounded-full text-lg font-bold">{initials}</div>
+                            {/* A real button: reachable with the keyboard and announced as a menu. */}
+                            <button
+                                type="button"
+                                aria-label={`Menu du compte de ${user.name || 'Utilisateur'}`}
+                                className="hover:bg-accent focus-visible:ring-ring flex w-full cursor-pointer items-center gap-3 rounded-lg p-2 text-left select-none focus-visible:ring-2 focus-visible:outline-none"
+                            >
+                                <span
+                                    aria-hidden="true"
+                                    className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-lg font-bold"
+                                >
+                                    {initials}
+                                </span>
                                 <span className="truncate text-sm font-medium">{user.name || 'Utilisateur'}</span>
-                                <ChevronDown className="text-muted-foreground ml-auto h-4 w-4" />
-                            </div>
+                                <ChevronDown aria-hidden="true" className="text-muted-foreground ml-auto h-4 w-4" />
+                            </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="mb-2 w-56" align="end">
                             <DropdownMenuItem asChild>
@@ -251,6 +252,11 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                             <DropdownMenuItem asChild>
                                 <Link href="/settings/attestations" onClick={() => setSidebarOpen(false)}>
                                     Mes attestations
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link href="/protection-des-donnees" onClick={() => setSidebarOpen(false)}>
+                                    Protection des données
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
@@ -302,10 +308,16 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                     </div>
                 </header>
                 {/* Page content */}
-                <div className="flex-1 overflow-auto p-4">{children}</div>
+                <div id="contenu" tabIndex={-1} className="flex-1 overflow-auto p-4 focus:outline-none">
+                    {children}
+                </div>
             </main>
 
             {/* Logout confirmation dialog */}
+            {/* App-wide toasts and the confirm/prompt dialog. */}
+            <AppToaster />
+            <ConfirmDialogHost />
+
             <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
                 <DialogContent>
                     <DialogHeader>Êtes-vous sûr de vouloir vous déconnecter&nbsp;?</DialogHeader>

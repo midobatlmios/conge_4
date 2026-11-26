@@ -66,6 +66,36 @@ return [
     'employee_document_max_kb' => 10240,
     'document_expiry_alert_days' => 30,
 
+    // Reminders, sent each working morning by `php artisan reminders:send` (scheduled
+    // in routes/console.php; the server needs the Laravel scheduler in its cron).
+    // - a manager is reminded of requests waiting for them this many working days,
+    //   then again every `manager_repeat_days` working days while they still wait;
+    // - HR gets a daily summary of what to do (requests waiting this long, CNSS,
+    //   contracts, documents, attestations…), only on days with something to do;
+    // - an employee who has not accepted the data protection notice this many days
+    //   after their account was created is reminded, at most once a week.
+    'reminders' => [
+        'request_waiting_days' => 3,
+        'manager_repeat_days' => 3,
+        'notice_days' => 7,
+        'send_at' => '08:00',
+        // Local time of the company (the app itself stores dates in UTC).
+        'timezone' => 'Africa/Casablanca',
+    ],
+
+    // Personal data retention (loi 09-08: kept no longer than needed). Applied by the
+    // Administrateur from "Protection des données" (or `php artisan privacy:retention`).
+    // - medical certificates of sick leave: deleted this many years after the leave;
+    // - personal data (CIN, RIB, address…), document folder and attestations of a
+    //   former employee: deleted this many years after departure;
+    // - the former employee is then anonymized (name, e-mail, comments) after this
+    //   many years; leave and payroll history is kept, without identity.
+    'retention' => [
+        'medical_certificates_years' => 2,
+        'personal_data_years' => 5,
+        'anonymize_after_years' => 10,
+    ],
+
     // Contracts: a CDD (ANAPEC, stage) or a trial period ending within this many
     // days is flagged on the overview and the employee page.
     'contract_alert_days' => 30,

@@ -24,6 +24,8 @@ class NewPasswordController extends Controller
         return Inertia::render('auth/reset-password', [
             'email' => $request->email,
             'token' => $request->route('token'),
+            // Invitation e-mail of an imported employee: their first password.
+            'invitation' => $request->boolean('invitation'),
         ]);
     }
 
@@ -43,7 +45,8 @@ class NewPasswordController extends Controller
         // Here we will attempt to reset the user's password. If it is successful we
         // will update the password on an actual user model and persist it to the
         // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
+        // Invitation links come from their own broker (7-day tokens, own table).
+        $status = Password::broker($request->boolean('invitation') ? 'invitations' : null)->reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user) use ($request) {
                 $user->forceFill([

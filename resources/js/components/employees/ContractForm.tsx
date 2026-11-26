@@ -41,7 +41,7 @@ export default function ContractForm({ employeeId, contract, options, onDone }: 
         else form.post(`/admin/users/${employeeId}/contracts`, options);
     };
 
-    const error = (field: keyof typeof errors) => errors[field] && <p className="text-sm text-red-500">{errors[field]}</p>;
+    const error = (field: keyof typeof errors) => errors[field] && <p className="text-sm text-red-700 dark:text-red-400">{errors[field]}</p>;
 
     return (
         <form onSubmit={submit} className="space-y-4 rounded-md border border-dashed p-4">

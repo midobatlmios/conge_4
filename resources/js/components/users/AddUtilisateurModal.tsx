@@ -54,17 +54,17 @@ export default function AddUtilisateurModal({ isOpen, onClose, onSuccess, depart
                     <div className="space-y-2">
                         <Label htmlFor="name">Nom</Label>
                         <Input id="name" value={data.name} onChange={(e) => setData('name', e.target.value)} required />
-                        {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+                        {errors.name && <p className="text-sm text-red-700 dark:text-red-400">{errors.name}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Adresse e-mail</Label>
                         <Input id="email" type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} required />
-                        {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+                        {errors.email && <p className="text-sm text-red-700 dark:text-red-400">{errors.email}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="password">Mot de passe</Label>
                         <Input id="password" type="password" value={data.password} onChange={(e) => setData('password', e.target.value)} required />
-                        {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+                        {errors.password && <p className="text-sm text-red-700 dark:text-red-400">{errors.password}</p>}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="role">Rôle</Label>
@@ -80,14 +80,14 @@ export default function AddUtilisateurModal({ isOpen, onClose, onSuccess, depart
                                 ))}
                             </SelectContent>
                         </Select>
-                        {errors.role && <p className="text-sm text-red-500">{errors.role}</p>}
+                        {errors.role && <p className="text-sm text-red-700 dark:text-red-400">{errors.role}</p>}
                     </div>
                     <EmployeeRecordFields data={data} setData={setData} errors={errors} departments={departments} managers={managers} />
                     <div className="flex justify-end gap-2">
                         <Button type="button" variant="outline" onClick={close} disabled={processing}>
                             Annuler
                         </Button>
-                        <Button type="submit" disabled={processing} className="bg-green-600 hover:bg-green-700">
+                        <Button type="submit" disabled={processing} className="bg-green-700 text-white hover:bg-green-800">
                             {processing ? 'Ajout...' : 'Ajouter'}
                         </Button>
                     </div>

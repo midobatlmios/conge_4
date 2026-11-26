@@ -6,6 +6,7 @@ use App\Enums\AttestationStatus;
 use App\Enums\AttestationType;
 use App\Enums\Role;
 use App\Models\Attestation;
+use App\Models\PersonalDataAccess;
 use App\Models\User;
 use App\Notifications\AttestationHandled;
 use App\Notifications\AttestationRequested;
@@ -136,6 +137,7 @@ class AttestationController extends Controller
         $viewer = $request->user();
         abort_unless($viewer->canViewHr() || $attestation->user_id === $viewer->id, 403);
         abort_unless($attestation->status === AttestationStatus::Issued, 404);
+        PersonalDataAccess::record($viewer, $attestation->user, 'attestation_pdf', $attestation->number);
 
         return $this->issuer->pdf($attestation)->stream($this->issuer->fileName($attestation));
     }

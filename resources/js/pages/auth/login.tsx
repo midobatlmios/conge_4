@@ -102,7 +102,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 <div className="text-muted-foreground text-center text-sm">Pas de compte ? Demandez-en un à votre administrateur.</div>
             </form>
 
-            {status && <div className="mb-4 text-center text-sm font-medium text-green-600">{status}</div>}
+            {status && <div className="mb-4 text-center text-sm font-medium text-green-700 dark:text-green-400">{status}</div>}
         </AuthLayout>
     );
 }

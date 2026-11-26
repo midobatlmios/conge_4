@@ -59,6 +59,10 @@ class User extends Authenticatable
         'password' => 'hashed',
         'role' => Role::class,
         'deactivated_at' => 'datetime',
+        // Read and accepted the data protection notice (loi 09-08).
+        'privacy_acknowledged_at' => 'datetime',
+        // Former employee whose identity was erased at the end of the retention period.
+        'anonymized_at' => 'datetime',
         'hire_date' => 'date:Y-m-d',
     ];
 
@@ -124,6 +128,43 @@ class User extends Authenticatable
     public function isManager(): bool
     {
         return $this->reports()->whereNull('deactivated_at')->exists();
+    }
+
+    /** Delegations this manager gave (their approvals handed to someone else). */
+    public function delegationsGiven(): HasMany
+    {
+        return $this->hasMany(ApprovalDelegation::class, 'manager_id')->orderBy('starts_on');
+    }
+
+    /** The person approving for this manager today, if they delegated (and that person is active). */
+    public function currentDelegate(): ?User
+    {
+        $delegate = $this->delegationsGiven()->current()->with('delegate')->first()?->delegate;
+
+        return $delegate?->isActive() ? $delegate : null;
+    }
+
+    /** @return list<int> Managers who delegated their approvals to this user today. */
+    public function delegatingManagerIds(): array
+    {
+        return ApprovalDelegation::current()->where('delegate_id', $this->id)->pluck('manager_id')->all();
+    }
+
+    /** Approves someone's requests today: their own team, or a team delegated to them. */
+    public function approvesRequests(): bool
+    {
+        return $this->isManager() || $this->delegatingManagerIds() !== [];
+    }
+
+    /**
+     * Who should hear about a request waiting for this manager: the delegate during
+     * a delegation (unless the request is the delegate's own), otherwise the manager.
+     */
+    public function approvalRecipient(?User $requester = null): User
+    {
+        $delegate = $this->currentDelegate();
+
+        return $delegate && ! $delegate->is($requester) ? $delegate : $this;
     }
 
     /** The active manager who approves this employee's requests first, if any. */

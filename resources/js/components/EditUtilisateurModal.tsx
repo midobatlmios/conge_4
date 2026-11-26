@@ -84,7 +84,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                             className={`w-full ${errors.name ? 'border-red-500' : ''}`}
                             required
                         />
-                        {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
+                        {errors.name && <p className="text-sm text-red-700 dark:text-red-400">{errors.name}</p>}
                     </div>
 
                     <div className="flex flex-col space-y-1">
@@ -98,7 +98,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                             className={`w-full ${errors.email ? 'border-red-500' : ''}`}
                             required
                         />
-                        {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
+                        {errors.email && <p className="text-sm text-red-700 dark:text-red-400">{errors.email}</p>}
                     </div>
 
                     <div className="space-y-4 border-t pt-4">
@@ -125,7 +125,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                                     {showPassword ? 'Masquer' : 'Afficher'}
                                 </Button>
                             </div>
-                            {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+                            {errors.password && <p className="text-sm text-red-700 dark:text-red-400">{errors.password}</p>}
                         </div>
 
                         <div className="flex flex-col space-y-1">
@@ -139,7 +139,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                                 className={`w-full ${errors.password_confirmation ? 'border-red-500' : ''}`}
                                 minLength={8}
                             />
-                            {errors.password_confirmation && <p className="text-sm text-red-500">{errors.password_confirmation}</p>}
+                            {errors.password_confirmation && <p className="text-sm text-red-700 dark:text-red-400">{errors.password_confirmation}</p>}
                         </div>
                     </div>
 
@@ -160,7 +160,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                                 </option>
                             ))}
                         </select>
-                        {errors.role && <p className="text-sm text-red-500">{errors.role}</p>}
+                        {errors.role && <p className="text-sm text-red-700 dark:text-red-400">{errors.role}</p>}
                     </div>
 
                     <EmployeeRecordFields

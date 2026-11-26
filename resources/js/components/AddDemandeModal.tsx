@@ -205,7 +205,7 @@ export const AddDemandeModal = ({
                                     Employé
                                 </label>
                                 <Select value={data.user_id} onValueChange={(value) => setData('user_id', value)}>
-                                    <SelectTrigger className={errors.user_id ? 'border-red-500' : ''}>
+                                    <SelectTrigger id="user_id" className={errors.user_id ? 'border-red-500' : ''}>
                                         <SelectValue placeholder="Sélectionner un employé" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -216,7 +216,7 @@ export const AddDemandeModal = ({
                                         ))}
                                     </SelectContent>
                                 </Select>
-                                {errors.user_id && <p className="text-xs text-red-500">{errors.user_id}</p>}
+                                {errors.user_id && <p className="text-xs text-red-700 dark:text-red-400">{errors.user_id}</p>}
                             </div>
                         )}
 
@@ -226,7 +226,7 @@ export const AddDemandeModal = ({
                                     Type de congé
                                 </label>
                                 <Select value={data.type_conge} onValueChange={(value: TypeConge) => setData('type_conge', value)}>
-                                    <SelectTrigger>
+                                    <SelectTrigger id="type_conge">
                                         <SelectValue placeholder="Sélectionner un type de congé" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -240,34 +240,34 @@ export const AddDemandeModal = ({
                                     </SelectContent>
                                 </Select>
                                 {data.type_conge === 'annuel' && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         Déduit des jours acquis : {formatDays(rules.maxDaysPerYear / 12)} jour par mois travaillé (plus l'ancienneté)
                                     </p>
                                 )}
                                 {data.type_conge === 'mariage' && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         4 jours dont deux jours payés et deux jours déduits automatiquement du congé
                                     </p>
                                 )}
                                 {data.type_conge === 'naissance' && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         3 jours - à prendre dans un délai de un mois à compter de la date de la naissance
                                     </p>
                                 )}
                                 {data.type_conge === 'deces' && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours
                                         déduits automatiquement du congé
                                     </p>
                                 )}
                                 {data.type_conge === 'sans_solde' && (
-                                    <p className="text-sm text-gray-500">Ce congé sera déduit automatiquement de votre salaire</p>
+                                    <p className="text-muted-foreground text-sm">Ce congé sera déduit automatiquement de votre salaire</p>
                                 )}
                                 {data.type_conge === 'recuperation' && (
-                                    <p className="text-sm text-gray-500">La journée à récupérer doit se faire dans un délai de 2 mois</p>
+                                    <p className="text-muted-foreground text-sm">La journée à récupérer doit se faire dans un délai de 2 mois</p>
                                 )}
                                 {data.type_conge === 'maladie' && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         Arrêt de travail à déclarer dans les 48 heures, avec le certificat médical. Il ne réduit pas vos jours de
                                         congé.
                                     </p>
@@ -279,16 +279,16 @@ export const AddDemandeModal = ({
                                     Nombre de jours
                                 </label>
                                 <Input id="nbr_jours" type="text" name="nbr_jours" value={formatDays(nbr_jours)} className="w-full" readOnly />
-                                <p className="text-xs text-gray-500">Jours ouvrés, hors week-ends et jours fériés</p>
+                                <p className="text-muted-foreground text-xs">Jours ouvrés, hors week-ends et jours fériés</p>
                                 {beforeEligibility && balance?.eligibleFrom && (
-                                    <p className="text-xs text-amber-600">
+                                    <p className="text-xs text-amber-700 dark:text-amber-400">
                                         Le congé annuel n'est dû qu'après 6 mois de service, soit à partir du{' '}
                                         {parseISODate(balance.eligibleFrom)?.toLocaleDateString('fr-FR')}. Cette demande ne pourra pas être acceptée
                                         en l'état.
                                     </p>
                                 )}
                                 {!beforeEligibility && exceedsBalance && availableAtStart !== null && (
-                                    <p className="text-xs text-amber-600">
+                                    <p className="text-xs text-amber-700 dark:text-amber-400">
                                         Cette demande utilise {requestedFromAllowance} jour(s), mais vous n'aurez acquis que{' '}
                                         {formatDays(Math.max(0, availableAtStart))} jour(s) disponibles à cette date. Elle ne pourra pas être acceptée
                                         en l'état.
@@ -312,7 +312,7 @@ export const AddDemandeModal = ({
                                     className={errors.date_debut ? 'border-red-500' : ''}
                                     required
                                 />
-                                {errors.date_debut && <p className="text-xs text-red-500">{errors.date_debut}</p>}
+                                {errors.date_debut && <p className="text-xs text-red-700 dark:text-red-400">{errors.date_debut}</p>}
                             </div>
 
                             <div className="space-y-1">
@@ -330,9 +330,9 @@ export const AddDemandeModal = ({
                                     required
                                     readOnly={Boolean(fixedLength)}
                                 />
-                                {errors.date_fin && <p className="text-xs text-red-500">{errors.date_fin}</p>}
+                                {errors.date_fin && <p className="text-xs text-red-700 dark:text-red-400">{errors.date_fin}</p>}
                                 {fixedLength && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         La date de fin est automatiquement calculée en fonction de la date de début
                                     </p>
                                 )}
@@ -351,11 +351,11 @@ export const AddDemandeModal = ({
                                     onChange={(e) => setData('document', e.target.files?.[0] ?? null)}
                                     className={errors.document ? 'border-red-500' : ''}
                                 />
-                                <p className="text-xs text-gray-500">
+                                <p className="text-muted-foreground text-xs">
                                     Acte de mariage, de naissance ou de décès (PDF, JPG ou PNG). Vous pouvez aussi l'ajouter plus tard ; il est
                                     nécessaire avant l'acceptation par les RH.
                                 </p>
-                                {errors.document && <p className="text-xs text-red-500">{errors.document}</p>}
+                                {errors.document && <p className="text-xs text-red-700 dark:text-red-400">{errors.document}</p>}
                             </div>
                         )}
 
@@ -381,7 +381,7 @@ export const AddDemandeModal = ({
                                 placeholder="Entrez la raison de votre demande..."
                                 className={`min-h-[100px] ${errors.comment ? 'border-red-500' : ''}`}
                             />
-                            {errors.comment && <p className="text-xs text-red-500">{errors.comment}</p>}
+                            {errors.comment && <p className="text-xs text-red-700 dark:text-red-400">{errors.comment}</p>}
                         </div>
                     </form>
                 </div>

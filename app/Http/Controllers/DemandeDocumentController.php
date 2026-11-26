@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Demande;
 use App\Models\DemandeDocument;
 use App\Models\DemandeEvent;
+use App\Models\PersonalDataAccess;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -32,9 +33,11 @@ class DemandeDocumentController extends Controller
     }
 
     /** Opens the file in the browser (PDF, image) under its original name. */
-    public function show(DemandeDocument $document): StreamedResponse
+    public function show(Request $request, DemandeDocument $document): StreamedResponse
     {
         Gate::authorize('viewDocuments', $document->demande);
+        // Certificates can hold health data (sick leave).
+        PersonalDataAccess::record($request->user(), $document->demande->user, 'open_certificate', "{$document->demande->type_conge->label()} : {$document->original_name}");
 
         return Storage::disk(DemandeDocument::DISK)->response(
             $document->path,

@@ -22,7 +22,7 @@ export default function PersonalDataForm({ employeeId, profile }: { employeeId: 
     const initial = Object.fromEntries(
         SECTIONS.flatMap((s) => s.fields).map(({ field }) => [field, profile?.[field] == null ? '' : String(profile[field])]),
     ) as FormData;
-    const { data, setData, put, processing, errors, clearErrors, recentlySuccessful } = useForm<FormData>(initial);
+    const { data, setData, put, processing, errors, clearErrors } = useForm<FormData>(initial);
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -106,7 +106,7 @@ export default function PersonalDataForm({ employeeId, profile }: { employeeId: 
                             <div key={field} className={`space-y-1 ${field === 'address' || field === 'rib' ? 'sm:col-span-2' : ''}`}>
                                 <Label htmlFor={field}>{label}</Label>
                                 {input(field)}
-                                {errors[field] && <p className="text-sm text-red-500">{errors[field]}</p>}
+                                {errors[field] && <p className="text-sm text-red-700 dark:text-red-400">{errors[field]}</p>}
                             </div>
                         ))}
                     </div>
@@ -121,7 +121,6 @@ export default function PersonalDataForm({ employeeId, profile }: { employeeId: 
                     CIN, N° CNSS, RIB, adresse et téléphones sont chiffrés en base.
                 </p>
                 <div className="flex items-center gap-3">
-                    {recentlySuccessful && <span className="text-sm text-green-700 dark:text-green-400">Enregistré.</span>}
                     <Button type="submit" disabled={processing}>
                         {processing ? 'Enregistrement…' : 'Enregistrer'}
                     </Button>

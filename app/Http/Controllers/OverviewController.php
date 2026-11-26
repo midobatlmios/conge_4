@@ -7,6 +7,7 @@ use App\Enums\LeaveType;
 use App\Models\Demande;
 use App\Models\EmployeeDocument;
 use App\Models\User;
+use App\Services\HrTodo;
 use App\Services\LeaveCalculator;
 use Carbon\Carbon;
 use Inertia\Inertia;
@@ -44,7 +45,7 @@ class OverviewController extends Controller
             // Fixed-term contracts and trial periods ending soon.
             'contractAlerts' => EmploymentContractController::alerts($employees),
             // Folder documents (CIN, residence card, medical aptitude…) expired or expiring soon.
-            'cnssPending' => $this->cnssPending($employees),
+            'cnssPending' => app(HrTodo::class)->cnss($employees),
             'expiringDocuments' => EmployeeDocument::needsRenewal()
                 ->whereIn('user_id', $employees->modelKeys())
                 ->with('user:id,name')
@@ -75,38 +76,6 @@ class OverviewController extends Controller
                 ]),
             'departments' => $this->departments($employees, $year),
         ]);
-    }
-
-    /**
-     * Sick leave long enough for CNSS daily allowances whose dossier HR has not
-     * filed yet, the closest deadline first.
-     *
-     * @return list<array<string, mixed>>
-     */
-    private function cnssPending($employees): array
-    {
-        $names = $employees->pluck('name', 'id');
-
-        return Demande::query()
-            ->where('type_conge', LeaveType::Sick)
-            ->whereNotIn('etat', LeaveStatus::inactive())
-            ->whereNull('cnss_filed_on')
-            ->whereIn('user_id', $employees->modelKeys())
-            ->orderBy('date_debut')
-            ->get()
-            ->filter(fn (Demande $leave) => $leave->needsCnssFiling())
-            ->map(fn (Demande $leave) => [
-                'id' => $leave->id,
-                'user_id' => $leave->user_id,
-                'name' => $names[$leave->user_id],
-                'start' => Carbon::parse($leave->date_debut)->toDateString(),
-                'end' => Carbon::parse($leave->date_fin)->toDateString(),
-                'calendar_days' => $leave->calendar_days,
-                'deadline' => $leave->cnssDeadline()->toDateString(),
-                'overdue' => $leave->cnssDeadline()->lt(today()),
-            ])
-            ->values()
-            ->all();
     }
 
     /**

@@ -1,3 +1,5 @@
+import { toastErrors } from '@/components/app-toaster';
+import { confirmAction } from '@/components/confirm-dialog';
 import { columns } from '@/components/demandes/columns';
 import { DataTable } from '@/components/demandes/data-table';
 import DemandeHistoryModal from '@/components/demandes/DemandeHistoryModal';
@@ -38,10 +40,14 @@ export default function Demandes({ demandes, users, cnssMinDays }: DemandesProps
     // The server redirects back after each change, so the list is already fresh.
     const handleUpdate = () => setEditModelOpen(false);
 
-    const handleDelete = (id: number) => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette demande ?')) {
-            router.delete(`/demandes/${id}`, { preserveScroll: true });
-        }
+    const handleDelete = async (id: number) => {
+        const ok = await confirmAction({
+            title: 'Supprimer cette demande ?',
+            description: 'Elle sera définitivement supprimée.',
+            confirmLabel: 'Supprimer',
+            destructive: true,
+        });
+        if (ok) router.delete(`/demandes/${id}`, { preserveScroll: true, onError: toastErrors });
     };
 
     return (

@@ -1,3 +1,4 @@
+import EmptyState from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
@@ -5,7 +6,7 @@ import { TYPE_CONGE_LABELS, TypeConge, isWorkingDay, toISODate, todayISO, useLea
 import { usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users } from 'lucide-react';
 
 interface Leave {
     id: number;
@@ -131,9 +132,13 @@ export default function Calendar({ month, departmentId, departments, departmentN
                 </div>
 
                 {people.length === 0 ? (
-                    <p className="text-muted-foreground rounded-md border p-6 text-center text-sm">Aucun employé à afficher.</p>
+                    <EmptyState
+                        icon={Users}
+                        title="Aucun employé à afficher"
+                        description="Choisissez un autre département, ou rattachez les employés à un département dans leur dossier."
+                    />
                 ) : (
-                    <div className="overflow-x-auto rounded-md border">
+                    <div className="overflow-x-auto rounded-md border" tabIndex={0} role="region" aria-label="Calendrier des absences">
                         <table className="w-full border-collapse text-sm">
                             <thead>
                                 <tr className="border-b">
@@ -187,6 +192,8 @@ export default function Calendar({ month, departmentId, departments, departmentN
                                                                 return (
                                                                     <div
                                                                         key={leave.id}
+                                                                        // A colored block: an image with a name for screen readers.
+                                                                        role="img"
                                                                         aria-label={labels[i]}
                                                                         className={`absolute inset-y-0 rounded-sm ${
                                                                             part === 'morning'
@@ -218,7 +225,9 @@ export default function Calendar({ month, departmentId, departments, departmentN
                                         const count = isWorkingDay(day, rules) ? awayCount(iso) : 0;
                                         return (
                                             <td key={iso} className={`text-center text-xs ${isWorkingDay(day, rules) ? '' : 'bg-muted'}`}>
-                                                {count > 0 && <span className={count > 1 ? 'font-bold text-red-600' : ''}>{count}</span>}
+                                                {count > 0 && (
+                                                    <span className={count > 1 ? 'font-bold text-red-700 dark:text-red-400' : ''}>{count}</span>
+                                                )}
                                             </td>
                                         );
                                     })}

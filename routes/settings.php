@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AttestationController;
+use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDocumentController;
 use App\Http\Controllers\Settings\PasswordController;
@@ -22,6 +23,11 @@ Route::middleware('auth')->group(function () {
     Route::get('settings/personal-data', [EmployeeController::class, 'own'])->name('personal-data');
     Route::get('settings/documents', [EmployeeDocumentController::class, 'own'])->name('my-documents');
     Route::get('settings/attestations', [AttestationController::class, 'mine'])->name('my-attestations');
+
+    // Calendar subscription links (iCal) for Outlook / Google Calendar.
+    Route::get('settings/calendar', [CalendarFeedController::class, 'settings'])->name('calendar-feed.settings');
+    Route::post('settings/calendar', [CalendarFeedController::class, 'regenerate'])->name('calendar-feed.regenerate');
+    Route::delete('settings/calendar', [CalendarFeedController::class, 'disable'])->name('calendar-feed.disable');
 
     Route::get('settings/appearance', function () {
         return Inertia::render('settings/appearance');

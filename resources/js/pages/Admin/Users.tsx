@@ -1,6 +1,5 @@
-// columns.tsx
-'use client';
-
+import { toastErrors } from '@/components/app-toaster';
+import { confirmAction } from '@/components/confirm-dialog';
 import EditUtilisateurModal from '@/components/EditUtilisateurModal';
 import ResetPasswordModal from '@/components/ResetPasswordModal';
 import { Button } from '@/components/ui/button';
@@ -11,8 +10,8 @@ import { Option } from '@/components/users/EmployeeRecordFields';
 import AppLayout from '@/layouts/app-layout';
 import { RoleOption, usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem, type SharedData } from '@/types';
-import { Head, router, usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { FileSpreadsheet, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface UsersProps {
@@ -41,7 +40,6 @@ const Users = ({ users: initialUsers, departments, managers, roles }: UsersProps
     const [resetPasswordModalOpen, setResetPasswordModalOpen] = useState(false);
     const [addModalOpen, setAddModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const { auth } = usePage<SharedData>().props;
 
     useEffect(() => {
@@ -61,29 +59,32 @@ const Users = ({ users: initialUsers, departments, managers, roles }: UsersProps
         setResetPasswordModalOpen(true);
     };
 
-    const handleToggleActive = (user: User) => {
+    const handleToggleActive = async (user: User) => {
         const deactivating = !user.deactivated_at;
-        const question = deactivating
-            ? `Désactiver le compte de ${user.name} ?
-
-Il ne pourra plus se connecter. Son historique de congés est conservé et le compte peut être réactivé à tout moment.`
-            : `Réactiver le compte de ${user.name} ? Il pourra de nouveau se connecter.`;
-
-        if (!window.confirm(question)) {
-            return;
-        }
-
-        setFeedback(null);
-        router.put(
-            `/admin/users/${user.id}/${deactivating ? 'deactivate' : 'reactivate'}`,
-            {},
-            {
-                preserveScroll: true,
-                onSuccess: () =>
-                    setFeedback({ type: 'success', text: deactivating ? `${user.name} a été désactivé.` : `${user.name} a été réactivé.` }),
-                onError: (errors) => setFeedback({ type: 'error', text: Object.values(errors).join(' ') }),
-            },
+        const ok = await confirmAction(
+            deactivating
+                ? {
+                      title: `Désactiver le compte de ${user.name} ?`,
+                      description:
+                          'Il ne pourra plus se connecter. Son historique de congés est conservé et le compte peut être réactivé à tout moment.',
+                      confirmLabel: 'Désactiver',
+                      destructive: true,
+                  }
+                : { title: `Réactiver le compte de ${user.name} ?`, description: 'Il pourra de nouveau se connecter.', confirmLabel: 'Réactiver' },
         );
+        if (!ok) return;
+
+        router.put(`/admin/users/${user.id}/${deactivating ? 'deactivate' : 'reactivate'}`, {}, { preserveScroll: true, onError: toastErrors });
+    };
+
+    /** Welcome e-mail with a link to choose a password (valid 7 days). */
+    const handleInvite = async (user: User) => {
+        const ok = await confirmAction({
+            title: `Envoyer une invitation à ${user.name} ?`,
+            description: `Un e-mail est envoyé à ${user.email} avec un lien pour choisir son mot de passe (valable 7 jours).`,
+            confirmLabel: 'Envoyer',
+        });
+        if (ok) router.post('/admin/users/invite', { ids: [user.id] }, { preserveScroll: true, onError: toastErrors });
     };
 
     if (!users) {
@@ -97,24 +98,20 @@ Il ne pourra plus se connecter. Son historique de congés est conservé et le co
                 <div className="mb-6 flex items-center justify-between">
                     <h1 className="text-2xl font-bold">Gestion des employés</h1>
                     {can.manage_hr && (
-                        <Button onClick={() => setAddModalOpen(true)} className="bg-green-600 hover:bg-green-700">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Ajouter un employé
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" asChild>
+                                <Link href="/admin/import">
+                                    <FileSpreadsheet className="mr-2 h-4 w-4" />
+                                    Importer depuis Excel
+                                </Link>
+                            </Button>
+                            <Button onClick={() => setAddModalOpen(true)} className="bg-green-700 text-white hover:bg-green-800">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Ajouter un employé
+                            </Button>
+                        </div>
                     )}
                 </div>
-                {feedback && (
-                    <div
-                        role="status"
-                        className={`mb-4 rounded-md border px-4 py-3 text-sm ${
-                            feedback.type === 'success'
-                                ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
-                                : 'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-300'
-                        }`}
-                    >
-                        {feedback.text}
-                    </div>
-                )}
                 <DataTable
                     columns={columns(
                         refreshData,
@@ -124,6 +121,7 @@ Il ne pourra plus se connecter. Son historique de congés est conservé et le co
                         handleToggleActive,
                         auth.user?.id,
                         can,
+                        handleInvite,
                     )}
                     data={users}
                 />

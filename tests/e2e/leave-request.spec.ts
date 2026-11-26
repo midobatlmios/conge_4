@@ -21,6 +21,10 @@ test('leave request: employee → manager → HR → employee notified', async (
     await expect(toValidate).toContainText(ACCOUNTS.employee.name);
     await expect(toValidate).toContainText('Congé annuel');
     await toValidate.getByRole('button', { name: 'Valider' }).click();
+    await manager
+        .getByRole('dialog', { name: /Valider la demande/ })
+        .getByRole('button', { name: 'Valider' })
+        .click();
     await expect(manager.getByRole('listitem').filter({ hasText: 'Vacances en famille (E2E)' })).toContainText('Validée par le responsable');
 
     // 3. HR accepts it.
@@ -50,8 +54,10 @@ test('a manager refusal is final and its reason reaches the employee', async ({ 
 
     const manager = await signIn(browser, 'manager');
     await manager.goto('/equipe');
-    manager.once('dialog', (dialog) => dialog.accept('Clôture des comptes'));
     await manager.getByRole('listitem').filter({ hasText: 'Pont (E2E)' }).getByRole('button', { name: 'Refuser' }).click();
+    const refusal = manager.getByRole('dialog', { name: /Refuser la demande/ });
+    await refusal.getByLabel('Motif (facultatif)').fill('Clôture des comptes');
+    await refusal.getByRole('button', { name: 'Refuser' }).click();
     await expect(manager.getByRole('listitem').filter({ hasText: 'Pont (E2E)' })).toContainText('Motif du refus : Clôture des comptes');
 
     await employee.reload();

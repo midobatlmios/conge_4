@@ -96,7 +96,7 @@ export default function Profile({ mustVerifyEmail, status }: { mustVerifyEmail: 
                                 </p>
 
                                 {status === 'verification-link-sent' && (
-                                    <div className="mt-2 text-sm font-medium text-green-600">
+                                    <div className="mt-2 text-sm font-medium text-green-700 dark:text-green-400">
                                         Un nouveau lien de vérification a été envoyé à votre adresse e-mail.
                                     </div>
                                 )}

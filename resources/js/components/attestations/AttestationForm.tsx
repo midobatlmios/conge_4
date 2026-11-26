@@ -45,7 +45,7 @@ export default function AttestationForm({ url, types, submitLabel, withNetSalary
                             </option>
                         ))}
                     </select>
-                    {errors.type && <p className="text-sm text-red-500">{errors.type}</p>}
+                    {errors.type && <p className="text-sm text-red-700 dark:text-red-400">{errors.type}</p>}
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="attestation-purpose">Motif (facultatif)</Label>
@@ -55,7 +55,7 @@ export default function AttestationForm({ url, types, submitLabel, withNetSalary
                         onChange={(e) => form.setData('purpose', e.target.value)}
                         placeholder="Ex. : demande de visa, dossier bancaire"
                     />
-                    {errors.purpose && <p className="text-sm text-red-500">{errors.purpose}</p>}
+                    {errors.purpose && <p className="text-sm text-red-700 dark:text-red-400">{errors.purpose}</p>}
                 </div>
                 {withNetSalary && form.data.type === 'salaire' && (
                     <div className="space-y-1">
@@ -69,11 +69,11 @@ export default function AttestationForm({ url, types, submitLabel, withNetSalary
                             onChange={(e) => form.setData('net_salary', e.target.value)}
                         />
                         <p className="text-muted-foreground text-xs">Le brut vient du contrat en cours.</p>
-                        {errors.net_salary && <p className="text-sm text-red-500">{errors.net_salary}</p>}
+                        {errors.net_salary && <p className="text-sm text-red-700 dark:text-red-400">{errors.net_salary}</p>}
                     </div>
                 )}
             </div>
-            {errors.attestation && <p className="text-sm text-red-500">{errors.attestation}</p>}
+            {errors.attestation && <p className="text-sm text-red-700 dark:text-red-400">{errors.attestation}</p>}
             <div className="flex justify-end">
                 <Button type="submit" disabled={form.processing}>
                     {form.processing ? 'Envoi…' : submitLabel}

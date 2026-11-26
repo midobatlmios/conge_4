@@ -28,6 +28,11 @@ const sidebarNavItems: NavItem[] = [
         icon: null,
     },
     {
+        title: 'Calendrier',
+        href: '/settings/calendar',
+        icon: null,
+    },
+    {
         title: 'Mot de passe',
         href: '/settings/password',
         icon: null,

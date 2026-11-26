@@ -6,6 +6,7 @@ use App\Enums\ContractType;
 use App\Enums\StaffCategory;
 use App\Http\Requests\Admin\ContractRequest;
 use App\Models\EmploymentContract;
+use App\Models\PersonalDataAccess;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,7 +20,8 @@ class EmploymentContractController extends Controller
 {
     public function store(ContractRequest $request, User $user): RedirectResponse
     {
-        $user->contracts()->create([...$request->contractData(), 'created_by' => $request->user()->id]);
+        $contract = $user->contracts()->create([...$request->contractData(), 'created_by' => $request->user()->id]);
+        PersonalDataAccess::record($request->user(), $user, 'update_contract', "Ajout : {$contract->type->label()}");
 
         return back()->with('success', 'Contrat ajouté.');
     }
@@ -27,6 +29,7 @@ class EmploymentContractController extends Controller
     public function update(ContractRequest $request, EmploymentContract $contract): RedirectResponse
     {
         $contract->update($request->contractData());
+        PersonalDataAccess::record($request->user(), $contract->user, 'update_contract', "Modification : {$contract->type->label()}");
 
         return back()->with('success', 'Contrat modifié.');
     }
@@ -36,6 +39,7 @@ class EmploymentContractController extends Controller
         abort_if($contract->user_id === $request->user()->id, 403);
 
         $contract->delete();
+        PersonalDataAccess::record($request->user(), $contract->user, 'update_contract', "Suppression : {$contract->type->label()}");
 
         return back()->with('success', 'Contrat supprimé.');
     }

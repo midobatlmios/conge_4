@@ -1,3 +1,6 @@
+import { toastErrors } from '@/components/app-toaster';
+import { confirmAction } from '@/components/confirm-dialog';
+import EmptyState from '@/components/empty-state';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Building2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { FormEvent, useState } from 'react';
 
 interface Department {
@@ -23,7 +26,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const Departments = ({ departments }: { departments: Department[] }) => {
     const [editing, setEditing] = useState<Department | null>(null);
-    const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
     const form = useForm({ name: '' });
 
     const resetForm = () => {
@@ -34,19 +36,15 @@ const Departments = ({ departments }: { departments: Department[] }) => {
 
     const startEdit = (department: Department) => {
         setEditing(department);
-        setFeedback(null);
         form.clearErrors();
         form.setData('name', department.name);
     };
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        setFeedback(null);
-        const name = form.data.name;
         const options = {
             preserveScroll: true,
             onSuccess: () => {
-                setFeedback({ type: 'success', text: editing ? `« ${name} » a été modifié.` : `« ${name} » a été ajouté.` });
                 resetForm();
             },
         };
@@ -58,18 +56,15 @@ const Departments = ({ departments }: { departments: Department[] }) => {
         }
     };
 
-    const remove = (department: Department) => {
-        if (!window.confirm(`Supprimer le département « ${department.name} » ?`)) {
-            return;
-        }
-        setFeedback(null);
+    const remove = async (department: Department) => {
+        const ok = await confirmAction({ title: `Supprimer le département « ${department.name} » ?`, confirmLabel: 'Supprimer', destructive: true });
+        if (!ok) return;
         router.delete(`/admin/departments/${department.id}`, {
             preserveScroll: true,
             onSuccess: () => {
-                setFeedback({ type: 'success', text: `« ${department.name} » a été supprimé.` });
                 if (editing?.id === department.id) resetForm();
             },
-            onError: (errors) => setFeedback({ type: 'error', text: Object.values(errors).join(' ') }),
+            onError: toastErrors,
         });
     };
 
@@ -83,19 +78,6 @@ const Departments = ({ departments }: { departments: Department[] }) => {
                         Les départements proposés dans le dossier de chaque employé (page « Gestion des employés »).
                     </p>
                 </div>
-
-                {feedback && (
-                    <div
-                        role="status"
-                        className={`rounded-md border px-4 py-3 text-sm ${
-                            feedback.type === 'success'
-                                ? 'border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
-                                : 'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-300'
-                        }`}
-                    >
-                        {feedback.text}
-                    </div>
-                )}
 
                 <Card>
                     <CardHeader>
@@ -122,7 +104,7 @@ const Departments = ({ departments }: { departments: Department[] }) => {
                                         Annuler
                                     </Button>
                                 )}
-                                <Button type="submit" disabled={form.processing} className="bg-green-600 hover:bg-green-700">
+                                <Button type="submit" disabled={form.processing} className="bg-green-700 text-white hover:bg-green-800">
                                     {editing ? (
                                         'Enregistrer'
                                     ) : (
@@ -166,7 +148,7 @@ const Departments = ({ departments }: { departments: Department[] }) => {
                                             variant="ghost"
                                             size="icon"
                                             aria-label={`Supprimer ${department.name}`}
-                                            className="text-red-600 hover:text-red-700"
+                                            className="text-red-700 hover:text-red-700 dark:text-red-400"
                                             onClick={() => remove(department)}
                                         >
                                             <Trash2 className="h-4 w-4" />
@@ -175,7 +157,11 @@ const Departments = ({ departments }: { departments: Department[] }) => {
                                 ))}
                             </ul>
                         ) : (
-                            <p className="text-muted-foreground text-sm">Aucun département pour l'instant.</p>
+                            <EmptyState
+                                icon={Building2}
+                                title="Aucun département pour l'instant"
+                                description="Ajoutez-en un ci-dessus ; ils servent au dossier des employés, au calendrier et aux indicateurs."
+                            />
                         )}
                     </CardContent>
                 </Card>

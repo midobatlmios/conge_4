@@ -1,10 +1,13 @@
+import { toastErrors } from '@/components/app-toaster';
+import { confirmAction } from '@/components/confirm-dialog';
 import { formatDate } from '@/components/employees/personal-data';
+import EmptyState from '@/components/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { router, useForm } from '@inertiajs/react';
-import { FileText, Image, Trash2, Upload } from 'lucide-react';
+import { FileText, FolderOpen, Image, Trash2, Upload } from 'lucide-react';
 import { FormEvent, useRef } from 'react';
 
 /** A document of an employee's folder, as EmployeeDocumentController::folder() sends it. */
@@ -75,15 +78,24 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
         });
     };
 
-    const remove = (document: FolderDocument) => {
-        if (!window.confirm(`Supprimer « ${document.title || document.category_label} » du dossier ? Le fichier sera effacé.`)) return;
-        router.delete(`/admin/employee-documents/${document.id}`, { preserveScroll: true });
+    const remove = async (document: FolderDocument) => {
+        const ok = await confirmAction({
+            title: 'Supprimer ce document ?',
+            description: `« ${document.title || document.category_label} » sera retiré du dossier et le fichier effacé.`,
+            confirmLabel: 'Supprimer',
+            destructive: true,
+        });
+        if (ok) router.delete(`/admin/employee-documents/${document.id}`, { preserveScroll: true, onError: toastErrors });
     };
 
     return (
         <div className="space-y-6">
             {documents.length === 0 ? (
-                <p className="text-muted-foreground text-sm">Aucun document dans le dossier.</p>
+                <EmptyState
+                    icon={FolderOpen}
+                    title="Aucun document dans le dossier"
+                    description="Contrat, copie CIN, diplômes… ajoutés par le service RH."
+                />
             ) : (
                 <ul className="divide-y rounded-md border">
                     {documents.map((document) => {
@@ -113,7 +125,7 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="self-start text-red-600 hover:bg-red-50 hover:text-red-700 sm:self-center"
+                                        className="self-start text-red-700 hover:bg-red-50 hover:text-red-700 sm:self-center dark:text-red-400"
                                         onClick={() => remove(document)}
                                     >
                                         <Trash2 className="h-4 w-4" />
@@ -144,7 +156,7 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
                                     </option>
                                 ))}
                             </select>
-                            {form.errors.category && <p className="text-sm text-red-500">{form.errors.category}</p>}
+                            {form.errors.category && <p className="text-sm text-red-700 dark:text-red-400">{form.errors.category}</p>}
                         </div>
                         <div className="space-y-1">
                             <Label htmlFor="doc-title">Intitulé (facultatif)</Label>
@@ -154,7 +166,7 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
                                 onChange={(e) => form.setData('title', e.target.value)}
                                 placeholder="Ex. : Master en finance"
                             />
-                            {form.errors.title && <p className="text-sm text-red-500">{form.errors.title}</p>}
+                            {form.errors.title && <p className="text-sm text-red-700 dark:text-red-400">{form.errors.title}</p>}
                         </div>
                         <div className="space-y-1">
                             <Label htmlFor="doc-expires">Date d'expiration (facultatif)</Label>
@@ -165,7 +177,7 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
                                 onChange={(e) => form.setData('expires_on', e.target.value)}
                             />
                             <p className="text-muted-foreground text-xs">CIN, carte de séjour, aptitude médicale… : alerte 30 jours avant.</p>
-                            {form.errors.expires_on && <p className="text-sm text-red-500">{form.errors.expires_on}</p>}
+                            {form.errors.expires_on && <p className="text-sm text-red-700 dark:text-red-400">{form.errors.expires_on}</p>}
                         </div>
                         <div className="space-y-1">
                             <Label htmlFor="doc-file">Fichier</Label>
@@ -178,7 +190,7 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
                                 required
                             />
                             <p className="text-muted-foreground text-xs">PDF, JPG ou PNG, {upload.maxKb / 1024} Mo maximum.</p>
-                            {form.errors.file && <p className="text-sm text-red-500">{form.errors.file}</p>}
+                            {form.errors.file && <p className="text-sm text-red-700 dark:text-red-400">{form.errors.file}</p>}
                         </div>
                     </div>
                     <div className="flex justify-end">

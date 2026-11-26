@@ -97,6 +97,14 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        // Welcome link sent to imported employees to choose their password.
+        'invitations' => [
+            'provider' => 'users',
+            'table' => 'invitation_tokens',
+            'expire' => 60 * 24 * 7,
+            'throttle' => 0,
+        ],
     ],
 
     /*

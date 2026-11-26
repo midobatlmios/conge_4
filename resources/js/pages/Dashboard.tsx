@@ -1,8 +1,11 @@
 import { AddDemandeModal } from '@/components/AddDemandeModal';
+import { toastErrors } from '@/components/app-toaster';
+import { confirmAction } from '@/components/confirm-dialog';
 import { canRequestCancellation, requestCancellation } from '@/components/demandes/cancellation';
 import DemandeHistoryModal from '@/components/demandes/DemandeHistoryModal';
 import DocumentsModal, { DocumentsButton } from '@/components/demandes/DocumentsModal';
 import EditDemandeModal from '@/components/EditDemandeModal';
+import EmptyState from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
@@ -12,6 +15,7 @@ import { PageProps } from '@inertiajs/core';
 import { Head, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { CalendarPlus } from 'lucide-react';
 import { useState } from 'react';
 
 interface DashboardProps extends PageProps {
@@ -52,10 +56,14 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
         }
     };
 
-    const handleDelete = (id: number) => {
-        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette demande ?')) {
-            router.delete(`/demandes/${id}`, { preserveScroll: true });
-        }
+    const handleDelete = async (id: number) => {
+        const ok = await confirmAction({
+            title: 'Supprimer cette demande ?',
+            description: 'Elle sera définitivement supprimée.',
+            confirmLabel: 'Supprimer',
+            destructive: true,
+        });
+        if (ok) router.delete(`/demandes/${id}`, { preserveScroll: true, onError: toastErrors });
     };
 
     return (
@@ -85,13 +93,15 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                     <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-4">
                         <h2 className="mb-2 text-xl font-bold">Statut des demandes</h2>
                         <div className="space-y-2">
-                            <p className={`text-lg ${statusCounts['en attente'] > 0 ? 'text-yellow-500' : 'text-gray-500'}`}>
+                            <p
+                                className={`text-lg ${statusCounts['en attente'] > 0 ? 'text-yellow-700 dark:text-yellow-400' : 'text-muted-foreground'}`}
+                            >
                                 En attente: <span className="font-bold">{statusCounts['en attente']}</span>
                             </p>
-                            <p className={`text-lg ${statusCounts['acceptée'] > 0 ? 'text-green-500' : 'text-gray-500'}`}>
+                            <p className={`text-lg ${statusCounts['acceptée'] > 0 ? 'text-green-700 dark:text-green-400' : 'text-muted-foreground'}`}>
                                 Acceptées: <span className="font-bold">{statusCounts['acceptée']}</span>
                             </p>
-                            <p className={`text-lg ${statusCounts['refusée'] > 0 ? 'text-red-500' : 'text-gray-500'}`}>
+                            <p className={`text-lg ${statusCounts['refusée'] > 0 ? 'text-red-700 dark:text-red-400' : 'text-muted-foreground'}`}>
                                 Refusées: <span className="font-bold">{statusCounts['refusée']}</span>
                             </p>
                         </div>
@@ -101,7 +111,7 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                             <h2 className="mb-2 text-xl font-bold">Besoin d'un congé ?</h2>
                             <p className="text-muted-foreground text-sm">Soumettez une demande ; vous serez notifié dès qu'elle sera traitée.</p>
                         </div>
-                        <Button className="w-full bg-green-600 font-medium text-white hover:bg-green-700" onClick={() => setIsModalOpen(true)}>
+                        <Button className="w-full bg-green-700 font-medium text-white hover:bg-green-800" onClick={() => setIsModalOpen(true)}>
                             Nouvelle demande
                         </Button>
                     </div>
@@ -111,7 +121,11 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                 <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-4">
                     <h2 className="mb-4 text-xl font-bold">Mes demandes de congé</h2>
                     {demandes.length === 0 ? (
-                        <div className="py-8 text-center text-gray-500">Aucune demande de congé trouvée</div>
+                        <EmptyState
+                            icon={CalendarPlus}
+                            title="Aucune demande pour l'instant"
+                            description="Vos demandes de congé apparaîtront ici, avec leur état et leur historique. Utilisez « Nouvelle demande » pour commencer."
+                        />
                     ) : (
                         <Table>
                             <TableHeader>
@@ -140,7 +154,9 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                                         <TableCell>
                                             {demande.comment || '-'}
                                             {demande.manager_comment && (
-                                                <div className="text-xs text-red-600">Motif du responsable : {demande.manager_comment}</div>
+                                                <div className="text-xs text-red-700 dark:text-red-400">
+                                                    Motif du responsable : {demande.manager_comment}
+                                                </div>
                                             )}
                                         </TableCell>
                                         <TableCell>
@@ -170,7 +186,7 @@ export default function Dashboard({ auth, demandes = [] }: DashboardProps) {
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        className="text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                                                        className="text-orange-700 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400"
                                                         onClick={() => requestCancellation(demande)}
                                                     >
                                                         Demander l'annulation

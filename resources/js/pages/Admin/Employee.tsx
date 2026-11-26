@@ -1,6 +1,9 @@
+import { toastErrors } from '@/components/app-toaster';
 import AttestationForm from '@/components/attestations/AttestationForm';
 import AttestationList from '@/components/attestations/AttestationList';
 import { Attestation, TypeOption } from '@/components/attestations/attestations';
+import { confirmAction } from '@/components/confirm-dialog';
+import DelegationPanel, { Delegation } from '@/components/DelegationPanel';
 import EditUtilisateurModal from '@/components/EditUtilisateurModal';
 import ContractForm from '@/components/employees/ContractForm';
 import ContractList from '@/components/employees/ContractList';
@@ -18,7 +21,7 @@ import AppLayout from '@/layouts/app-layout';
 import { canManageAccount, ROLE_LABELS, RoleOption, usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { AlertTriangle, ArrowLeft, FileBadge, FileSignature, FolderOpen, Lock, Pencil, Plus } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Download, FileBadge, FileSignature, FolderOpen, Lock, Pencil, Plus, UserCheck } from 'lucide-react';
 import { useState } from 'react';
 
 interface EmployeeProps {
@@ -42,6 +45,10 @@ interface EmployeeProps {
     attestationTypes: TypeOption[];
     /** Sick leave this year: working days off, calendar days (CNSS), number of stops. */
     sickDays: { year: number; working: number; calendar: number; count: number };
+    /** Manages a team: HR can delegate their approvals. */
+    isManager: boolean;
+    delegations: Delegation[];
+    nextLeave: { start: string; end: string } | null;
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
@@ -70,6 +77,9 @@ export default function Employee({
     attestations,
     attestationTypes,
     sickDays,
+    isManager,
+    delegations,
+    nextLeave,
 }: EmployeeProps) {
     const [editOpen, setEditOpen] = useState(false);
     const can = usePermissions();
@@ -80,9 +90,14 @@ export default function Employee({
     // null: no form open; 'new': adding; a contract: editing it.
     const [contractForm, setContractForm] = useState<Contract | 'new' | null>(null);
 
-    const deleteContract = (contract: Contract) => {
-        if (!window.confirm(`Supprimer ce ${contract.type_label} du ${formatDate(contract.start_date)} ?`)) return;
-        router.delete(`/admin/contracts/${contract.id}`, { preserveScroll: true });
+    const deleteContract = async (contract: Contract) => {
+        const ok = await confirmAction({
+            title: 'Supprimer ce contrat ?',
+            description: `${contract.type_label} du ${formatDate(contract.start_date)}. À utiliser pour une erreur de saisie : l'historique des contrats sert aux attestations.`,
+            confirmLabel: 'Supprimer',
+            destructive: true,
+        });
+        if (ok) router.delete(`/admin/contracts/${contract.id}`, { preserveScroll: true, onError: toastErrors });
     };
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -108,13 +123,25 @@ export default function Employee({
                                 .join(' · ') || 'Dossier à compléter'}
                         </p>
                     </div>
-                    {employee.deactivated_at ? (
-                        <Badge variant="secondary">Désactivé le {formatDate(employee.deactivated_at)}</Badge>
-                    ) : (
-                        <Badge variant="outline" className="border-green-600 text-green-700 dark:text-green-400">
-                            Actif
-                        </Badge>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                        {can.manage_hr && !isSelf && (
+                            <Button variant="outline" size="sm" asChild>
+                                <a
+                                    href={`/admin/users/${employee.id}/data-export`}
+                                    title="Droit d'accès (loi 09-08) : toutes ses données et ses documents"
+                                >
+                                    <Download className="mr-2 h-4 w-4" /> Exporter ses données
+                                </a>
+                            </Button>
+                        )}
+                        {employee.deactivated_at ? (
+                            <Badge variant="secondary">Désactivé le {formatDate(employee.deactivated_at)}</Badge>
+                        ) : (
+                            <Badge variant="outline" className="border-green-600 text-green-700 dark:text-green-400">
+                                Actif
+                            </Badge>
+                        )}
+                    </div>
                 </div>
 
                 <Card>
@@ -224,6 +251,28 @@ export default function Employee({
                         )}
                     </CardContent>
                 </Card>
+
+                {isManager && can.manage_hr && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <UserCheck className="h-4 w-4" /> Délégation de validation
+                            </CardTitle>
+                            <CardDescription>
+                                {employee.name} valide les demandes de son équipe. En cas d'absence, confiez cette validation à quelqu'un d'autre.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <DelegationPanel
+                                delegations={delegations}
+                                options={managers.filter((m) => m.id !== employee.id)}
+                                url={`/admin/users/${employee.id}/delegations`}
+                                nextLeave={nextLeave}
+                                whose={employee.name}
+                            />
+                        </CardContent>
+                    </Card>
+                )}
 
                 <Card>
                     <CardHeader>

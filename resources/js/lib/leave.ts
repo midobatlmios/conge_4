@@ -25,11 +25,11 @@ export const STATUS_LABELS: Record<LeaveStatus, string> = {
 };
 
 export const STATUS_COLORS: Record<LeaveStatus, string> = {
-    'en attente': 'text-yellow-500',
+    'en attente': 'text-yellow-700 dark:text-yellow-400',
     'validée manager': 'text-blue-500',
-    acceptée: 'text-green-500',
-    refusée: 'text-red-500',
-    'annulation demandée': 'text-orange-500',
+    acceptée: 'text-green-700 dark:text-green-400',
+    refusée: 'text-red-700 dark:text-red-400',
+    'annulation demandée': 'text-orange-700 dark:text-orange-400',
     annulée: 'text-gray-500',
 };
 

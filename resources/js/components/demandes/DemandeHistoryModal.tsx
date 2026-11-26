@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Skeleton } from '@/components/ui/skeleton';
 import { parseISODate, STATUS_LABELS, TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
 import axios from 'axios';
 import { Ban, CheckCircle2, CirclePlus, Paperclip, Pencil, RotateCcw, Trash2, XCircle } from 'lucide-react';
@@ -44,18 +45,18 @@ interface HistoryEvent {
 
 const ACTIONS: Record<Action, { label: string; icon: typeof Pencil; color: string }> = {
     created: { label: 'Demande créée', icon: CirclePlus, color: 'text-blue-600' },
-    updated: { label: 'Demande modifiée', icon: Pencil, color: 'text-yellow-600' },
-    accepted: { label: 'Demande acceptée', icon: CheckCircle2, color: 'text-green-600' },
-    refused: { label: 'Demande refusée', icon: XCircle, color: 'text-red-600' },
-    reopened: { label: 'Remise en attente', icon: RotateCcw, color: 'text-orange-600' },
-    deleted: { label: 'Demande supprimée', icon: Trash2, color: 'text-red-600' },
-    cancellation_requested: { label: 'Annulation demandée', icon: Ban, color: 'text-orange-600' },
-    cancelled: { label: 'Congé annulé', icon: Ban, color: 'text-gray-600' },
-    cancellation_refused: { label: 'Annulation refusée, congé maintenu', icon: CheckCircle2, color: 'text-green-600' },
+    updated: { label: 'Demande modifiée', icon: Pencil, color: 'text-yellow-700 dark:text-yellow-400' },
+    accepted: { label: 'Demande acceptée', icon: CheckCircle2, color: 'text-green-700 dark:text-green-400' },
+    refused: { label: 'Demande refusée', icon: XCircle, color: 'text-red-700 dark:text-red-400' },
+    reopened: { label: 'Remise en attente', icon: RotateCcw, color: 'text-orange-700 dark:text-orange-400' },
+    deleted: { label: 'Demande supprimée', icon: Trash2, color: 'text-red-700 dark:text-red-400' },
+    cancellation_requested: { label: 'Annulation demandée', icon: Ban, color: 'text-orange-700 dark:text-orange-400' },
+    cancelled: { label: 'Congé annulé', icon: Ban, color: 'text-muted-foreground' },
+    cancellation_refused: { label: 'Annulation refusée, congé maintenu', icon: CheckCircle2, color: 'text-green-700 dark:text-green-400' },
     manager_approved: { label: 'Validée par le responsable', icon: CheckCircle2, color: 'text-blue-600' },
-    manager_refused: { label: 'Refusée par le responsable', icon: XCircle, color: 'text-red-600' },
+    manager_refused: { label: 'Refusée par le responsable', icon: XCircle, color: 'text-red-700 dark:text-red-400' },
     document_added: { label: 'Justificatif ajouté', icon: Paperclip, color: 'text-blue-600' },
-    document_removed: { label: 'Justificatif supprimé', icon: Paperclip, color: 'text-gray-600' },
+    document_removed: { label: 'Justificatif supprimé', icon: Paperclip, color: 'text-muted-foreground' },
 };
 
 const FIELDS: Record<Field, string> = {
@@ -124,8 +125,20 @@ export default function DemandeHistoryModal({ demandeId, onClose }: Props) {
                     <DialogDescription>Qui a créé, modifié ou traité cette demande, et quand.</DialogDescription>
                 </DialogHeader>
 
-                {error && <p className="text-sm text-red-600">{error}</p>}
-                {!error && events === null && <p className="text-muted-foreground text-sm">Chargement…</p>}
+                {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
+                {!error && events === null && (
+                    <div className="space-y-3" aria-busy="true" aria-label="Chargement de l'historique">
+                        {[0, 1, 2].map((i) => (
+                            <div key={i} className="flex gap-3">
+                                <Skeleton className="h-8 w-8 rounded-full" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-4 w-2/3" />
+                                    <Skeleton className="h-3 w-1/3" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
                 {events?.length === 0 && (
                     <p className="text-muted-foreground text-sm">Aucun historique : cette demande date d'avant la mise en place du suivi.</p>
                 )}
@@ -155,7 +168,9 @@ export default function DemandeHistoryModal({ demandeId, onClose }: Props) {
                                     </div>
                                     {event.changes?.document && <div className="mt-1 text-sm">{event.changes.document}</div>}
                                     {event.changes?.skipped_manager && (
-                                        <div className="text-xs text-orange-600">Décision RH sans attendre la validation du responsable</div>
+                                        <div className="text-xs text-orange-700 dark:text-orange-400">
+                                            Décision RH sans attendre la validation du responsable
+                                        </div>
                                     )}
                                     {isUpdate ? (
                                         <ul className="mt-1.5 space-y-0.5 text-sm">

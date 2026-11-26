@@ -63,7 +63,9 @@ class DemandePolicy
             // Sick leave is declared, not approved by the manager.
             && ! $demande->type_conge->isDeclared()
             && $demande->user_id !== $user->id
-            && $demande->user?->manager_id === $user->id;
+            && $demande->user?->manager_id !== null
+            // The manager, or the person they delegated their approvals to today.
+            && ($demande->user->manager_id === $user->id || in_array($demande->user->manager_id, $user->delegatingManagerIds(), true));
     }
 
     /** The employee asks to cancel their accepted leave, as long as it has not started. */

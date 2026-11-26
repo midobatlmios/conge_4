@@ -11,17 +11,21 @@ import AuthLayout from '@/layouts/auth-layout';
 interface ResetPasswordProps {
     token: string;
     email: string;
+    /** Opened from an invitation e-mail (account created by HR): first password. */
+    invitation?: boolean;
 }
 
 type ResetPasswordForm = {
+    invitation: boolean;
     token: string;
     email: string;
     password: string;
     password_confirmation: string;
 };
 
-export default function ResetPassword({ token, email }: ResetPasswordProps) {
+export default function ResetPassword({ token, email, invitation = false }: ResetPasswordProps) {
     const { data, setData, post, processing, errors, reset } = useForm<Required<ResetPasswordForm>>({
+        invitation,
         token: token,
         email: email,
         password: '',
@@ -36,8 +40,11 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
     };
 
     return (
-        <AuthLayout title="Réinitialiser le mot de passe" description="Choisissez votre nouveau mot de passe">
-            <Head title="Réinitialiser le mot de passe" />
+        <AuthLayout
+            title={invitation ? 'Bienvenue' : 'Réinitialiser le mot de passe'}
+            description={invitation ? 'Choisissez le mot de passe de votre compte' : 'Choisissez votre nouveau mot de passe'}
+        >
+            <Head title={invitation ? 'Choisir mon mot de passe' : 'Réinitialiser le mot de passe'} />
 
             <form onSubmit={submit}>
                 <div className="grid gap-6">

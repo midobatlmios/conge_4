@@ -76,7 +76,9 @@ function Stat({ label, value, hint, tone }: { label: string; value: number; hint
         <Card className="gap-1 py-4">
             <CardContent className="px-4">
                 <div className="text-muted-foreground text-sm">{label}</div>
-                <div className={`text-3xl font-bold tabular-nums ${tone === 'warn' && value > 0 ? 'text-orange-600' : ''}`}>{value}</div>
+                <div className={`text-3xl font-bold tabular-nums ${tone === 'warn' && value > 0 ? 'text-orange-700 dark:text-orange-400' : ''}`}>
+                    {value}
+                </div>
                 {hint && <div className="text-muted-foreground mt-1 text-xs">{hint}</div>}
             </CardContent>
         </Card>
@@ -149,7 +151,7 @@ export default function Overview({
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4 text-orange-600" /> Dossiers CNSS à déposer
+                                <AlertTriangle className="h-4 w-4 text-orange-700 dark:text-orange-400" /> Dossiers CNSS à déposer
                             </CardTitle>
                             <CardDescription>
                                 Arrêts maladie de 4 jours ou plus : la CNSS indemnise à partir du 4ᵉ jour, dossier à déposer dans les 30 jours.
@@ -168,7 +170,7 @@ export default function Overview({
                                                 · {range(leave.start, leave.end)} ({leave.calendar_days} j)
                                             </span>
                                         </span>
-                                        <span className={leave.overdue ? 'text-red-600' : 'text-orange-700 dark:text-orange-400'}>
+                                        <span className={leave.overdue ? 'text-red-700 dark:text-red-400' : 'text-orange-700 dark:text-orange-400'}>
                                             {leave.overdue ? 'Délai dépassé depuis le' : 'À déposer avant le'} {shortDate(leave.deadline)}
                                         </span>
                                     </li>
@@ -182,7 +184,7 @@ export default function Overview({
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4 text-orange-600" /> Contrats à suivre
+                                <AlertTriangle className="h-4 w-4 text-orange-700 dark:text-orange-400" /> Contrats à suivre
                             </CardTitle>
                             <CardDescription>CDD, contrats ANAPEC, stages et périodes d'essai qui se terminent dans les 30 jours.</CardDescription>
                         </CardHeader>
@@ -196,7 +198,11 @@ export default function Overview({
                                         <Link href={`/admin/users/${alert.user_id}`} className="font-medium hover:underline">
                                             {alert.name}
                                         </Link>
-                                        <span className={alert.kind === 'ended' ? 'text-red-600' : 'text-orange-700 dark:text-orange-400'}>
+                                        <span
+                                            className={
+                                                alert.kind === 'ended' ? 'text-red-700 dark:text-red-400' : 'text-orange-700 dark:text-orange-400'
+                                            }
+                                        >
                                             {alertText(alert)}
                                         </span>
                                     </li>
@@ -210,7 +216,7 @@ export default function Overview({
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4 text-orange-600" /> Documents à renouveler
+                                <AlertTriangle className="h-4 w-4 text-orange-700 dark:text-orange-400" /> Documents à renouveler
                             </CardTitle>
                             <CardDescription>Expirés ou expirant dans les 30 jours (CIN, carte de séjour, aptitude médicale…).</CardDescription>
                         </CardHeader>
@@ -274,7 +280,11 @@ export default function Overview({
                                             </div>
                                             <Badge
                                                 variant="outline"
-                                                className={item.status === 'annulation demandée' ? 'border-orange-500 text-orange-700' : ''}
+                                                className={
+                                                    item.status === 'annulation demandée'
+                                                        ? 'border-orange-500 text-orange-700 dark:text-orange-400'
+                                                        : ''
+                                                }
                                             >
                                                 {STATUS_LABELS[item.status]}
                                             </Badge>
@@ -317,7 +327,9 @@ export default function Overview({
                                         <TableCell className="text-right tabular-nums">{row.employees}</TableCell>
                                         <TableCell className="text-right tabular-nums">{formatDays(row.usedDays)}</TableCell>
                                         <TableCell className="text-right tabular-nums">{formatDays(row.averageDays)}</TableCell>
-                                        <TableCell className={`text-right tabular-nums ${row.unpaidDays > 0 ? 'text-red-600' : ''}`}>
+                                        <TableCell
+                                            className={`text-right tabular-nums ${row.unpaidDays > 0 ? 'text-red-700 dark:text-red-400' : ''}`}
+                                        >
                                             {formatDays(row.unpaidDays)}
                                         </TableCell>
                                     </TableRow>

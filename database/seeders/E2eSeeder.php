@@ -20,6 +20,7 @@ class E2eSeeder extends Seeder
     {
         $department = Department::create(['name' => 'Comptabilité']);
 
+        $this->account('admin@e2e.test', 'Amal Admin', Role::Admin, ['hire_date' => '2012-01-02']);
         $this->account('rh@e2e.test', 'Rachid RH', Role::Hr, ['hire_date' => '2015-01-05']);
         $manager = $this->account('manager@e2e.test', 'Meryem Responsable', Role::User, [
             'hire_date' => '2018-03-01',
@@ -45,6 +46,7 @@ class E2eSeeder extends Seeder
             'password' => self::PASSWORD, // hashed by the model's "hashed" cast
             'role' => $role,
             'email_verified_at' => now(),
+            'privacy_acknowledged_at' => now(),
             // In the app since long ago, so last year's unused days carry over.
             'created_at' => now()->subYears(3),
             ...$record,

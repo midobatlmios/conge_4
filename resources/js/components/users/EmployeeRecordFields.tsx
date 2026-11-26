@@ -29,7 +29,7 @@ interface EmployeeRecordFieldsProps {
 }
 
 export default function EmployeeRecordFields({ data, setData, errors, departments, managers, selfId }: EmployeeRecordFieldsProps) {
-    const error = (field: keyof EmployeeRecord) => errors[field] && <p className="text-sm text-red-500">{errors[field]}</p>;
+    const error = (field: keyof EmployeeRecord) => errors[field] && <p className="text-sm text-red-700 dark:text-red-400">{errors[field]}</p>;
 
     return (
         <div className="grid gap-4 border-t pt-4 sm:grid-cols-2">

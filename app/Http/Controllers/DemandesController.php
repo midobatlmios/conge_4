@@ -81,7 +81,11 @@ class DemandesController extends Controller
                 $this->send($manager, new SickLeaveDeclared($demande));
             }
         } elseif ($manager && ! $manager->is($request->user())) {
-            $this->send($manager, new LeaveRequestAwaitingDecision($demande, forManager: true));
+            // During a delegation, the delegate is told (unless it is their own request).
+            $recipient = $manager->approvalRecipient($demande->user);
+            if (! $recipient->is($request->user())) {
+                $this->send($recipient, new LeaveRequestAwaitingDecision($demande, forManager: true));
+            }
         } elseif (! $manager) {
             $this->notifyHr($demande, $request->user());
         }

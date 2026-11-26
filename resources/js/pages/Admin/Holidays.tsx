@@ -1,3 +1,4 @@
+import { confirmAction } from '@/components/confirm-dialog';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,6 @@ const formatFullDate = (iso: string) =>
 
 const Holidays = ({ holidays }: HolidaysProps) => {
     const [editing, setEditing] = useState<Holiday | null>(null);
-    const [feedback, setFeedback] = useState<string | null>(null);
     const form = useForm<{ name: string; date: string; recurring: boolean }>({ name: '', date: '', recurring: false });
 
     const recurring = holidays.filter((h) => h.recurring);
@@ -62,7 +62,6 @@ const Holidays = ({ holidays }: HolidaysProps) => {
 
     const startEdit = (holiday: Holiday) => {
         setEditing(holiday);
-        setFeedback(null);
         form.clearErrors();
         form.setData({
             name: holiday.name,
@@ -75,12 +74,9 @@ const Holidays = ({ holidays }: HolidaysProps) => {
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
-        setFeedback(null);
-        const name = form.data.name;
         const options = {
             preserveScroll: true,
             onSuccess: () => {
-                setFeedback(editing ? `« ${name} » a été modifié.` : `« ${name} » a été ajouté.`);
                 resetForm();
             },
         };
@@ -92,14 +88,17 @@ const Holidays = ({ holidays }: HolidaysProps) => {
         }
     };
 
-    const remove = (holiday: Holiday) => {
-        if (!window.confirm(`Supprimer le jour férié « ${holiday.name} » ?\n\nLes jours de congé seront recalculés en conséquence.`)) {
-            return;
-        }
+    const remove = async (holiday: Holiday) => {
+        const ok = await confirmAction({
+            title: `Supprimer le jour férié « ${holiday.name} » ?`,
+            description: 'Les jours de congé seront recalculés en conséquence.',
+            confirmLabel: 'Supprimer',
+            destructive: true,
+        });
+        if (!ok) return;
         router.delete(`/admin/holidays/${holiday.id}`, {
             preserveScroll: true,
             onSuccess: () => {
-                setFeedback(`« ${holiday.name} » a été supprimé.`);
                 if (editing?.id === holiday.id) resetForm();
             },
         });
@@ -118,7 +117,7 @@ const Holidays = ({ holidays }: HolidaysProps) => {
                 variant="ghost"
                 size="icon"
                 aria-label={`Supprimer ${holiday.name}`}
-                className="text-red-600 hover:text-red-700"
+                className="text-red-700 hover:text-red-700 dark:text-red-400"
                 onClick={() => remove(holiday)}
             >
                 <Trash2 className="h-4 w-4" />
@@ -136,15 +135,6 @@ const Holidays = ({ holidays }: HolidaysProps) => {
                         Ces jours ne sont pas décomptés des congés. Toute modification s'applique immédiatement au calcul des jours et des soldes.
                     </p>
                 </div>
-
-                {feedback && (
-                    <div
-                        role="status"
-                        className="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-300"
-                    >
-                        {feedback}
-                    </div>
-                )}
 
                 <Card>
                     <CardHeader>
@@ -196,7 +186,7 @@ const Holidays = ({ holidays }: HolidaysProps) => {
                                         Annuler
                                     </Button>
                                 )}
-                                <Button type="submit" disabled={form.processing} className="bg-green-600 hover:bg-green-700">
+                                <Button type="submit" disabled={form.processing} className="bg-green-700 text-white hover:bg-green-800">
                                     {editing ? (
                                         'Enregistrer'
                                     ) : (

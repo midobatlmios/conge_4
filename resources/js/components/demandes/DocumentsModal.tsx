@@ -1,3 +1,5 @@
+import { toastErrors } from '@/components/app-toaster';
+import { confirmAction } from '@/components/confirm-dialog';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -30,7 +32,7 @@ export function DocumentsButton({ demande, onClick }: { demande: Demande; onClic
             variant="outline"
             size="sm"
             onClick={onClick}
-            className={missing ? 'border-orange-500 text-orange-700 hover:text-orange-800' : ''}
+            className={missing ? 'border-orange-500 text-orange-700 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300' : ''}
             title={missing ? 'Justificatif manquant : nécessaire avant acceptation' : undefined}
         >
             <FileText className="mr-1 h-4 w-4" />
@@ -61,10 +63,14 @@ export default function DocumentsModal({ demande, canManage, onClose }: Document
         });
     };
 
-    const remove = (id: number, name: string) => {
-        if (window.confirm(`Supprimer le justificatif « ${name} » ?`)) {
-            router.delete(`/documents/${id}`, { preserveScroll: true, preserveState: true });
-        }
+    const remove = async (id: number, name: string) => {
+        const ok = await confirmAction({
+            title: 'Supprimer ce justificatif ?',
+            description: `« ${name} » sera définitivement supprimé.`,
+            confirmLabel: 'Supprimer',
+            destructive: true,
+        });
+        if (ok) router.delete(`/documents/${id}`, { preserveScroll: true, preserveState: true, onError: toastErrors });
     };
 
     return (
@@ -90,7 +96,9 @@ export default function DocumentsModal({ demande, canManage, onClose }: Document
                 </DialogHeader>
 
                 {documents.length === 0 ? (
-                    <p className={`text-sm ${needed ? 'text-orange-600' : 'text-muted-foreground'}`}>Aucun justificatif joint.</p>
+                    <p className={`text-sm ${needed ? 'text-orange-700 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                        Aucun justificatif joint.
+                    </p>
                 ) : (
                     <ul className="divide-y rounded-md border">
                         {documents.map((doc) => (
@@ -105,7 +113,7 @@ export default function DocumentsModal({ demande, canManage, onClose }: Document
                                         variant="ghost"
                                         size="icon"
                                         aria-label={`Supprimer ${doc.original_name}`}
-                                        className="text-red-600 hover:text-red-700"
+                                        className="text-red-700 hover:text-red-700 dark:text-red-400"
                                         onClick={() => remove(doc.id, doc.original_name)}
                                     >
                                         <Trash2 className="h-4 w-4" />

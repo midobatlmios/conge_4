@@ -121,7 +121,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     Type de congé
                                 </label>
                                 <Select value={data.type_conge} onValueChange={(value: TypeConge) => updateDates({ type_conge: value })}>
-                                    <SelectTrigger>
+                                    <SelectTrigger id="type_conge">
                                         <SelectValue placeholder="Sélectionner un type de congé" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -135,31 +135,31 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     </SelectContent>
                                 </Select>
                                 {data.type_conge === 'annuel' && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         Déduit des jours acquis : {formatDays(rules.maxDaysPerYear / 12)} jour par mois travaillé (plus l'ancienneté)
                                     </p>
                                 )}
                                 {data.type_conge === 'mariage' && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         4 jours dont deux jours payés et deux jours déduits automatiquement du congé
                                     </p>
                                 )}
                                 {data.type_conge === 'naissance' && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         3 jours - à prendre dans un délai de un mois à compter de la date de la naissance
                                     </p>
                                 )}
                                 {data.type_conge === 'deces' && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         3 jours (décès conjoint, d'un enfant, d'un petit-enfant, d'un ascendant), dont un jour payé et deux jours
                                         déduits automatiquement du congé
                                     </p>
                                 )}
                                 {data.type_conge === 'sans_solde' && (
-                                    <p className="text-sm text-gray-500">Ce congé sera déduit automatiquement de votre salaire</p>
+                                    <p className="text-muted-foreground text-sm">Ce congé sera déduit automatiquement de votre salaire</p>
                                 )}
                                 {data.type_conge === 'recuperation' && (
-                                    <p className="text-sm text-gray-500">La journée à récupérer doit se faire dans un délai de 2 mois</p>
+                                    <p className="text-muted-foreground text-sm">La journée à récupérer doit se faire dans un délai de 2 mois</p>
                                 )}
                             </div>
 
@@ -168,7 +168,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     Nombre de jours
                                 </label>
                                 <Input id="nbr_jours" type="text" name="nbr_jours" value={formatDays(nbrJours)} className="w-full" readOnly />
-                                <p className="text-xs text-gray-500">Jours ouvrés, hors week-ends et jours fériés</p>
+                                <p className="text-muted-foreground text-xs">Jours ouvrés, hors week-ends et jours fériés</p>
                             </div>
                         </div>
 
@@ -186,7 +186,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     className={errors.date_debut ? 'border-red-500' : ''}
                                     required
                                 />
-                                {errors.date_debut && <p className="text-xs text-red-500">{errors.date_debut}</p>}
+                                {errors.date_debut && <p className="text-xs text-red-700 dark:text-red-400">{errors.date_debut}</p>}
                             </div>
 
                             <div className="space-y-1">
@@ -203,9 +203,9 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     required
                                     readOnly={Boolean(fixedLength)}
                                 />
-                                {errors.date_fin && <p className="text-xs text-red-500">{errors.date_fin}</p>}
+                                {errors.date_fin && <p className="text-xs text-red-700 dark:text-red-400">{errors.date_fin}</p>}
                                 {fixedLength && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-muted-foreground text-sm">
                                         La date de fin est automatiquement calculée en fonction de la date de début
                                     </p>
                                 )}
@@ -240,7 +240,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                 placeholder="Entrez la raison de votre demande..."
                                 className={`min-h-[100px] ${errors.comment ? 'border-red-500' : ''}`}
                             />
-                            {errors.comment && <p className="text-xs text-red-500">{errors.comment}</p>}
+                            {errors.comment && <p className="text-xs text-red-700 dark:text-red-400">{errors.comment}</p>}
                         </div>
 
                         {/* État field: only editable by admin */}
@@ -265,7 +265,7 @@ const EditDemandeModal: React.FC<EditDemandeModalProps> = ({ isOpen, onClose, de
                                     <option value="acceptée">Acceptée</option>
                                     <option value="refusée">Refusée</option>
                                 </select>
-                                {errors.etat && <p className="text-xs text-red-500">{errors.etat}</p>}
+                                {errors.etat && <p className="text-xs text-red-700 dark:text-red-400">{errors.etat}</p>}
                             </div>
                         ) : (
                             <div className="space-y-1">

@@ -47,6 +47,8 @@ class CompanyController extends Controller
             'signatory_name' => ['required', 'string', 'max:150'],
             'signatory_title' => ['nullable', 'string', 'max:100'],
             'brand_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'cndp_number' => ['nullable', 'string', 'max:50'],
+            'privacy_contact' => ['nullable', 'string', 'max:150'],
         ], [
             'ice.regex' => "L'ICE doit contenir 15 chiffres.",
             'brand_color.regex' => 'Choisissez une couleur au format #RRGGBB.',
@@ -63,6 +65,8 @@ class CompanyController extends Controller
             'signatory_name' => 'nom du signataire',
             'signatory_title' => 'fonction du signataire',
             'brand_color' => 'couleur',
+            'cndp_number' => 'N° de déclaration CNDP',
+            'privacy_contact' => 'contact protection des données',
         ]);
 
         $company = CompanySetting::current();

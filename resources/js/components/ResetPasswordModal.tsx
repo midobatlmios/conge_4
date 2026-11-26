@@ -66,7 +66,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
                                 {showPassword ? 'Masquer' : 'Afficher'}
                             </Button>
                         </div>
-                        {errors.password && <p className="text-sm text-red-500">{errors.password}</p>}
+                        {errors.password && <p className="text-sm text-red-700 dark:text-red-400">{errors.password}</p>}
                     </div>
 
                     <div className="flex flex-col space-y-1">
@@ -80,7 +80,7 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
                             minLength={8}
                             required
                         />
-                        {errors.password_confirmation && <p className="text-sm text-red-500">{errors.password_confirmation}</p>}
+                        {errors.password_confirmation && <p className="text-sm text-red-700 dark:text-red-400">{errors.password_confirmation}</p>}
                     </div>
 
                     <DialogFooter>

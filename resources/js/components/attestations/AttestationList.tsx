@@ -1,13 +1,20 @@
 import { Attestation, pdfUrl, STATUS_CLASS } from '@/components/attestations/attestations';
 import { formatDate } from '@/components/employees/personal-data';
+import EmptyState from '@/components/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, FileBadge } from 'lucide-react';
 
 /** Attestations of one employee: status, number and PDF download. */
 export default function AttestationList({ attestations }: { attestations: Attestation[] }) {
     if (attestations.length === 0) {
-        return <p className="text-muted-foreground text-sm">Aucune attestation pour le moment.</p>;
+        return (
+            <EmptyState
+                icon={FileBadge}
+                title="Aucune attestation pour le moment"
+                description="Les attestations demandées et délivrées apparaîtront ici, prêtes à télécharger."
+            />
+        );
     }
 
     return (
@@ -28,7 +35,9 @@ export default function AttestationList({ attestations }: { attestations: Attest
                                 : `Demandée le ${formatDate(attestation.requested_at)}`}
                             {attestation.purpose ? ` · ${attestation.purpose}` : ''}
                         </p>
-                        {attestation.refusal_reason && <p className="text-xs text-red-600">Motif du refus : {attestation.refusal_reason}</p>}
+                        {attestation.refusal_reason && (
+                            <p className="text-xs text-red-700 dark:text-red-400">Motif du refus : {attestation.refusal_reason}</p>
+                        )}
                     </div>
                     {attestation.status === 'delivree' && (
                         <Button variant="outline" size="sm" asChild className="self-start sm:self-center">

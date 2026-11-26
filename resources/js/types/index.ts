@@ -16,9 +16,10 @@ export interface BreadcrumbItem {
 export interface SharedData extends PageProps {
     name: string;
     quote?: { message: string; author: string };
+    /** One-off messages after an action, shown as toasts. */
     flash?: {
-        message?: string;
-        type?: 'success' | 'error' | 'warning' | 'info';
+        success?: string | null;
+        error?: string | null;
     };
     sidebarOpen?: boolean;
     [key: string]: unknown;

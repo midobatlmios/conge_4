@@ -49,10 +49,10 @@ policy, form requests), check-only CI.
 
 | # | Item | Why | Size |
 |---|------|-----|------|
-| 4.1 | **Toast notifications** for success/error instead of inline banners + page reloads | Feels like a modern app | S |
-| 4.2 | **Confirm dialogs** using the app's own modal instead of `window.confirm` | Consistent look, works in French | S |
-| 4.3 | **Loading skeletons** and empty-state illustrations | Feels faster and friendlier | S |
-| 4.4 | **Accessibility pass** (keyboard navigation, labels, contrast) | Required in many companies; better for everyone | S |
+| 4.1 | ✅ **Toast notifications** for success/error instead of inline banners + page reloads (done: server messages shown as toasts on every page, errors of actions too) | Feels like a modern app | S |
+| 4.2 | ✅ **Confirm dialogs** using the app's own modal instead of `window.confirm` (done: every confirm and prompt, incl. refusal reasons and the CNSS date) | Consistent look, works in French | S |
+| 4.3 | ✅ **Loading skeletons** and empty-state illustrations (done: empty states with a next step on the main lists; placeholders while notifications and history load) | Feels faster and friendlier | S |
+| 4.4 | ✅ **Accessibility pass** (keyboard navigation, labels, contrast) (done: WCAG 2.1 AA checked with axe-core in the E2E tests, light and dark mode; skip link, current page in the menu, focus rings) | Required in many companies; better for everyone | S |
 | 4.5 | **Progressive Web App** (installable on phone) | Employees check balance from their phone | M |
 | 4.6 | **Arabic / English languages** (i18n) | Useful in Morocco for multilingual teams | M |
 
@@ -85,22 +85,22 @@ employee lifecycle, documents, every kind of absence, reporting and compliance.
 | 6.4 | ✅ **Personal & administrative data**: CIN, CNSS number, birth date, address, RIB, emergency contact (HR-only access) — done: employee page `/admin/users/{id}`, encrypted fields, RIB key check, employee reads own data in Paramètres | Needed for payroll, declarations and attestations | M |
 | 6.5 | ✅ **Employee document folder**: contract, CIN copy, diplomas (private storage, as for leave certificates) — done: categories, optional expiry date with 30-day alert (employee page + Vue d'ensemble), employee reads own in Paramètres → Mes documents | Replaces the paper file in the HR cabinet | S |
 | 6.6 | ✅ **Org chart** built from the manager links (done: "Organigramme" page for everyone, search, collapsible teams, outline on phones) | Shows the structure at a glance; already have the data | S |
-| 6.7 | **Import employees from Excel** (with a downloadable template and error report) | No company re-types 50 people by hand | M |
+| 6.7 | ✅ **Import employees from Excel** (with a downloadable template and error report) — done: check before import (all or nothing), updates existing employees, invitation e-mails | No company re-types 50 people by hand | M |
 
 ### Steering and day-to-day running
 
 | # | Item | Why | Size |
 |---|------|-----|------|
 | 6.8 | ✅ **HR indicators** (done: "Indicateurs RH" page per year and department, year-end report in Excel): absence rate, headcount over time, turnover, days expiring soon, year-end report | What HR presents to management | M |
-| 6.9 | **Reminders**: requests waiting > 3 days nudge the manager/HR; carried-over days expiring on 31 March trigger an alert in February | Nothing gets stuck or lost | S |
-| 6.10 | **Delegation**: a manager on leave hands their approvals to someone else | Approvals don't stop during holidays | S |
-| 6.11 | **Calendar export** (iCal feed of approved leave for Outlook / Google Calendar) | Leave shows up where people already plan | S |
+| 6.9 | ✅ **Reminders** (done: managers about requests waiting 3 working days, HR daily summary, data-protection notice; `reminders:send` scheduled weekdays 08:00): requests waiting > 3 days nudge the manager/HR; carried-over days expiring on 31 March trigger an alert in February | Nothing gets stuck or lost | S |
+| 6.10 | ✅ **Delegation**: a manager on leave hands their approvals to someone else (done: set by the manager on « Mon équipe » or by HR, chosen dates, both can decide, notifications and reminders go to the delegate) | Approvals don't stop during holidays | S |
+| 6.11 | ✅ **Calendar export** (iCal feed of approved leave for Outlook / Google Calendar) — done: « Mes congés » and « Absences de mon équipe » (names only) via private links in Paramètres → Calendrier | Leave shows up where people already plan | S |
 
 ### Trust and compliance
 
 | # | Item | Why | Size |
 |---|------|-----|------|
-| 6.12 | **Personal data protection (loi 09-08 / CNDP)**: consent, retention periods, export of an employee's data on request, access limited by role | A buyer checks this first; personal data is now stored | M |
+| 6.12 | ✅ **Personal data protection (loi 09-08 / CNDP)** (done: notice accepted at first login, access log for the Administrateur, data export, retention periods, register page with the CNDP checklist): consent, retention periods, export of an employee's data on request, access limited by role | A buyer checks this first; personal data is now stored | M |
 | 6.13 | ✅ **Finer roles**: HR, super-admin, read-only (payroll / accountant) instead of one admin role — done: roles admin / rh / paie / user | Matches how companies split responsibilities | M |
 | 6.14 | **Company settings** (started: name, address, ICE/RC/IF/CNSS, signatory and logo on the "Entreprise" page; multi-site still to do): name, logo, address, ICE (used on attestations), several sites with their own holidays | One app per company, branded and multi-site | M |
 

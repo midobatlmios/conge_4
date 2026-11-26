@@ -1,5 +1,8 @@
+import { toastErrors } from '@/components/app-toaster';
 import { Attestation, pdfUrl, STATUS_CLASS } from '@/components/attestations/attestations';
+import { confirmAction, promptValue } from '@/components/confirm-dialog';
 import { formatDate } from '@/components/employees/personal-data';
+import EmptyState from '@/components/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,7 +10,7 @@ import AppLayout from '@/layouts/app-layout';
 import { usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { Download } from 'lucide-react';
+import { Download, FileBadge } from 'lucide-react';
 import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -22,26 +25,47 @@ export default function Attestations({ attestations }: { attestations: Attestati
     const [busy, setBusy] = useState<number | null>(null);
     const waiting = attestations.filter((a) => a.status === 'demandee').length;
 
-    const issue = (attestation: Attestation) => {
+    const issue = async (attestation: Attestation) => {
         let net: string | null = null;
         if (attestation.type === 'salaire') {
-            net = window.prompt("Salaire net mensuel à indiquer (facultatif, en DH). Laissez vide pour n'indiquer que le brut du contrat.", '');
+            net = await promptValue({
+                title: `Délivrer l'attestation de salaire de ${attestation.name} ?`,
+                description: "Le salaire brut vient du contrat en cours. Laissez vide pour n'indiquer que le brut.",
+                label: 'Salaire net mensuel (facultatif, DH)',
+                type: 'number',
+                confirmLabel: 'Délivrer',
+            });
             if (net === null) return;
-        } else if (!window.confirm(`Délivrer l'${attestation.type_label.toLowerCase()} de ${attestation.name} ?`)) {
+        } else if (
+            !(await confirmAction({ title: `Délivrer l'${attestation.type_label.toLowerCase()} de ${attestation.name} ?`, confirmLabel: 'Délivrer' }))
+        ) {
             return;
         }
         setBusy(attestation.id);
         router.put(`/admin/attestations/${attestation.id}/issue`, net ? { net_salary: net.replace(',', '.').replace(/\s/g, '') } : {}, {
             preserveScroll: true,
+            onError: toastErrors,
             onFinish: () => setBusy(null),
         });
     };
 
-    const refuse = (attestation: Attestation) => {
-        const reason = window.prompt(`Motif du refus pour ${attestation.name} :`);
+    const refuse = async (attestation: Attestation) => {
+        const reason = await promptValue({
+            title: `Refuser la demande de ${attestation.name} ?`,
+            description: `${attestation.type_label}. L'employé est prévenu avec ce motif.`,
+            label: 'Motif du refus',
+            multiline: true,
+            required: true,
+            confirmLabel: 'Refuser',
+            destructive: true,
+        });
         if (!reason) return;
         setBusy(attestation.id);
-        router.put(`/admin/attestations/${attestation.id}/refuse`, { reason }, { preserveScroll: true, onFinish: () => setBusy(null) });
+        router.put(
+            `/admin/attestations/${attestation.id}/refuse`,
+            { reason },
+            { preserveScroll: true, onError: toastErrors, onFinish: () => setBusy(null) },
+        );
     };
 
     const errorText = errors.attestation || errors.net_salary || errors.reason;
@@ -70,7 +94,12 @@ export default function Attestations({ attestations }: { attestations: Attestati
                 <Card>
                     <CardContent>
                         {attestations.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">Aucune attestation.</p>
+                            <EmptyState
+                                icon={FileBadge}
+                                title="Aucune attestation"
+                                description="Les demandes des employés apparaîtront ici. Pour en établir une directement, ouvrez la fiche de l'employé."
+                                className="border-0"
+                            />
                         ) : (
                             <ul className="divide-y">
                                 {attestations.map((attestation) => {
@@ -100,7 +129,7 @@ export default function Attestations({ attestations }: { attestations: Attestati
                                                     {attestation.handled_by ? ` · traitée par ${attestation.handled_by}` : ''}
                                                 </p>
                                                 {attestation.refusal_reason && (
-                                                    <p className="text-xs text-red-600">Refus : {attestation.refusal_reason}</p>
+                                                    <p className="text-xs text-red-700 dark:text-red-400">Refus : {attestation.refusal_reason}</p>
                                                 )}
                                                 {attestation.missing && attestation.missing.length > 0 && (
                                                     <p className="text-xs text-orange-700 dark:text-orange-400">
@@ -124,7 +153,7 @@ export default function Attestations({ attestations }: { attestations: Attestati
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            className="text-red-600"
+                                                            className="text-red-700 dark:text-red-400"
                                                             disabled={busy === attestation.id}
                                                             onClick={() => refuse(attestation)}
                                                         >

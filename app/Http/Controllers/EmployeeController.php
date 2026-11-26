@@ -10,6 +10,7 @@ use App\Http\Requests\Admin\UpdateEmployeeProfileRequest;
 use App\Models\Demande;
 use App\Models\Department;
 use App\Models\EmployeeProfile;
+use App\Models\PersonalDataAccess;
 use App\Models\User;
 use App\Services\LeaveCalculator;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,8 @@ class EmployeeController extends Controller
 {
     public function show(Request $request, User $user): Response
     {
+        PersonalDataAccess::record($request->user(), $user, 'view_file');
+
         $user->load(['department:id,name', 'manager:id,name', 'profile.editor:id,name']);
         $profile = $user->profile;
         $user->unsetRelation('profile');
@@ -43,6 +46,10 @@ class EmployeeController extends Controller
             'contractAlerts' => EmploymentContractController::alerts(collect([$user])),
             'contractOptions' => EmploymentContractController::options(),
             'sickDays' => $this->sickDays($user),
+            // Delegation of their approvals, when they manage a team.
+            'isManager' => $user->isManager(),
+            'delegations' => $user->delegationsGiven()->notOver()->with('delegate:id,name')->get()->map->present(),
+            'nextLeave' => $this->nextLeave($user),
             'attestations' => $user->attestations()->with('handler:id,name')->latest()->get()->map->present(),
             'attestationTypes' => AttestationType::options(),
             'documentCategories' => DocumentCategory::options(),
@@ -76,6 +83,14 @@ class EmployeeController extends Controller
         ];
     }
 
+    /** @return array{start: string, end: string}|null The employee's next booked leave. */
+    private function nextLeave(User $user): ?array
+    {
+        $leave = $user->demandes()->whereIn('etat', LeaveStatus::booked())->whereDate('date_fin', '>=', today())->orderBy('date_debut')->first();
+
+        return $leave ? ['start' => Carbon::parse($leave->date_debut)->toDateString(), 'end' => Carbon::parse($leave->date_fin)->toDateString()] : null;
+    }
+
     public function updateProfile(UpdateEmployeeProfileRequest $request, User $user): RedirectResponse
     {
         $profile = $user->profile ?? new EmployeeProfile;
@@ -83,6 +98,11 @@ class EmployeeController extends Controller
         $profile->fill($request->validated());
 
         if ($profile->isDirty()) {
+            // Which fields changed, never their values.
+            PersonalDataAccess::record($request->user(), $user, 'update_profile', implode(', ', array_map(
+                fn (string $field) => $request->attributes()[$field] ?? $field,
+                array_keys($profile->getDirty()),
+            )));
             $profile->updated_by = $request->user()->id;
             $profile->save();
         }

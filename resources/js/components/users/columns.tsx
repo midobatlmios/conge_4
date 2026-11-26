@@ -26,6 +26,8 @@ export type User = {
     role: Role;
     /** Set when the employee has left: cannot sign in, history kept. */
     deactivated_at: string | null;
+    /** Last welcome e-mail (link to choose a password), if any. */
+    invited_at?: string | null;
     matricule: string | null;
     department_id: number | null;
     job_title: string | null;
@@ -47,6 +49,7 @@ export const columns = (
     handleToggleActive: (user: User) => void,
     currentUserId: number | undefined,
     can: Permissions,
+    handleInvite: (user: User) => void,
 ): ColumnDef<User>[] => [
     {
         accessorKey: 'matricule',
@@ -124,7 +127,7 @@ export const columns = (
         header: 'Rôle',
         cell: ({ row }) => {
             const role = row.getValue('role') as Role;
-            return <div className={`font-medium ${role !== 'user' ? 'text-blue-600' : ''}`}>{ROLE_LABELS[role]}</div>;
+            return <div className={`font-medium ${role !== 'user' ? 'text-blue-600 dark:text-blue-400' : ''}`}>{ROLE_LABELS[role]}</div>;
         },
     },
     {
@@ -185,18 +188,23 @@ export const columns = (
                                 >
                                     Modifier l'utilisateur
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleResetPassword(user)} className="text-yellow-600">
+                                <DropdownMenuItem onClick={() => handleResetPassword(user)} className="text-yellow-700 dark:text-yellow-400">
                                     Réinitialiser le mot de passe
                                 </DropdownMenuItem>
+                                {user.id !== currentUserId && !user.deactivated_at && (
+                                    <DropdownMenuItem onClick={() => handleInvite(user)}>
+                                        {user.invited_at ? "Renvoyer l'invitation" : 'Envoyer une invitation'}
+                                    </DropdownMenuItem>
+                                )}
                                 {user.id !== currentUserId && (
                                     <>
                                         <DropdownMenuSeparator />
                                         {user.deactivated_at ? (
-                                            <DropdownMenuItem onClick={() => handleToggleActive(user)} className="text-green-700">
+                                            <DropdownMenuItem onClick={() => handleToggleActive(user)} className="text-green-700 dark:text-green-400">
                                                 Réactiver le compte
                                             </DropdownMenuItem>
                                         ) : (
-                                            <DropdownMenuItem onClick={() => handleToggleActive(user)} className="text-red-600">
+                                            <DropdownMenuItem onClick={() => handleToggleActive(user)} className="text-red-700 dark:text-red-400">
                                                 Désactiver le compte
                                             </DropdownMenuItem>
                                         )}

@@ -2,6 +2,7 @@ import { Browser, expect, Page } from '@playwright/test';
 
 /** Accounts created by database/seeders/E2eSeeder.php (password "password"). */
 export const ACCOUNTS = {
+    admin: { email: 'admin@e2e.test', name: 'Amal Admin' },
     hr: { email: 'rh@e2e.test', name: 'Rachid RH' },
     manager: { email: 'manager@e2e.test', name: 'Meryem Responsable' },
     employee: { email: 'employe@e2e.test', name: 'Elias Employé' },
@@ -10,9 +11,6 @@ export const ACCOUNTS = {
 /** Opens a fresh browser session signed in as one of the test accounts. */
 export async function signIn(browser: Browser, account: keyof typeof ACCOUNTS): Promise<Page> {
     const page = await (await browser.newContext()).newPage();
-    // Confirm dialogs (window.confirm) are accepted; prompts answered by the test itself.
-    page.on('dialog', (dialog) => (dialog.type() === 'prompt' ? undefined : dialog.accept()));
-
     await page.goto('/login');
     await page.getByLabel('Adresse e-mail').fill(ACCOUNTS[account].email);
     await page.getByLabel('Mot de passe').fill('password');

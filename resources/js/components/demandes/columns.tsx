@@ -30,7 +30,9 @@ export const columns = (
             // Earned so far this year minus accepted days.
             const remainingDays = row.original.user.remaining_days ?? 0;
             return (
-                <div className={`font-medium ${remainingDays <= 5 ? 'text-red-500' : remainingDays <= 10 ? 'text-yellow-500' : 'text-green-500'}`}>
+                <div
+                    className={`font-medium ${remainingDays <= 5 ? 'text-red-700 dark:text-red-400' : remainingDays <= 10 ? 'text-yellow-700 dark:text-yellow-400' : 'text-green-700 dark:text-green-400'}`}
+                >
                     {formatDays(remainingDays)} jours
                 </div>
             );
@@ -139,7 +141,7 @@ export const columns = (
                         <Button
                             variant="outline"
                             size="sm"
-                            className={demande.cnss_filed_on ? '' : 'text-orange-600 hover:bg-orange-50 hover:text-orange-700'}
+                            className={demande.cnss_filed_on ? '' : 'text-orange-700 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400'}
                             onClick={() => recordCnss(demande)}
                         >
                             {demande.cnss_filed_on ? 'Dossier CNSS ✓' : 'Dossier CNSS à déposer'}
@@ -150,7 +152,7 @@ export const columns = (
                             <Button
                                 variant="outline"
                                 size="sm"
-                                className="text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                                className="text-orange-700 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400"
                                 onClick={() => cancelLeave(demande, true)}
                             >
                                 Approuver l'annulation
@@ -164,7 +166,7 @@ export const columns = (
                         <Button
                             variant="outline"
                             size="sm"
-                            className="text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                            className="text-orange-700 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400"
                             onClick={() => requestCancellation(demande)}
                         >
                             Demander l'annulation
@@ -174,7 +176,7 @@ export const columns = (
                         <Button
                             variant="outline"
                             size="sm"
-                            className="text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+                            className="text-orange-700 hover:bg-orange-50 hover:text-orange-700 dark:text-orange-400"
                             onClick={() => cancelLeave(demande, false)}
                         >
                             Annuler le congé
@@ -184,7 +186,7 @@ export const columns = (
                         <Button
                             variant="outline"
                             size="sm"
-                            className="text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700"
+                            className="text-yellow-700 hover:bg-yellow-50 hover:text-yellow-700 dark:text-yellow-400"
                             onClick={() => {
                                 setSelectedDemande(demande);
                                 onEdit(true);
@@ -197,7 +199,7 @@ export const columns = (
                         <Button
                             variant="outline"
                             size="sm"
-                            className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                            className="text-red-700 hover:bg-red-50 hover:text-red-700 dark:text-red-400"
                             onClick={() => onDelete(demande.id)}
                         >
                             Supprimer

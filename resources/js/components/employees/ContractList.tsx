@@ -1,8 +1,9 @@
 import { Contract, STATUS_LABELS } from '@/components/employees/contracts';
 import { formatDate } from '@/components/employees/personal-data';
+import EmptyState from '@/components/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2 } from 'lucide-react';
+import { FileSignature, Pencil, Trash2 } from 'lucide-react';
 
 const statusClass: Record<Contract['status'], string> = {
     active: 'border-green-600 text-green-700 dark:text-green-400',
@@ -20,7 +21,13 @@ interface ContractListProps {
 /** An employee's contracts, newest first. */
 export default function ContractList({ contracts, onEdit, onDelete }: ContractListProps) {
     if (contracts.length === 0) {
-        return <p className="text-muted-foreground text-sm">Aucun contrat enregistré.</p>;
+        return (
+            <EmptyState
+                icon={FileSignature}
+                title="Aucun contrat enregistré"
+                description="Le contrat de travail (type, dates, période d'essai, salaire) est saisi par le service RH."
+            />
+        );
     }
 
     return (
@@ -69,7 +76,7 @@ export default function ContractList({ contracts, onEdit, onDelete }: ContractLi
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    className="text-red-700 hover:bg-red-50 hover:text-red-700 dark:text-red-400"
                                     onClick={() => onDelete(contract)}
                                 >
                                     <Trash2 className="h-4 w-4" />

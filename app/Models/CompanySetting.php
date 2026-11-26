@@ -27,6 +27,7 @@ class CompanySetting extends Model
     public const FIELDS = [
         'name', 'legal_form', 'address', 'city', 'phone', 'email',
         'ice', 'rc', 'if_number', 'cnss_number', 'signatory_name', 'signatory_title', 'brand_color',
+        'cndp_number', 'privacy_contact',
     ];
 
     /** Needed before any attestation can be issued. */

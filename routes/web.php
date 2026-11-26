@@ -3,13 +3,16 @@
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DelegationController;
 use App\Http\Controllers\DemandeDocumentController;
 use App\Http\Controllers\DemandesController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDocumentController;
+use App\Http\Controllers\EmployeeImportController;
 use App\Http\Controllers\EmploymentContractController;
 use App\Http\Controllers\HolidayController;
 use App\Http\Controllers\IndicatorsController;
@@ -17,12 +20,19 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OrgChartController;
 use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\PayrollController;
+use App\Http\Controllers\PrivacyController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // The company logo, shown on the sign-in pages too (not sensitive).
 Route::get('/brand/logo', [CompanyController::class, 'logo'])->name('brand.logo');
+
+// Calendar subscriptions (iCal) read by Outlook / Google Calendar: the secret token is the access.
+Route::get('/calendrier/abonnement/{token}/{feed}.ics', [CalendarFeedController::class, 'feed'])
+    ->where(['token' => '[A-Za-z0-9]{48}', 'feed' => 'me|team'])
+    ->middleware('throttle:60,1')
+    ->name('calendar.feed');
 
 Route::get('/', function () {
     return Inertia::render('Welcome');
@@ -46,6 +56,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Two-step approval: the employee's manager approves (then HR decides) or refuses.
     Route::get('/equipe', [TeamController::class, 'index'])->name('team');
+    // A manager hands their approvals to someone for a period (HR can too, below).
+    Route::post('/equipe/delegations', [DelegationController::class, 'store'])->name('delegations.store');
+    Route::delete('/delegations/{delegation}', [DelegationController::class, 'destroy'])->name('delegations.destroy');
     Route::put('/demandes/{demande}/manager-approve', [DemandesController::class, 'managerApprove'])->name('demandes.manager-approve');
     Route::put('/demandes/{demande}/manager-refuse', [DemandesController::class, 'managerRefuse'])->name('demandes.manager-refuse');
 
@@ -59,6 +72,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Team calendar: who is off when (what each person sees is decided in the controller).
     Route::get('/calendrier', [CalendarController::class, 'index'])->name('calendar');
+
+    // Data protection notice (accepted once), and the export of one's own data.
+    Route::get('/protection-des-donnees', [PrivacyController::class, 'notice'])->name('privacy.notice');
+    Route::post('/protection-des-donnees/accept', [PrivacyController::class, 'acknowledge'])->name('privacy.acknowledge');
+    Route::get('/protection-des-donnees/export', [PrivacyController::class, 'exportOwn'])->name('privacy.export');
 
     // Org chart from the manager links (everyone; no personal data).
     Route::get('/organigramme', [OrgChartController::class, 'index'])->name('org-chart');
@@ -92,6 +110,13 @@ Route::middleware(['auth', 'verified', 'role:admin,rh,paie'])->prefix('admin')->
     Route::get('/indicators/export', [IndicatorsController::class, 'export'])->name('indicators.export');
 });
 
+// Data protection register, access log and retention: Administrateur only.
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin/privacy')->name('admin.privacy.')->group(function () {
+    Route::get('/', [PrivacyController::class, 'register'])->name('register');
+    Route::get('/log', [PrivacyController::class, 'log'])->name('log');
+    Route::post('/retention', [PrivacyController::class, 'applyRetention'])->name('retention');
+});
+
 // HR changes: Admin and RH only. Which accounts RH may change is checked in
 // AdminController (RH handles plain employees; only Admin gives roles).
 Route::middleware(['auth', 'verified', 'role:admin,rh'])->prefix('admin')->name('admin.')->group(function () {
@@ -110,6 +135,20 @@ Route::middleware(['auth', 'verified', 'role:admin,rh'])->prefix('admin')->name(
     Route::post('/users/{user}/contracts', [EmploymentContractController::class, 'store'])->name('users.contracts.store');
     Route::put('/contracts/{contract}', [EmploymentContractController::class, 'update'])->name('contracts.update');
     Route::delete('/contracts/{contract}', [EmploymentContractController::class, 'destroy'])->name('contracts.destroy');
+
+    // Import employees from Excel (template, check, import), then invite them.
+    Route::get('/import', [EmployeeImportController::class, 'index'])->name('import.index');
+    Route::get('/import/modele', [EmployeeImportController::class, 'template'])->name('import.template');
+    Route::post('/import', [EmployeeImportController::class, 'upload'])->name('import.upload');
+    Route::get('/import/{token}/erreurs', [EmployeeImportController::class, 'report'])->name('import.report');
+    Route::post('/import/{token}/confirm', [EmployeeImportController::class, 'confirm'])->name('import.confirm');
+    Route::post('/users/invite', [EmployeeImportController::class, 'invite'])->name('users.invite');
+
+    // HR sets a manager's delegation (sudden absence…).
+    Route::post('/users/{user}/delegations', [DelegationController::class, 'storeFor'])->name('users.delegations.store');
+
+    // Export of an employee's data on request (right of access).
+    Route::get('/users/{user}/data-export', [PrivacyController::class, 'exportFor'])->name('users.data-export');
 
     // Issuing or refusing attestations (never one's own).
     Route::post('/users/{user}/attestations', [AttestationController::class, 'storeForEmployee'])->name('users.attestations.store');

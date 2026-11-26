@@ -79,7 +79,7 @@ function PersonBox({ node, view }: { node: Node; view: ViewProps }) {
                 </Badge>
             )}
             {node.job_title && <p className="text-muted-foreground truncate text-xs">{node.job_title}</p>}
-            {node.department && <p className="text-muted-foreground/80 truncate text-[11px] uppercase">{node.department}</p>}
+            {node.department && <p className="text-muted-foreground truncate text-[11px] uppercase">{node.department}</p>}
             {node.reports.length > 0 && (
                 <button
                     type="button"

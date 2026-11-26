@@ -29,10 +29,18 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            // Already accepted the data protection notice (see the unacknowledged state).
+            'privacy_acknowledged_at' => now(),
             // 1 to 4 years of service: past the 6-month wait, no seniority bonus yet.
             // now() follows travelTo() in tests; Faker's relative dates use the real clock.
             'hire_date' => fake()->dateTimeBetween(now()->subYears(4), now()->subYear())->format('Y-m-d'),
         ];
+    }
+
+    /** Has not yet read and accepted the data protection notice. */
+    public function privacyNotAcknowledged(): static
+    {
+        return $this->state(fn () => ['privacy_acknowledged_at' => null]);
     }
 
     /**

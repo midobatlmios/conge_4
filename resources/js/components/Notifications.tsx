@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
 import { TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
 import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -22,6 +23,8 @@ interface Notification {
 export default function Notifications() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
+    // Until the first answer, show placeholders rather than "Aucune notification".
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         // Fetch notifications from the server
@@ -45,10 +48,12 @@ export default function Notifications() {
                 // Ensure data is an array
                 const notificationsArray = Array.isArray(data) ? data : [];
                 setNotifications(notificationsArray);
+                setLoaded(true);
                 setUnreadCount(notificationsArray.filter((n: Notification) => !n.read_at).length);
             } catch (error) {
                 console.error('Error fetching notifications:', error);
                 setNotifications([]); // Set empty array on error
+                setLoaded(true);
                 setUnreadCount(0);
             }
         };
@@ -95,8 +100,14 @@ export default function Notifications() {
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
-                {!Array.isArray(notifications) || notifications.length === 0 ? (
-                    <DropdownMenuItem className="text-sm text-gray-500">Aucune notification</DropdownMenuItem>
+                {!loaded ? (
+                    <div className="space-y-2 p-3" aria-busy="true" aria-label="Chargement des notifications">
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                        <Skeleton className="mt-3 h-4 w-2/3" />
+                    </div>
+                ) : !Array.isArray(notifications) || notifications.length === 0 ? (
+                    <DropdownMenuItem className="text-muted-foreground text-sm">Aucune notification</DropdownMenuItem>
                 ) : (
                     notifications.map((notification) => (
                         <DropdownMenuItem
@@ -105,10 +116,10 @@ export default function Notifications() {
                             onClick={() => markAsRead(notification.id)}
                         >
                             <p className="font-medium">{notification.data.message}</p>
-                            <p className="text-sm text-gray-500">{notification.created_at}</p>
-                            {notification.data.comment && <p className="mt-1 text-sm text-gray-600">{notification.data.comment}</p>}
+                            <p className="text-muted-foreground text-sm">{notification.created_at}</p>
+                            {notification.data.comment && <p className="text-muted-foreground mt-1 text-sm">{notification.data.comment}</p>}
                             {notification.data.type_conge && (
-                                <p className="text-sm text-gray-500">
+                                <p className="text-muted-foreground text-sm">
                                     Type : {TYPE_CONGE_LABELS[notification.data.type_conge as TypeConge] ?? notification.data.type_conge}
                                 </p>
                             )}

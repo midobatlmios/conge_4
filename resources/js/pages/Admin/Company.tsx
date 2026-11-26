@@ -22,6 +22,8 @@ type CompanyFields = {
     cnss_number: string;
     signatory_name: string;
     signatory_title: string;
+    cndp_number: string;
+    privacy_contact: string;
     /** Accent color, #RRGGBB (empty: the default red). */
     brand_color: string;
 };
@@ -39,6 +41,8 @@ const FIELDS: { field: Exclude<keyof CompanyFields, 'brand_color'>; label: strin
     { field: 'cnss_number', label: "N° d'affiliation CNSS" },
     { field: 'signatory_name', label: 'Signataire des attestations', placeholder: 'Nom et prénom', required: true },
     { field: 'signatory_title', label: 'Fonction du signataire', placeholder: 'Directeur des ressources humaines' },
+    { field: 'cndp_number', label: 'N° de déclaration CNDP', placeholder: 'Récépissé de la CNDP' },
+    { field: 'privacy_contact', label: 'Contact protection des données', placeholder: 'E-mail ou service' },
 ];
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -182,7 +186,6 @@ export default function Company({ company, logo, defaultColor, missing }: Compan
                                 </div>
                             </div>
                             <div className="flex items-center justify-end gap-3">
-                                {form.recentlySuccessful && <span className="text-sm text-green-700 dark:text-green-400">Enregistré.</span>}
                                 <Button type="submit" disabled={form.processing}>
                                     {form.processing ? 'Enregistrement…' : 'Enregistrer'}
                                 </Button>
@@ -221,7 +224,7 @@ export default function Company({ company, logo, defaultColor, missing }: Compan
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="text-red-600"
+                                    className="text-red-700 dark:text-red-400"
                                     onClick={() => router.delete('/admin/company/logo', { preserveScroll: true })}
                                 >
                                     Supprimer le logo

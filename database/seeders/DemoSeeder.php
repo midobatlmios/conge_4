@@ -87,6 +87,8 @@ class DemoSeeder extends Seeder
             'signatory_name' => 'Nadia El Amrani',
             'signatory_title' => 'Directrice des ressources humaines',
             'brand_color' => '#1D4E89',
+            'cndp_number' => 'D-GC-000/2026 (exemple)',
+            'privacy_contact' => 'dpo@'.self::DOMAIN,
         ]);
     }
 
@@ -170,6 +172,7 @@ class DemoSeeder extends Seeder
                 'password' => self::PASSWORD,
                 'role' => $role,
                 'email_verified_at' => now(),
+                'privacy_acknowledged_at' => $login === 'employe' ? null : now()->subMonths(2),
                 'matricule' => sprintf('ATL-%03d', $i + 1),
                 'department_id' => $departments[$department]->id,
                 'job_title' => $job,

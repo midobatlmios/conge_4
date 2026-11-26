@@ -45,6 +45,11 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'name' => config('app.name'),
+            // One-off messages after an action, shown as toasts (components/app-toaster.tsx).
+            'flash' => fn (): array => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
+            ],
             // The company's name, accent color and logo (or initials), on every page incl. sign-in.
             'brand' => fn (): array => CompanySetting::current()->brand(),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
@@ -55,7 +60,8 @@ class HandleInertiaRequests extends Middleware
                     'email' => $request->user()->email,
                     'role' => $request->user()->role,
                     // Approves their team's requests first (two-step approval).
-                    'is_manager' => $request->user()->isManager(),
+                    // Approves requests: their team, or one delegated to them today.
+                    'is_manager' => $request->user()->approvesRequests(),
                     'can' => $request->user()->permissions(),
                 ] : null,
             ],

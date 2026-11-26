@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\DocumentCategory;
 use App\Models\EmployeeDocument;
+use App\Models\PersonalDataAccess;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,7 +49,7 @@ class EmployeeDocumentController extends Controller
 
         $file = $request->file('file');
 
-        EmployeeDocument::create([
+        $document = EmployeeDocument::create([
             'user_id' => $user->id,
             'uploaded_by' => $request->user()->id,
             'category' => $validated['category'],
@@ -65,6 +66,8 @@ class EmployeeDocumentController extends Controller
             'size' => $file->getSize(),
         ]);
 
+        PersonalDataAccess::record($request->user(), $user, 'add_document', $document->title ?: $document->category->label());
+
         return back()->with('success', 'Document ajouté au dossier.');
     }
 
@@ -73,6 +76,7 @@ class EmployeeDocumentController extends Controller
     {
         $viewer = $request->user();
         abort_unless($viewer->canViewHr() || $document->user_id === $viewer->id, 403);
+        PersonalDataAccess::record($viewer, $document->user, 'open_document', $document->title ?: $document->category->label());
 
         return Storage::disk(EmployeeDocument::DISK)->response(
             $document->path,
@@ -86,6 +90,7 @@ class EmployeeDocumentController extends Controller
         abort_if($document->user_id === $request->user()->id, 403);
 
         $document->delete();
+        PersonalDataAccess::record($request->user(), $document->user, 'delete_document', $document->title ?: $document->category->label());
 
         return back()->with('success', 'Document supprimé du dossier.');
     }

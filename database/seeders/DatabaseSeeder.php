@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             'password' => 'password', // hashed by the model's "hashed" cast
             'role' => $role,
             'email_verified_at' => now(),
+            'privacy_acknowledged_at' => now(),
         ])->save();
     }
 }

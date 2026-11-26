@@ -1,3 +1,4 @@
+import EmptyState from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,7 +7,7 @@ import AppLayout from '@/layouts/app-layout';
 import { formatDays } from '@/lib/leave';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { Download } from 'lucide-react';
+import { Download, FileSpreadsheet } from 'lucide-react';
 
 interface PayrollRow {
     id: number;
@@ -66,7 +67,7 @@ export default function Payroll({ month, rows }: { month: string; rows: PayrollR
                                 className="w-44"
                             />
                         </div>
-                        <Button asChild className="bg-green-600 hover:bg-green-700">
+                        <Button asChild className="bg-green-700 text-white hover:bg-green-800">
                             {/* A plain link: the browser downloads the file. */}
                             <a href={`/admin/payroll/export?month=${month}`}>
                                 <Download className="mr-1 h-4 w-4" /> Télécharger Excel
@@ -81,9 +82,13 @@ export default function Payroll({ month, rows }: { month: string; rows: PayrollR
                 </p>
 
                 {rows.length === 0 ? (
-                    <p className="text-muted-foreground rounded-md border p-6 text-center text-sm">Aucun employé pour ce mois.</p>
+                    <EmptyState
+                        icon={FileSpreadsheet}
+                        title="Aucun employé pour ce mois"
+                        description="Aucun employé n'était en poste ce mois-là. Choisissez un autre mois."
+                    />
                 ) : (
-                    <div className="overflow-x-auto rounded-md border">
+                    <div className="overflow-x-auto rounded-md border" tabIndex={0} role="region" aria-label="Tableau de paie">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -110,7 +115,7 @@ export default function Payroll({ month, rows }: { month: string; rows: PayrollR
                                         {DAY_COLUMNS.map((column) => (
                                             <TableCell
                                                 key={column.key}
-                                                className={`text-right tabular-nums ${column.key === 'unpaid' && row.unpaid > 0 ? 'font-bold text-red-600' : ''} ${column.key === 'total' ? 'font-medium' : ''}`}
+                                                className={`text-right tabular-nums ${column.key === 'unpaid' && row.unpaid > 0 ? 'font-bold text-red-700 dark:text-red-400' : ''} ${column.key === 'total' ? 'font-medium' : ''}`}
                                             >
                                                 {row[column.key] ? formatDays(row[column.key] as number) : dash}
                                             </TableCell>

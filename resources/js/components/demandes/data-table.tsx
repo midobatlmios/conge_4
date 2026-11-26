@@ -1,4 +1,5 @@
 import { AddDemandeModal } from '@/components/AddDemandeModal';
+import EmptyState from '@/components/empty-state';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,6 +16,7 @@ import {
     useReactTable,
     VisibilityState,
 } from '@tanstack/react-table';
+import { Inbox } from 'lucide-react';
 import * as React from 'react';
 
 interface DataTableProps<TData, TValue> {
@@ -58,7 +60,7 @@ export function DataTable<TData, TValue>({ columns, data, isAdmin = false, users
                     value={statusFilter}
                     onValueChange={(value) => table.getColumn('etat')?.setFilterValue(value === ALL_STATUSES ? undefined : value)}
                 >
-                    <SelectTrigger className="w-48">
+                    <SelectTrigger className="w-48" aria-label="Filtrer par état">
                         <SelectValue placeholder="Filtrer par état" />
                     </SelectTrigger>
                     <SelectContent>
@@ -118,8 +120,17 @@ export function DataTable<TData, TValue>({ columns, data, isAdmin = false, users
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    Aucune demande.
+                                <TableCell colSpan={columns.length} className="p-4">
+                                    <EmptyState
+                                        icon={Inbox}
+                                        title={statusFilter && statusFilter !== ALL_STATUSES ? 'Aucune demande dans cet état' : 'Aucune demande'}
+                                        description={
+                                            statusFilter && statusFilter !== ALL_STATUSES
+                                                ? 'Choisissez « Tous les états » dans le filtre pour tout afficher.'
+                                                : "Les demandes de congé apparaîtront ici dès qu'elles seront déposées."
+                                        }
+                                        className="border-0"
+                                    />
                                 </TableCell>
                             </TableRow>
                         )}
