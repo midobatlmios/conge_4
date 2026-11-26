@@ -64,6 +64,11 @@ class CareerChangeController extends Controller
             $contract?->save();
 
             PersonalDataAccess::record($request->user(), $user, 'career_change', "Ajout : {$change->kind->label()}");
+
+            // The recommendation of an annual review this change applies.
+            if ($request->filled('review_id')) {
+                \App\Models\Review::whereKey($request->integer('review_id'))->update(['recommendation_status' => 'applied', 'career_change_id' => $change->id]);
+            }
         });
 
         return back()->with('success', 'Changement enregistré et appliqué au dossier.');

@@ -101,7 +101,8 @@ abstract class LeaveRequestForm extends FormRequest
 
     private function checkDays(Validator $validator): void
     {
-        $calculator = app(LeaveCalculator::class);
+        // The employee's site decides which local holidays count.
+        $calculator = app(LeaveCalculator::class)->forUser($this->ownerId());
         ['start_half' => $startHalf, 'end_half' => $endHalf] = $this->halfDays();
         $start = $this->input('date_debut');
         $end = $this->input('date_fin');

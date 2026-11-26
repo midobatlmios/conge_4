@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { t } from '@/lib/i18n';
 import { useForm } from '@inertiajs/react';
 import { Plus, Trash2 } from 'lucide-react';
 import { FormEvent } from 'react';
@@ -60,15 +61,17 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
         <Dialog open onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Bulletin de {name}</DialogTitle>
-                    <DialogDescription>Les jours et heures sont repris des congés et du pointage ; corrigez-les si besoin.</DialogDescription>
+                    <DialogTitle>
+                        {t('Bulletin de')} {name}
+                    </DialogTitle>
+                    <DialogDescription>{t('Les jours et heures sont repris des congés et du pointage ; corrigez-les si besoin.')}</DialogDescription>
                 </DialogHeader>
                 <form id="payslip-editor" onSubmit={submit} className="space-y-6">
                     <section className="space-y-3">
-                        <h3 className={sectionTitle}>Jours non payés (salaire ÷ 26 par jour)</h3>
+                        <h3 className={sectionTitle}>{t('Jours non payés (salaire ÷ 26 par jour)')}</h3>
                         <div className="grid gap-3 sm:grid-cols-2">
                             <div className="space-y-1">
-                                <Label htmlFor="unpaid">Congé sans solde (jours)</Label>
+                                <Label htmlFor="unpaid">{t('Congé sans solde (jours)')}</Label>
                                 <Input
                                     id="unpaid"
                                     type="number"
@@ -77,11 +80,13 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
                                     value={data.unpaid_days}
                                     onChange={(e) => setData('unpaid_days', e.target.value)}
                                 />
-                                <p className={hint}>Congés acceptés : {inputs.unpaid_from_leave} j</p>
+                                <p className={hint}>
+                                    {t('Congés acceptés :')} {inputs.unpaid_from_leave} j
+                                </p>
                                 {error('unpaid_days') && <p className="text-sm text-red-700 dark:text-red-400">{error('unpaid_days')}</p>}
                             </div>
                             <div className="space-y-1">
-                                <Label htmlFor="absent">Absences non justifiées (jours)</Label>
+                                <Label htmlFor="absent">{t('Absences non justifiées (jours)')}</Label>
                                 <Input
                                     id="absent"
                                     type="number"
@@ -90,14 +95,16 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
                                     value={data.absent_days}
                                     onChange={(e) => setData('absent_days', e.target.value)}
                                 />
-                                <p className={hint}>Pointage : {inputs.absent_from_attendance} j. Mettez 0 pour une absence justifiée après coup.</p>
+                                <p className={hint}>
+                                    {t('Pointage :')} {inputs.absent_from_attendance} {t('j. Mettez 0 pour une absence justifiée après coup.')}
+                                </p>
                                 {error('absent_days') && <p className="text-sm text-red-700 dark:text-red-400">{error('absent_days')}</p>}
                             </div>
                         </div>
                     </section>
 
                     <section className="space-y-3">
-                        <h3 className={sectionTitle}>Heures supplémentaires</h3>
+                        <h3 className={sectionTitle}>{t('Heures supplémentaires')}</h3>
                         <div className="grid grid-cols-3 gap-3">
                             {(['25', '50', '100'] as const).map((k) => (
                                 <div key={k} className="space-y-1">
@@ -110,7 +117,9 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
                                         value={data.overtime_hours[k]}
                                         onChange={(e) => setData('overtime_hours', { ...data.overtime_hours, [k]: e.target.value })}
                                     />
-                                    <p className={hint}>Pointage : {inputs.overtime_from_attendance[k]} h</p>
+                                    <p className={hint}>
+                                        {t('Pointage :')} {inputs.overtime_from_attendance[k]} h
+                                    </p>
                                 </div>
                             ))}
                         </div>
@@ -118,7 +127,7 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
 
                     <section className="space-y-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className={sectionTitle}>Primes et indemnités</h3>
+                            <h3 className={sectionTitle}>{t('Primes et indemnités')}</h3>
                             <div className="flex flex-wrap gap-1">
                                 {presets.map((preset) => (
                                     <Button
@@ -136,11 +145,11 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
                                 ))}
                             </div>
                         </div>
-                        {data.bonuses.length === 0 && <p className={hint}>Aucune prime ce mois-ci.</p>}
+                        {data.bonuses.length === 0 && <p className={hint}>{t('Aucune prime ce mois-ci.')}</p>}
                         {data.bonuses.map((line, i) => (
                             <div key={i} className="grid grid-cols-[1fr_8rem_auto_auto] items-center gap-2">
                                 <Input
-                                    aria-label="Libellé"
+                                    aria-label={t('Libellé')}
                                     value={line.label}
                                     onChange={(e) =>
                                         setData(
@@ -150,11 +159,11 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
                                     }
                                 />
                                 <Input
-                                    aria-label="Montant (DH)"
+                                    aria-label={t('Montant (DH)')}
                                     type="number"
                                     min={0}
                                     step="0.01"
-                                    placeholder="DH"
+                                    placeholder={t('DH')}
                                     value={line.amount}
                                     onChange={(e) =>
                                         setData(
@@ -174,13 +183,13 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
                                             )
                                         }
                                     />
-                                    Imposable
+                                    {t('Imposable')}
                                 </label>
                                 <Button
                                     type="button"
                                     size="sm"
                                     variant="ghost"
-                                    aria-label="Retirer cette ligne"
+                                    aria-label={t('Retirer cette ligne')}
                                     onClick={() =>
                                         setData(
                                             'bonuses',
@@ -193,31 +202,32 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
                             </div>
                         ))}
                         <p className={hint}>
-                            Imposable : entre dans le brut (CNSS, AMO, IR). Non imposable : ajouté au net (transport, panier… dans les plafonds légaux
-                            ; la part au-dessus du plafond est à saisir comme imposable).
+                            {t(
+                                'Imposable : entre dans le brut (CNSS, AMO, IR). Non imposable : ajouté au net (transport, panier… dans les plafonds légaux ; la part au-dessus du plafond est à saisir comme imposable).',
+                            )}
                         </p>
                     </section>
 
                     <section className="space-y-3">
                         <div className="flex items-center justify-between gap-2">
-                            <h3 className={sectionTitle}>Avances et prêts</h3>
+                            <h3 className={sectionTitle}>{t('Avances et prêts')}</h3>
                             <Button
                                 type="button"
                                 size="sm"
                                 variant="outline"
                                 disabled={data.advances.length >= 5}
-                                onClick={() => setData('advances', [...data.advances, { label: 'Avance sur salaire', amount: '' }])}
+                                onClick={() => setData('advances', [...data.advances, { label: t('Avance sur salaire'), amount: '' }])}
                             >
-                                <Plus className="me-1 h-3 w-3" /> Ajouter
+                                <Plus className="me-1 h-3 w-3" /> {t('Ajouter')}
                             </Button>
                         </div>
-                        {data.advances.length === 0 && <p className={hint}>Rien à retenir ce mois-ci.</p>}
+                        {data.advances.length === 0 && <p className={hint}>{t('Rien à retenir ce mois-ci.')}</p>}
                         {data.advances.map((line, i) => (
                             <div key={i} className="grid grid-cols-[1fr_8rem_auto] items-center gap-2">
                                 <Input
-                                    aria-label="Libellé"
+                                    aria-label={t('Libellé')}
                                     value={line.label}
-                                    placeholder="Avance sur salaire, échéance de prêt…"
+                                    placeholder={t('Avance sur salaire, échéance de prêt…')}
                                     onChange={(e) =>
                                         setData(
                                             'advances',
@@ -226,11 +236,11 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
                                     }
                                 />
                                 <Input
-                                    aria-label="Montant retenu (DH)"
+                                    aria-label={t('Montant retenu (DH)')}
                                     type="number"
                                     min={0}
                                     step="0.01"
-                                    placeholder="DH"
+                                    placeholder={t('DH')}
                                     value={line.amount}
                                     onChange={(e) =>
                                         setData(
@@ -243,7 +253,7 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
                                     type="button"
                                     size="sm"
                                     variant="ghost"
-                                    aria-label="Retirer cette ligne"
+                                    aria-label={t('Retirer cette ligne')}
                                     onClick={() =>
                                         setData(
                                             'advances',
@@ -255,19 +265,19 @@ export default function PayslipEditor({ payslipId, name, inputs, presets, onClos
                                 </Button>
                             </div>
                         ))}
-                        <p className={hint}>Retenu sur le net à payer, après impôt.</p>
+                        <p className={hint}>{t('Retenu sur le net à payer, après impôt.')}</p>
                         {error('advances') && <p className="text-sm text-red-700 dark:text-red-400">{error('advances')}</p>}
                         {Object.keys(errors).some((k) => k.startsWith('bonuses.') || k.startsWith('advances.')) && (
-                            <p className="text-sm text-red-700 dark:text-red-400">Chaque ligne a besoin d'un libellé et d'un montant.</p>
+                            <p className="text-sm text-red-700 dark:text-red-400">{t("Chaque ligne a besoin d'un libellé et d'un montant.")}</p>
                         )}
                     </section>
                 </form>
                 <DialogFooter>
                     <Button type="button" variant="outline" onClick={onClose} disabled={processing}>
-                        Annuler
+                        {t('Annuler')}
                     </Button>
                     <Button type="submit" form="payslip-editor" disabled={processing}>
-                        {processing ? 'Calcul…' : 'Enregistrer et recalculer'}
+                        {processing ? t('Calcul…') : t('Enregistrer et recalculer')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

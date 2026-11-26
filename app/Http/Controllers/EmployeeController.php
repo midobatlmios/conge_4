@@ -31,7 +31,7 @@ class EmployeeController extends Controller
     {
         PersonalDataAccess::record($request->user(), $user, 'view_file');
 
-        $user->load(['department:id,name', 'manager:id,name', 'profile.editor:id,name']);
+        $user->load(['department:id,name', 'site:id,name', 'manager:id,name', 'profile.editor:id,name']);
         $profile = $user->profile;
         $user->unsetRelation('profile');
 
@@ -48,6 +48,8 @@ class EmployeeController extends Controller
             'contractOptions' => EmploymentContractController::options(),
             'careerChanges' => $user->careerChanges()->with('author:id,name')->get()->map->present(),
             'careerKinds' => CareerChangeKind::options(),
+            // "Appliquer" on a review recommendation: the career-change form opens pre-filled.
+            'recommendation' => $this->recommendation($request, $user),
             'sickDays' => $this->sickDays($user),
             // Delegation of their approvals, when they manage a team.
             'isManager' => $user->isManager(),
@@ -76,7 +78,7 @@ class EmployeeController extends Controller
             ->whereDate('date_debut', '<=', $to)
             ->whereDate('date_fin', '>=', $from)
             ->get();
-        $calculator = app(LeaveCalculator::class);
+        $calculator = app(LeaveCalculator::class)->forUser($user);
 
         return [
             'year' => $from->year,
@@ -84,6 +86,22 @@ class EmployeeController extends Controller
             'calendar' => $leaves->sum(fn (Demande $leave) => (int) Carbon::parse($leave->date_debut)->max($from)->diffInDays(Carbon::parse($leave->date_fin)->min($to)) + 1),
             'count' => $leaves->count(),
         ];
+    }
+
+    /** @return array<string, mixed>|null A pending review recommendation to apply (?recommendation=review id). */
+    private function recommendation(Request $request, User $user): ?array
+    {
+        $review = $request->integer('recommendation')
+            ? \App\Models\Review::with('campaign')->where('user_id', $user->id)->where('recommendation_status', 'pending')->find($request->integer('recommendation'))
+            : null;
+
+        return $review ? [
+            'review_id' => $review->id,
+            'kind' => $review->recommendation === 'raise' ? 'augmentation' : 'promotion',
+            'job_title' => $review->recommended_job_title,
+            'gross_salary' => $review->recommended_salary === null ? null : (float) $review->recommended_salary,
+            'notes' => "Entretien annuel {$review->campaign->year} : {$review->recommendation_reason}",
+        ] : null;
     }
 
     /** @return array{start: string, end: string}|null The employee's next booked leave. */

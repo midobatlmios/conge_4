@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
+import { t } from '@/lib/i18n';
 import { usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -29,15 +30,18 @@ export default function Attestations({ attestations }: { attestations: Attestati
         let net: string | null = null;
         if (attestation.type === 'salaire') {
             net = await promptValue({
-                title: `Délivrer l'attestation de salaire de ${attestation.name} ?`,
-                description: "Le salaire brut vient du contrat en cours. Laissez vide pour n'indiquer que le brut.",
-                label: 'Salaire net mensuel (facultatif, DH)',
+                title: t("Délivrer l'attestation de salaire de :p0 ?", { p0: attestation.name }),
+                description: t("Le salaire brut vient du contrat en cours. Laissez vide pour n'indiquer que le brut."),
+                label: t('Salaire net mensuel (facultatif, DH)'),
                 type: 'number',
-                confirmLabel: 'Délivrer',
+                confirmLabel: t('Délivrer'),
             });
             if (net === null) return;
         } else if (
-            !(await confirmAction({ title: `Délivrer l'${attestation.type_label.toLowerCase()} de ${attestation.name} ?`, confirmLabel: 'Délivrer' }))
+            !(await confirmAction({
+                title: t("Délivrer l':p0 de :p1 ?", { p0: attestation.type_label.toLowerCase(), p1: attestation.name }),
+                confirmLabel: t('Délivrer'),
+            }))
         ) {
             return;
         }
@@ -51,12 +55,12 @@ export default function Attestations({ attestations }: { attestations: Attestati
 
     const refuse = async (attestation: Attestation) => {
         const reason = await promptValue({
-            title: `Refuser la demande de ${attestation.name} ?`,
-            description: `${attestation.type_label}. L'employé est prévenu avec ce motif.`,
-            label: 'Motif du refus',
+            title: t('Refuser la demande de :p0 ?', { p0: attestation.name }),
+            description: t(":p0. L'employé est prévenu avec ce motif.", { p0: attestation.type_label }),
+            label: t('Motif du refus'),
             multiline: true,
             required: true,
-            confirmLabel: 'Refuser',
+            confirmLabel: t('Refuser'),
             destructive: true,
         });
         if (!reason) return;
@@ -72,13 +76,13 @@ export default function Attestations({ attestations }: { attestations: Attestati
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Attestations" />
+            <Head title={t('Attestations')} />
             <div className="container mx-auto max-w-5xl space-y-6 px-4 py-10">
                 <div>
-                    <h1 className="text-2xl font-bold">Attestations</h1>
+                    <h1 className="text-2xl font-bold">{t('Attestations')}</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        {waiting > 0 ? `${waiting} demande${waiting > 1 ? 's' : ''} en attente.` : 'Aucune demande en attente.'} Pour établir une
-                        attestation sans demande, ouvrez la fiche de l'employé.
+                        {waiting > 0 ? t(':p0 demande:p1 en attente.', { p0: waiting, p1: waiting > 1 ? 's' : '' }) : t('Aucune demande en attente.')}{' '}
+                        {t("Pour établir une attestation sans demande, ouvrez la fiche de l'employé.")}
                     </p>
                 </div>
 
@@ -96,8 +100,10 @@ export default function Attestations({ attestations }: { attestations: Attestati
                         {attestations.length === 0 ? (
                             <EmptyState
                                 icon={FileBadge}
-                                title="Aucune attestation"
-                                description="Les demandes des employés apparaîtront ici. Pour en établir une directement, ouvrez la fiche de l'employé."
+                                title={t('Aucune attestation')}
+                                description={t(
+                                    "Les demandes des employés apparaîtront ici. Pour en établir une directement, ouvrez la fiche de l'employé.",
+                                )}
                                 className="border-0"
                             />
                         ) : (
@@ -114,26 +120,28 @@ export default function Attestations({ attestations }: { attestations: Attestati
                                                     <Link href={`/admin/users/${attestation.user_id}`} className="font-medium hover:underline">
                                                         {attestation.name}
                                                     </Link>
-                                                    <span>· {attestation.type_label}</span>
+                                                    <span>· {t(attestation.type_label)}</span>
                                                     <Badge variant="outline" className={STATUS_CLASS[attestation.status]}>
-                                                        {attestation.status_label}
+                                                        {t(attestation.status_label)}
                                                     </Badge>
                                                     {attestation.number && (
                                                         <span className="text-muted-foreground text-xs">n° {attestation.number}</span>
                                                     )}
                                                 </div>
                                                 <p className="text-muted-foreground text-xs">
-                                                    {attestation.requested_by_employee ? 'Demandée' : 'Établie par le RH'} le{' '}
+                                                    {attestation.requested_by_employee ? t('Demandée') : t('Établie par le RH')} {t('le')}{' '}
                                                     {formatDate(attestation.requested_at)}
                                                     {attestation.purpose ? ` · ${attestation.purpose}` : ''}
-                                                    {attestation.handled_by ? ` · traitée par ${attestation.handled_by}` : ''}
+                                                    {attestation.handled_by ? t(' · traitée par :p0', { p0: attestation.handled_by }) : ''}
                                                 </p>
                                                 {attestation.refusal_reason && (
-                                                    <p className="text-xs text-red-700 dark:text-red-400">Refus : {attestation.refusal_reason}</p>
+                                                    <p className="text-xs text-red-700 dark:text-red-400">
+                                                        {t('Refus :')} {attestation.refusal_reason}
+                                                    </p>
                                                 )}
                                                 {attestation.missing && attestation.missing.length > 0 && (
                                                     <p className="text-xs text-orange-700 dark:text-orange-400">
-                                                        À compléter avant de délivrer : {attestation.missing.join(', ')}.
+                                                        {t('À compléter avant de délivrer :')} {attestation.missing.join(', ')}.
                                                     </p>
                                                 )}
                                             </div>
@@ -141,14 +149,14 @@ export default function Attestations({ attestations }: { attestations: Attestati
                                                 {attestation.status === 'delivree' && (
                                                     <Button variant="outline" size="sm" asChild>
                                                         <a href={pdfUrl(attestation)} target="_blank" rel="noopener">
-                                                            <Download className="me-2 h-4 w-4" /> PDF
+                                                            <Download className="me-2 h-4 w-4" /> {t('PDF')}
                                                         </a>
                                                     </Button>
                                                 )}
                                                 {canHandle && (
                                                     <>
                                                         <Button size="sm" disabled={busy === attestation.id} onClick={() => issue(attestation)}>
-                                                            Délivrer
+                                                            {t('Délivrer')}
                                                         </Button>
                                                         <Button
                                                             variant="outline"
@@ -157,7 +165,7 @@ export default function Attestations({ attestations }: { attestations: Attestati
                                                             disabled={busy === attestation.id}
                                                             onClick={() => refuse(attestation)}
                                                         >
-                                                            Refuser
+                                                            {t('Refuser')}
                                                         </Button>
                                                     </>
                                                 )}

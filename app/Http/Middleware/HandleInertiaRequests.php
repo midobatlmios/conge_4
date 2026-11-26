@@ -49,8 +49,9 @@ class HandleInertiaRequests extends Middleware
             'locale' => \App\Http\Controllers\LocaleController::current($request),
             // One-off messages after an action, shown as toasts (components/app-toaster.tsx).
             'flash' => fn (): array => [
-                'success' => $request->session()->get('success'),
-                'error' => $request->session()->get('error'),
+                // Fixed sentences are translated (lang/ar.json, lang/en.json); others stay as written.
+                'success' => ($message = $request->session()->get('success')) ? __($message) : null,
+                'error' => ($message = $request->session()->get('error')) ? __($message) : null,
             ],
             // The company's name, accent color and logo (or initials), on every page incl. sign-in.
             'brand' => fn (): array => CompanySetting::current()->brand(),
@@ -71,6 +72,8 @@ class HandleInertiaRequests extends Middleware
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
+            // Sites for the employee forms (HR only; empty list: the field is hidden).
+            'sites' => fn (): array => $request->user()?->isHr() ? \App\Models\Site::orderBy('name')->get(['id', 'name'])->all() : [],
             'leaveRules' => fn (): array => [
                 'maxDaysPerYear' => config('conge.max_days_per_year'),
                 'countedTypes' => config('conge.counted_types'),
@@ -89,7 +92,8 @@ class HandleInertiaRequests extends Middleware
                 'documentMaxKb' => config('conge.document_max_kb'),
                 'workingDays' => config('conge.working_days'),
                 // Only signed-in pages count leave days; skip the query for guests.
-                'holidays' => $request->user() ? Holiday::keys() : [],
+                // The signed-in person's site: national holidays plus its local ones.
+                'holidays' => $request->user() ? Holiday::keys($request->user()->site_id) : [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

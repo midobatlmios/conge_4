@@ -23,6 +23,7 @@ class PrivacyRetention extends Command
             ['Certificats médicaux', $due['certificates']->count()],
             ['Dossiers d\'anciens employés', $due['personal']->count()],
             ['Anonymisations', $due['anonymize']->count()],
+            ['Candidatures expirées', $due['candidates']->count()],
         ]);
 
         if (! $this->option('apply')) {

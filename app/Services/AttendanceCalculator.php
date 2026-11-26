@@ -140,7 +140,7 @@ class AttendanceCalculator
     {
         $s = $this->schedule();
         $today = today();
-        $working = $this->leaves->isWorkingDay($day);
+        $working = $this->leaves->forUser($person)->isWorkingDay($day);
         $tracked = $s['since'] !== null && $day->gte($s['since'])
             && (! $person->hire_date || $person->hire_date->lte($day))
             && (! $person->deactivated_at || $person->deactivated_at->copy()->startOfDay()->gt($day));

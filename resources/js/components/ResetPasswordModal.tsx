@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { User } from '@/components/users/columns';
+import { t } from '@/lib/i18n';
 import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -39,13 +40,15 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Réinitialiser le mot de passe de {user?.name}</DialogTitle>
+                    <DialogTitle>
+                        {t('Réinitialiser le mot de passe de')} {user?.name}
+                    </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {wasSuccessful && <div className="rounded bg-green-200 p-2 text-green-800">Mot de passe réinitialisé avec succès</div>}
+                    {wasSuccessful && <div className="rounded bg-green-200 p-2 text-green-800">{t('Mot de passe réinitialisé avec succès')}</div>}
 
                     <div className="flex flex-col space-y-1">
-                        <label htmlFor="password">Nouveau mot de passe</label>
+                        <label htmlFor="password">{t('Nouveau mot de passe')}</label>
                         <div className="relative">
                             <Input
                                 id="password"
@@ -63,14 +66,14 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
                                 className="absolute end-2 top-1/2 -translate-y-1/2"
                                 onClick={() => setShowPassword(!showPassword)}
                             >
-                                {showPassword ? 'Masquer' : 'Afficher'}
+                                {showPassword ? t('Masquer') : t('Afficher')}
                             </Button>
                         </div>
                         {errors.password && <p className="text-sm text-red-700 dark:text-red-400">{errors.password}</p>}
                     </div>
 
                     <div className="flex flex-col space-y-1">
-                        <label htmlFor="password_confirmation">Confirmer le mot de passe</label>
+                        <label htmlFor="password_confirmation">{t('Confirmer le mot de passe')}</label>
                         <Input
                             id="password_confirmation"
                             type={showPassword ? 'text' : 'password'}
@@ -85,10 +88,10 @@ const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({ isOpen, onClose
 
                     <DialogFooter>
                         <Button variant="outline" type="button" onClick={onClose} disabled={processing}>
-                            Annuler
+                            {t('Annuler')}
                         </Button>
                         <Button type="submit" disabled={processing}>
-                            {processing ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
+                            {processing ? t('Réinitialisation...') : t('Réinitialiser le mot de passe')}
                         </Button>
                     </DialogFooter>
                 </form>

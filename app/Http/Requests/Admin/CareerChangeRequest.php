@@ -41,6 +41,8 @@ class CareerChangeRequest extends FormRequest
             'category' => ['nullable', Rule::enum(StaffCategory::class)],
             'gross_salary' => ['nullable', 'numeric', 'min:0', 'max:10000000'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            // Applying a manager's recommendation from an annual review.
+            'review_id' => ['nullable', 'integer', Rule::exists('reviews', 'id')->where('user_id', $this->employee()->id)->where('recommendation_status', 'pending')],
         ];
     }
 

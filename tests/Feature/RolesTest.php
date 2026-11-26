@@ -145,11 +145,11 @@ test('Paie reads personal data on the employee page', function () {
 test('permissions are shared with every page', function () {
     $this->actingAs(withRole(Role::Payroll))
         ->get('/calendrier')
-        ->assertInertia(fn (Assert $page) => $page->where('auth.user.can', ['view_hr' => true, 'manage_hr' => false, 'manage_roles' => false]));
+        ->assertInertia(fn (Assert $page) => $page->where('auth.user.can', ['view_hr' => true, 'manage_hr' => false, 'manage_roles' => false, 'recruitment' => false]));
 
     $this->actingAs(withRole(Role::Hr))
         ->get('/dashboard')
-        ->assertInertia(fn (Assert $page) => $page->where('auth.user.can', ['view_hr' => true, 'manage_hr' => true, 'manage_roles' => false]));
+        ->assertInertia(fn (Assert $page) => $page->where('auth.user.can', ['view_hr' => true, 'manage_hr' => true, 'manage_roles' => false, 'recruitment' => true]));
 });
 
 test('RH is told about requests waiting for a decision; Paie is not', function () {

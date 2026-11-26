@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { t } from '@/lib/i18n';
 import { useForm } from '@inertiajs/react';
 import { FormEvent } from 'react';
 
@@ -63,13 +64,13 @@ export default function PersonalDataForm({ employeeId, profile }: { employeeId: 
             case 'bank_name':
                 return <Input {...common} list="banks" onChange={(e) => change(field, e.target.value)} />;
             case 'cin':
-                return <Input {...common} placeholder="AB123456" autoComplete="off" onChange={(e) => change(field, e.target.value)} />;
+                return <Input {...common} placeholder={t('AB123456')} autoComplete="off" onChange={(e) => change(field, e.target.value)} />;
             case 'cnss_number':
                 return (
                     <Input
                         {...common}
                         inputMode="numeric"
-                        placeholder="9 chiffres"
+                        placeholder={t('9 chiffres')}
                         autoComplete="off"
                         onChange={(e) => change(field, e.target.value)}
                     />
@@ -116,13 +117,16 @@ export default function PersonalDataForm({ employeeId, profile }: { employeeId: 
             <div className="flex flex-col-reverse gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-muted-foreground text-xs">
                     {profile?.updated_at
-                        ? `Dernière modification le ${formatDate(profile.updated_at)}${profile.editor ? ` par ${profile.editor.name}` : ''}.`
-                        : 'Aucune donnée enregistrée pour le moment.'}{' '}
-                    CIN, N° CNSS, RIB, adresse et téléphones sont chiffrés en base.
+                        ? t('Dernière modification le :p0:p1.', {
+                              p0: formatDate(profile.updated_at),
+                              p1: profile.editor ? t(' par :p0', { p0: profile.editor.name }) : '',
+                          })
+                        : t('Aucune donnée enregistrée pour le moment.')}{' '}
+                    {t('CIN, N° CNSS, RIB, adresse et téléphones sont chiffrés en base.')}
                 </p>
                 <div className="flex items-center gap-3">
                     <Button type="submit" disabled={processing}>
-                        {processing ? 'Enregistrement…' : 'Enregistrer'}
+                        {processing ? t('Enregistrement…') : t('Enregistrer')}
                     </Button>
                 </div>
             </div>

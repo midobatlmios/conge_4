@@ -20,7 +20,9 @@ class HolidayController extends Controller
         return Inertia::render('Admin/Holidays', [
             'holidays' => Holiday::orderByDesc('recurring')
                 ->orderBy('date')
-                ->get(['id', 'name', 'date', 'recurring']),
+                ->with('site:id,name')
+                ->get(['id', 'name', 'date', 'recurring', 'site_id']),
+            'sites' => \App\Models\Site::orderBy('name')->get(['id', 'name']),
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AttendanceCorrection;
 use App\Models\AttendanceRecord;
 use App\Models\User;
+use App\Notifications\AppNotice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -45,6 +46,7 @@ class AttendanceCorrectionController extends Controller
                 ['clock_in' => $correction->clock_in, 'clock_out' => $correction->clock_out, 'source' => 'correction'],
             );
             $correction->update(['status' => 'approved', 'decided_by' => $request->user()->id, 'decided_at' => now()]);
+            $correction->user->notify(new AppNotice('Votre correction de pointage du :date a été acceptée.', ['date' => $correction->date->format('d/m/Y')], '/pointage'));
         });
 
         return back()->with('success', 'Correction acceptée : le pointage du jour est mis à jour.');
@@ -56,6 +58,7 @@ class AttendanceCorrectionController extends Controller
         $validated = $request->validate(['refusal_reason' => ['nullable', 'string', 'max:500']]);
 
         $correction->update(['status' => 'refused', 'decided_by' => $request->user()->id, 'decided_at' => now(), 'refusal_reason' => $validated['refusal_reason'] ?? null]);
+        $correction->user->notify(new AppNotice('Votre correction de pointage du :date a été refusée.', ['date' => $correction->date->format('d/m/Y')], '/pointage'));
 
         return back()->with('success', 'Correction refusée.');
     }

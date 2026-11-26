@@ -18,6 +18,45 @@ use Illuminate\Support\Collection;
  */
 class LeaveCalculator
 {
+    /** The site whose local holidays count (null: national holidays only). */
+    private ?int $siteId = null;
+
+    /** Already set to a site (forSite / forUser). */
+    private bool $scoped = false;
+
+    /** @var array<int, int|null> Site of each user, loaded once. */
+    private static ?array $userSites = null;
+
+    /** The same calculator, counting the holidays of a site. */
+    public function forSite(?int $siteId): static
+    {
+        $copy = clone $this;
+        $copy->siteId = $siteId;
+        $copy->scoped = true;
+
+        return $copy;
+    }
+
+    /** The same calculator, counting the holidays of a user's site. */
+    public function forUser(User|int|null $user): static
+    {
+        if ($user instanceof User) {
+            return $this->forSite($user->site_id);
+        }
+        if ($user === null) {
+            return $this->forSite(null);
+        }
+        self::$userSites ??= User::pluck('site_id', 'id')->all();
+
+        return $this->forSite(self::$userSites[$user] ?? null);
+    }
+
+    /** Forget the cached user → site map (after a site change, and in tests). */
+    public static function flushUserSites(): void
+    {
+        self::$userSites = null;
+    }
+
     /** Annual leave earned over a full calendar year, before any seniority bonus. */
     public function maxDaysPerYear(): int
     {
@@ -118,7 +157,7 @@ class LeaveCalculator
     public function isWorkingDay(CarbonInterface|string $day): bool
     {
         $day = Carbon::parse($day);
-        $holidays = Holiday::keys();
+        $holidays = Holiday::keys($this->siteId);
 
         return in_array($day->isoWeekday(), config('conge.working_days'), true)
             && ! in_array($day->format('m-d'), $holidays, true)
@@ -202,6 +241,11 @@ class LeaveCalculator
     /** Allowance days a user's accepted requests use in a year up to a date (included). */
     public function usedDaysUntil(int $userId, int $year, CarbonInterface|string $date): float
     {
+        // Count the holidays of this employee's site.
+        if (! $this->scoped) {
+            return $this->forUser($userId)->usedDaysUntil(...func_get_args());
+        }
+
         $date = Carbon::parse($date)->startOfDay();
 
         return (float) Demande::query()
@@ -225,6 +269,11 @@ class LeaveCalculator
     /** Allowance days a user's accepted requests use in a year. */
     public function usedDays(int $userId, int $year, ?int $excludeDemandeId = null): float
     {
+        // Count the holidays of this employee's site.
+        if (! $this->scoped) {
+            return $this->forUser($userId)->usedDays(...func_get_args());
+        }
+
         return (float) $this->acceptedInYear($userId, $year, $excludeDemandeId)->sum('days');
     }
 
@@ -242,6 +291,11 @@ class LeaveCalculator
      */
     public function carriedOver(User $user, int $year): float
     {
+        // Count the holidays of this employee's site.
+        if (! $this->scoped) {
+            return $this->forUser($user)->carriedOver(...func_get_args());
+        }
+
         $previous = $year - 1;
 
         if ($previous < ($user->created_at?->year ?? now()->year)) {
@@ -260,6 +314,11 @@ class LeaveCalculator
      */
     public function availableDays(User $user, int $year, CarbonInterface|string $asOf): float
     {
+        // Count the holidays of this employee's site.
+        if (! $this->scoped) {
+            return $this->forUser($user)->availableDays(...func_get_args());
+        }
+
         $carried = Carbon::parse($asOf)->lte($this->carryOverExpiry($year))
             ? $this->carriedOver($user, $year)
             : $this->carryUsed($user, $year);
@@ -273,6 +332,11 @@ class LeaveCalculator
      */
     public function remainingDays(int $userId, int $year): float
     {
+        // Count the holidays of this employee's site.
+        if (! $this->scoped) {
+            return $this->forUser($userId)->remainingDays(...func_get_args());
+        }
+
         return $this->availableDays(User::findOrFail($userId), $year, $this->asOf($year)) - $this->usedDays($userId, $year);
     }
 
@@ -283,6 +347,11 @@ class LeaveCalculator
      */
     public function balance(User $user): array
     {
+        // Count the holidays of this employee's site.
+        if (! $this->scoped) {
+            return $this->forUser($user)->balance(...func_get_args());
+        }
+
         $year = now()->year;
         $expiry = $this->carryOverExpiry($year);
         $carried = $this->carriedOver($user, $year);
@@ -319,6 +388,11 @@ class LeaveCalculator
         bool $startHalf = false,
         bool $endHalf = false,
     ): ?int {
+        // Count the holidays of this employee's site.
+        if (! $this->scoped) {
+            return $this->forUser($userId)->yearOverAllowance(...func_get_args());
+        }
+
         $user = User::findOrFail($userId);
 
         for ($year = Carbon::parse($start)->year; $year <= Carbon::parse($end)->year; $year++) {
@@ -401,6 +475,11 @@ class LeaveCalculator
     /** Carried-over days actually used in a year: leave days up to the expiry date, at most what was carried. */
     public function carryUsed(User $user, int $year): float
     {
+        // Count the holidays of this employee's site.
+        if (! $this->scoped) {
+            return $this->forUser($user)->carryUsed(...func_get_args());
+        }
+
         $carried = $this->carriedOver($user, $year);
 
         return $carried > 0

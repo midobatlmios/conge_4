@@ -79,7 +79,7 @@ class Demande extends Model
     public function getNbrJoursAttribute(): float
     {
         if ($this->date_debut && $this->date_fin) {
-            return app(LeaveCalculator::class)->leaveDays(
+            return app(LeaveCalculator::class)->forUser($this->user_id)->leaveDays(
                 $this->date_debut, $this->date_fin, (bool) $this->start_half, (bool) $this->end_half
             );
         }

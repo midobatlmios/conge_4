@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
+import { t } from '@/lib/i18n';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { AlertTriangle } from 'lucide-react';
@@ -98,13 +99,14 @@ export default function Company({ company, logo, defaultColor, missing }: Compan
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Entreprise" />
+            <Head title={t('Entreprise')} />
             <div className="container mx-auto max-w-3xl space-y-6 px-4 py-10">
                 <div>
-                    <h1 className="text-2xl font-bold">Entreprise</h1>
+                    <h1 className="text-2xl font-bold">{t('Entreprise')}</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        Ces informations figurent sur les attestations ; le nom, le logo et la couleur s'affichent aussi dans le menu et sur la page
-                        de connexion.
+                        {t(
+                            "Ces informations figurent sur les attestations ; le nom, le logo et la couleur s'affichent aussi dans le menu et sur la page de connexion.",
+                        )}
                     </p>
                 </div>
 
@@ -114,13 +116,15 @@ export default function Company({ company, logo, defaultColor, missing }: Compan
                         className="flex items-start gap-3 rounded-md border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300"
                     >
                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                        <p>À compléter avant de délivrer des attestations : {missing.join(', ')}.</p>
+                        <p>
+                            {t('À compléter avant de délivrer des attestations :')} {missing.join(', ')}.
+                        </p>
                     </div>
                 )}
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Informations légales</CardTitle>
+                        <CardTitle>{t('Informations légales')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="space-y-4">
@@ -142,7 +146,7 @@ export default function Company({ company, logo, defaultColor, missing }: Compan
                                     </div>
                                 ))}
                                 <div className="space-y-1">
-                                    <Label htmlFor="brand_color">Couleur principale</Label>
+                                    <Label htmlFor="brand_color">{t('Couleur principale')}</Label>
                                     <div className="flex items-center gap-2">
                                         <input
                                             id="brand_color"
@@ -154,14 +158,14 @@ export default function Company({ company, logo, defaultColor, missing }: Compan
                                         <span className="text-muted-foreground font-mono text-sm">{color}</span>
                                         {form.data.brand_color && form.data.brand_color.toLowerCase() !== defaultColor.toLowerCase() && (
                                             <Button type="button" variant="ghost" size="sm" onClick={() => form.setData('brand_color', '')}>
-                                                Couleur par défaut
+                                                {t('Couleur par défaut')}
                                             </Button>
                                         )}
                                     </div>
                                     <InputError message={form.errors.brand_color} />
                                 </div>
                                 <div className="space-y-1">
-                                    <span className="text-sm font-medium">Aperçu du menu</span>
+                                    <span className="text-sm font-medium">{t('Aperçu du menu')}</span>
                                     <div className="flex items-center gap-3 rounded-md border bg-white p-2 dark:bg-[#181818]">
                                         {logo ? (
                                             <img src={logo} alt="" className="h-9 max-w-24 object-contain" />
@@ -178,16 +182,16 @@ export default function Company({ company, logo, defaultColor, missing }: Compan
                                                 className="block truncate text-sm font-extrabold text-(--brand) dark:text-white"
                                                 style={{ '--brand': color } as CSSProperties}
                                             >
-                                                {form.data.name || 'Votre entreprise'}
+                                                {form.data.name || t('Votre entreprise')}
                                             </span>
-                                            <span className="text-muted-foreground text-xs uppercase">Congés & RH</span>
+                                            <span className="text-muted-foreground text-xs uppercase">{t('Congés & RH')}</span>
                                         </span>
                                     </div>
                                 </div>
                             </div>
                             <div className="flex items-center justify-end gap-3">
                                 <Button type="submit" disabled={form.processing}>
-                                    {form.processing ? 'Enregistrement…' : 'Enregistrer'}
+                                    {form.processing ? t('Enregistrement…') : t('Enregistrer')}
                                 </Button>
                             </div>
                         </form>
@@ -196,19 +200,20 @@ export default function Company({ company, logo, defaultColor, missing }: Compan
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Logo</CardTitle>
+                        <CardTitle>{t('Logo')}</CardTitle>
                         <CardDescription>
-                            PNG ou JPG, 1 Mo maximum. Affiché dans le menu, sur la page de connexion et en haut des attestations. Sans logo, les
-                            initiales de l'entreprise apparaissent dans la couleur principale.
+                            {t(
+                                "PNG ou JPG, 1 Mo maximum. Affiché dans le menu, sur la page de connexion et en haut des attestations. Sans logo, les initiales de l'entreprise apparaissent dans la couleur principale.",
+                            )}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
                         {logo ? (
                             // The URL changes after each upload, so the browser shows the new logo.
-                            <img src={logo} alt="Logo de l'entreprise" className="h-16 max-w-48 rounded border bg-white object-contain p-1" />
+                            <img src={logo} alt={t("Logo de l'entreprise")} className="h-16 max-w-48 rounded border bg-white object-contain p-1" />
                         ) : (
                             <div className="text-muted-foreground flex h-16 w-32 items-center justify-center rounded border border-dashed text-xs">
-                                Aucun logo
+                                {t('Aucun logo')}
                             </div>
                         )}
                         <div className="space-y-1">
@@ -216,7 +221,7 @@ export default function Company({ company, logo, defaultColor, missing }: Compan
                                 ref={logoInput}
                                 type="file"
                                 accept=".png,.jpg,.jpeg"
-                                aria-label="Logo"
+                                aria-label={t('Logo')}
                                 onChange={(e) => uploadLogo(e.target.files?.[0] ?? null)}
                             />
                             <InputError message={logoForm.errors.logo} />
@@ -227,7 +232,7 @@ export default function Company({ company, logo, defaultColor, missing }: Compan
                                     className="text-red-700 dark:text-red-400"
                                     onClick={() => router.delete('/admin/company/logo', { preserveScroll: true })}
                                 >
-                                    Supprimer le logo
+                                    {t('Supprimer le logo')}
                                 </Button>
                             )}
                         </div>

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
+import { intlLocale, t } from '@/lib/i18n';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { Check, ClockAlert, X } from 'lucide-react';
@@ -15,7 +16,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Corrections de pointage', href: '/pointage/corrections' },
 ];
 
-const frDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+const frDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
 const times = (c: Correction) => `${c.clock_in}${c.clock_out ? ` → ${c.clock_out}` : ' (départ non indiqué)'}`;
 
 /** Corrections of clocking waiting for the manager (or HR), and the latest decided. */
@@ -23,11 +24,11 @@ export default function AttendanceCorrections({ pending, recent }: { pending: Co
     const approve = (c: Correction) => router.put(`/pointage/corrections/${c.id}/approve`, {}, { preserveScroll: true, onError: toastErrors });
     const refuse = async (c: Correction) => {
         const reason = await promptValue({
-            title: 'Refuser cette correction ?',
+            title: t('Refuser cette correction ?'),
             description: `${c.name}, ${frDate(c.date)} : ${times(c)}.`,
-            label: 'Motif (facultatif, visible par l’employé)',
+            label: t('Motif (facultatif, visible par l’employé)'),
             multiline: true,
-            confirmLabel: 'Refuser',
+            confirmLabel: t('Refuser'),
             destructive: true,
         });
         if (reason !== null)
@@ -36,24 +37,28 @@ export default function AttendanceCorrections({ pending, recent }: { pending: Co
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Corrections de pointage" />
+            <Head title={t('Corrections de pointage')} />
             <div className="container mx-auto max-w-4xl space-y-6 px-4 py-10">
                 <div>
-                    <h1 className="text-2xl font-bold">Corrections de pointage</h1>
+                    <h1 className="text-2xl font-bold">{t('Corrections de pointage')}</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        Oublis et erreurs de pointage signalés par votre équipe. Accepter une correction remplace le pointage du jour.
+                        {t('Oublis et erreurs de pointage signalés par votre équipe. Accepter une correction remplace le pointage du jour.')}
                     </p>
                 </div>
 
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            À traiter <Badge variant="secondary">{pending.length}</Badge>
+                            {t('À traiter')} <Badge variant="secondary">{pending.length}</Badge>
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {pending.length === 0 ? (
-                            <EmptyState icon={ClockAlert} title="Rien à traiter" description="Les demandes de correction apparaîtront ici." />
+                            <EmptyState
+                                icon={ClockAlert}
+                                title={t('Rien à traiter')}
+                                description={t('Les demandes de correction apparaîtront ici.')}
+                            />
                         ) : (
                             <ul className="divide-y">
                                 {pending.map((c) => (
@@ -68,10 +73,10 @@ export default function AttendanceCorrections({ pending, recent }: { pending: Co
                                         {c.can_decide && (
                                             <div className="flex gap-2">
                                                 <Button size="sm" onClick={() => approve(c)}>
-                                                    <Check className="me-1 h-4 w-4" /> Accepter
+                                                    <Check className="me-1 h-4 w-4" /> {t('Accepter')}
                                                 </Button>
                                                 <Button size="sm" variant="outline" onClick={() => refuse(c)}>
-                                                    <X className="me-1 h-4 w-4" /> Refuser
+                                                    <X className="me-1 h-4 w-4" /> {t('Refuser')}
                                                 </Button>
                                             </div>
                                         )}
@@ -85,8 +90,8 @@ export default function AttendanceCorrections({ pending, recent }: { pending: Co
                 {recent.length > 0 && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Dernières décisions</CardTitle>
-                            <CardDescription>Les 15 plus récentes.</CardDescription>
+                            <CardTitle>{t('Dernières décisions')}</CardTitle>
+                            <CardDescription>{t('Les 15 plus récentes.')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ul className="divide-y">
@@ -94,11 +99,11 @@ export default function AttendanceCorrections({ pending, recent }: { pending: Co
                                     <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                                         <span>
                                             <span className="font-medium">{c.name}</span> ·{' '}
-                                            {new Date(`${c.date}T00:00:00`).toLocaleDateString('fr-FR')} ·{' '}
+                                            {new Date(`${c.date}T00:00:00`).toLocaleDateString(intlLocale())} ·{' '}
                                             <span className="tabular-nums">{times(c)}</span>
                                         </span>
                                         <Badge variant="secondary">
-                                            {c.status_label}
+                                            {t(c.status_label)}
                                             {c.decided_by ? ` · ${c.decided_by}` : ''}
                                         </Badge>
                                     </li>

@@ -3,6 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from '@/components/ui/skeleton';
 import { t } from '@/lib/i18n';
 import { TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
+import { router } from '@inertiajs/react';
 import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -16,6 +17,10 @@ interface Notification {
         nbr_jours: number;
         comment: string;
         type_conge: string;
+        /** AppNotice: the French sentence as a translation key, its values, the page to open. */
+        key?: string;
+        params?: Record<string, string | number>;
+        url?: string | null;
     };
     read_at: string | null;
     created_at: string;
@@ -114,9 +119,14 @@ export default function Notifications() {
                         <DropdownMenuItem
                             key={notification.id}
                             className={`flex flex-col items-start gap-1 p-3 ${!notification.read_at ? 'bg-gray-50' : ''}`}
-                            onClick={() => markAsRead(notification.id)}
+                            onClick={() => {
+                                markAsRead(notification.id);
+                                if (notification.data.url) router.visit(notification.data.url);
+                            }}
                         >
-                            <p className="font-medium">{notification.data.message}</p>
+                            <p className="font-medium">
+                                {notification.data.key ? t(notification.data.key, notification.data.params) : notification.data.message}
+                            </p>
                             <p className="text-muted-foreground text-sm">{notification.created_at}</p>
                             {notification.data.comment && <p className="text-muted-foreground mt-1 text-sm">{notification.data.comment}</p>}
                             {notification.data.type_conge && (

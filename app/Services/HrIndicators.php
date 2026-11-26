@@ -41,13 +41,14 @@ class HrIndicators
     public function __construct(private readonly LeaveCalculator $calculator) {}
 
     /** @return array<string, mixed> */
-    public function compute(int $year, ?int $departmentId = null): array
+    public function compute(int $year, ?int $departmentId = null, ?int $siteId = null): array
     {
         $start = Carbon::create($year, 1, 1)->startOfDay();
         $end = Carbon::create($year, 12, 31)->startOfDay()->min(today());
 
         $people = User::with(['department:id,name', 'contracts', 'careerChanges'])
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
+            ->when($siteId, fn ($query) => $query->where('site_id', $siteId))
             ->get();
 
         $workingDays = $this->workingDaysOf($start, $end);
@@ -256,7 +257,7 @@ class HrIndicators
 
     private function leaveDaysIn(Collection $leaves, Carbon $from, Carbon $to): float
     {
-        return (float) $leaves->sum(fn (Demande $leave) => $this->calculator->leaveDays(
+        return (float) $leaves->sum(fn (Demande $leave) => $this->calculator->forUser($leave->user_id)->leaveDays(
             $leave->date_debut, $leave->date_fin, (bool) $leave->start_half, (bool) $leave->end_half, $from, $to
         ));
     }

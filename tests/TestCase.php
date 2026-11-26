@@ -14,5 +14,6 @@ abstract class TestCase extends BaseTestCase
         // Holiday keys are cached in a static property; a test's database is
         // rolled back without model events, so start every test with a clean cache.
         Holiday::flushKeys();
+        \App\Services\LeaveCalculator::flushUserSites();
     }
 }

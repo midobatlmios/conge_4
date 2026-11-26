@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { t } from '@/lib/i18n';
 import {
     ColumnDef,
     ColumnFiltersState,
@@ -52,7 +53,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         <div>
             <div className="flex items-center py-4">
                 <Input
-                    placeholder="Filtrer par nom..."
+                    placeholder={t('Filtrer par nom...')}
                     value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
                     onChange={(event) => table.getColumn('name')?.setFilterValue(event.target.value)}
                     className="max-w-sm"
@@ -60,7 +61,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ms-auto">
-                            Colonnes
+                            {t('Colonnes')}
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -109,7 +110,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={columns.length} className="h-24 text-center">
-                                    Aucun résultat.
+                                    {t('Aucun résultat.')}
                                 </TableCell>
                             </TableRow>
                         )}
@@ -117,13 +118,13 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
                 </Table>
                 <div className="flex items-center justify-end space-x-2 px-4 py-4">
                     <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-                        Précédent
+                        {t('Précédent')}
                     </Button>
                     <span className="mx-2">
-                        Page {table.getState().pagination.pageIndex + 1} sur {Math.max(table.getPageCount(), 1)}
+                        {t('Page')} {table.getState().pagination.pageIndex + 1} {t('sur')} {Math.max(table.getPageCount(), 1)}
                     </span>
                     <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-                        Suivant
+                        {t('Suivant')}
                     </Button>
                 </div>
             </div>

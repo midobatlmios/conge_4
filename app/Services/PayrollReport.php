@@ -88,7 +88,7 @@ class PayrollReport
             $days = ['annual' => 0, 'exceptional' => 0, 'unpaid' => 0, 'recovery' => 0, 'sick' => 0];
 
             foreach ($leaves[$employee->id] ?? [] as $leave) {
-                $days[self::TYPE_COLUMNS[$leave->type_conge->value]] += $this->calculator->leaveDays(
+                $days[self::TYPE_COLUMNS[$leave->type_conge->value]] += $this->calculator->forUser($employee)->leaveDays(
                     $leave->date_debut, $leave->date_fin, $leave->start_half, $leave->end_half, $start, $end
                 );
             }

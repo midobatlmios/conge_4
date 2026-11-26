@@ -17,6 +17,8 @@ class HolidayRequest extends FormRequest
             'name' => ['required', 'string', 'max:100'],
             'date' => ['required', 'date_format:Y-m-d'],
             'recurring' => ['required', 'boolean'],
+            // A local holiday of one site; empty: every site (national).
+            'site_id' => ['nullable', 'integer', 'exists:sites,id'],
         ];
     }
 
@@ -67,6 +69,7 @@ class HolidayRequest extends FormRequest
             'name' => $this->validated('name'),
             'date' => $recurring ? '2000-'.$date->format('m-d') : $date->toDateString(),
             'recurring' => $recurring,
+            'site_id' => $this->validated('site_id'),
         ];
     }
 }

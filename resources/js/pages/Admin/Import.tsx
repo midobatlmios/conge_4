@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { t } from '@/lib/i18n';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { AlertTriangle, CheckCircle2, Download, FileSpreadsheet, Mail, Upload } from 'lucide-react';
@@ -69,13 +70,14 @@ export default function Import({ token, check, columns, imported }: ImportProps)
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Import Excel" />
+            <Head title={t('Import Excel')} />
             <div className="container mx-auto max-w-5xl space-y-6 px-4 py-10">
                 <div>
-                    <h1 className="text-2xl font-bold">Importer des employés depuis Excel</h1>
+                    <h1 className="text-2xl font-bold">{t('Importer des employés depuis Excel')}</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        Une ligne par employé. Un employé déjà présent (même e-mail ou même matricule) est mis à jour ; les cellules vides ne changent
-                        rien. Rien n'est enregistré tant que le fichier contient des erreurs.
+                        {t(
+                            "Une ligne par employé. Un employé déjà présent (même e-mail ou même matricule) est mis à jour ; les cellules vides ne changent rien. Rien n'est enregistré tant que le fichier contient des erreurs.",
+                        )}
                     </p>
                 </div>
                 {(errors.file || errors.invite) && (
@@ -91,12 +93,12 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <CheckCircle2 className="h-5 w-5 text-green-700 dark:text-green-400" /> Import terminé
+                                <CheckCircle2 className="h-5 w-5 text-green-700 dark:text-green-400" /> {t('Import terminé')}
                             </CardTitle>
                             <CardDescription>
-                                {imported.created.length} compte(s) créé(s), {imported.updated} mis à jour
-                                {imported.departments > 0 ? `, ${imported.departments} département(s) créé(s)` : ''}. Les nouveaux employés n'ont pas
-                                encore de mot de passe : envoyez-leur une invitation (lien valable 7 jours).
+                                {imported.created.length} {t('compte(s) créé(s),')} {imported.updated} {t('mis à jour')}
+                                {imported.departments > 0 ? t(', :p0 département(s) créé(s)', { p0: imported.departments }) : ''}
+                                {t(". Les nouveaux employés n'ont pas encore de mot de passe : envoyez-leur une invitation (lien valable 7 jours).")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
@@ -108,7 +110,7 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                                 ))}
                             </ul>
                             <Button onClick={() => invite(imported.created.map((user) => user.id))} disabled={inviting}>
-                                <Mail className="me-2 h-4 w-4" /> Envoyer les invitations
+                                <Mail className="me-2 h-4 w-4" /> {t('Envoyer les invitations')}
                             </Button>
                         </CardContent>
                     </Card>
@@ -117,23 +119,23 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                 <div className="grid gap-6 md:grid-cols-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>1. Télécharger le modèle</CardTitle>
+                            <CardTitle>{t('1. Télécharger le modèle')}</CardTitle>
                             <CardDescription>
-                                Remplissez la feuille « Employés » ; un exemple et le mode d'emploi sont dans les autres feuilles.
+                                {t("Remplissez la feuille « Employés » ; un exemple et le mode d'emploi sont dans les autres feuilles.")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Button variant="outline" asChild>
                                 <a href="/admin/import/modele">
-                                    <FileSpreadsheet className="me-2 h-4 w-4" /> Modèle Excel
+                                    <FileSpreadsheet className="me-2 h-4 w-4" /> {t('Modèle Excel')}
                                 </a>
                             </Button>
                         </CardContent>
                     </Card>
                     <Card>
                         <CardHeader>
-                            <CardTitle>2. Envoyer le fichier</CardTitle>
-                            <CardDescription>Le fichier est vérifié ligne par ligne avant tout enregistrement.</CardDescription>
+                            <CardTitle>{t('2. Envoyer le fichier')}</CardTitle>
+                            <CardDescription>{t('Le fichier est vérifié ligne par ligne avant tout enregistrement.')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={submit} className="flex flex-col gap-2 sm:flex-row">
@@ -141,12 +143,12 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                                     ref={fileInput}
                                     type="file"
                                     accept=".xlsx,.xls,.csv"
-                                    aria-label="Fichier Excel"
+                                    aria-label={t('Fichier Excel')}
                                     onChange={(e) => upload.setData('file', e.target.files?.[0] ?? null)}
                                     required
                                 />
                                 <Button type="submit" disabled={upload.processing}>
-                                    <Upload className="me-2 h-4 w-4" /> Vérifier
+                                    <Upload className="me-2 h-4 w-4" /> {t('Vérifier')}
                                 </Button>
                             </form>
                             <InputError message={upload.errors.file} className="mt-2" />
@@ -168,43 +170,46 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                     <Card>
                         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div className="space-y-1.5">
-                                <CardTitle>3. Vérification</CardTitle>
+                                <CardTitle>{t('3. Vérification')}</CardTitle>
                                 <CardDescription>
-                                    {check.rows.length} ligne(s) : {check.creates} création(s), {check.updates} mise(s) à jour
-                                    {check.new_departments.length > 0 ? `, nouveaux départements : ${check.new_departments.join(', ')}` : ''}.
+                                    {check.rows.length} {t('ligne(s) :')} {check.creates} {t('création(s),')} {check.updates} {t('mise(s) à jour')}
+                                    {check.new_departments.length > 0
+                                        ? t(', nouveaux départements : :p0', { p0: check.new_departments.join(', ') })
+                                        : ''}
+                                    .
                                 </CardDescription>
                             </div>
                             <div className="flex flex-wrap gap-2">
                                 {check.errors > 0 && (
                                     <Button variant="outline" asChild>
                                         <a href={`/admin/import/${token}/erreurs`}>
-                                            <Download className="me-2 h-4 w-4" /> Rapport d'erreurs
+                                            <Download className="me-2 h-4 w-4" /> {t("Rapport d'erreurs")}
                                         </a>
                                     </Button>
                                 )}
                                 <Button onClick={confirm} disabled={!ready || importing}>
-                                    {importing ? 'Import en cours…' : `Importer ${check.rows.length} employé(s)`}
+                                    {importing ? t('Import en cours…') : `Importer ${check.rows.length} employé(s)`}
                                 </Button>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {check.errors > 0 ? (
                                 <p className="text-sm text-red-700 dark:text-red-400">
-                                    {check.errors} ligne(s) à corriger dans le fichier, puis envoyez-le à nouveau. Rien n'a été enregistré.
+                                    {check.errors} {t("ligne(s) à corriger dans le fichier, puis envoyez-le à nouveau. Rien n'a été enregistré.")}
                                 </p>
                             ) : (
-                                <p className="text-sm text-green-700 dark:text-green-400">Aucune erreur : vous pouvez importer.</p>
+                                <p className="text-sm text-green-700 dark:text-green-400">{t('Aucune erreur : vous pouvez importer.')}</p>
                             )}
                             <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Ligne</TableHead>
-                                            <TableHead>Employé</TableHead>
-                                            <TableHead>Action</TableHead>
-                                            <TableHead>Département</TableHead>
-                                            <TableHead>Responsable</TableHead>
-                                            <TableHead>Erreurs / remarques</TableHead>
+                                            <TableHead>{t('Ligne')}</TableHead>
+                                            <TableHead>{t('Employé')}</TableHead>
+                                            <TableHead>{t('Action')}</TableHead>
+                                            <TableHead>{t('Département')}</TableHead>
+                                            <TableHead>{t('Responsable')}</TableHead>
+                                            <TableHead>{t('Erreurs / remarques')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -216,7 +221,7 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                                                     <div className="text-muted-foreground text-xs">{row.email}</div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant="outline">{row.action === 'create' ? 'Création' : 'Mise à jour'}</Badge>
+                                                    <Badge variant="outline">{row.action === 'create' ? t('Création') : t('Mise à jour')}</Badge>
                                                 </TableCell>
                                                 <TableCell>{row.department ?? '—'}</TableCell>
                                                 <TableCell>{row.manager_name ?? '—'}</TableCell>
@@ -232,7 +237,7 @@ export default function Import({ token, check, columns, imported }: ImportProps)
                                                         </p>
                                                     ))}
                                                     {row.errors.length === 0 && row.warnings.length === 0 && (
-                                                        <span className="text-green-700 dark:text-green-400">OK</span>
+                                                        <span className="text-green-700 dark:text-green-400">{t('OK')}</span>
                                                     )}
                                                 </TableCell>
                                             </TableRow>
@@ -246,12 +251,13 @@ export default function Import({ token, check, columns, imported }: ImportProps)
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Colonnes du modèle</CardTitle>
+                        <CardTitle>{t('Colonnes du modèle')}</CardTitle>
                         <CardDescription>
-                            Les colonnes peuvent être dans n'importe quel ordre ; seules les trois premières sont obligatoires. Les données sont
-                            ensuite visibles sur la fiche de chaque employé (
+                            {t(
+                                "Les colonnes peuvent être dans n'importe quel ordre ; seules les trois premières sont obligatoires. Les données sont ensuite visibles sur la fiche de chaque employé (",
+                            )}
                             <Link href="/admin/users" className="underline">
-                                Gestion des employés
+                                {t('Gestion des employés')}
                             </Link>
                             ).
                         </CardDescription>

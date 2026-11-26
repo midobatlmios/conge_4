@@ -72,6 +72,8 @@ class DemoSeeder extends Seeder
         $this->attestations();
         $this->careerChanges();
         $this->call(DemoAttendanceSeeder::class);
+        $this->call(DemoReviewSeeder::class);
+        $this->call(DemoRecruitmentSeeder::class);
     }
 
     /**

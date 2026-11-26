@@ -1,11 +1,12 @@
 import { toastErrors } from '@/components/app-toaster';
 import { confirmAction, promptValue } from '@/components/confirm-dialog';
+import { intlLocale } from '@/lib/i18n';
 import { todayISO } from '@/lib/leave';
 import { Demande } from '@/types';
 import { router } from '@inertiajs/react';
 
 const period = (demande: Demande) =>
-    `du ${new Date(`${demande.date_debut}T00:00:00`).toLocaleDateString('fr-FR')} au ${new Date(`${demande.date_fin}T00:00:00`).toLocaleDateString('fr-FR')}`;
+    `du ${new Date(`${demande.date_debut}T00:00:00`).toLocaleDateString(intlLocale())} au ${new Date(`${demande.date_fin}T00:00:00`).toLocaleDateString(intlLocale())}`;
 
 /** An employee may ask to cancel an accepted leave that has not started. Mirrors DemandePolicy::requestCancellation(). */
 export const canRequestCancellation = (demande: Demande) => demande.etat === 'acceptée' && demande.date_debut > todayISO();

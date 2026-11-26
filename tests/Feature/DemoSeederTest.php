@@ -30,7 +30,13 @@ test('the demo company has staff, managers, contracts, folders and a year of lea
         ->and(App\Models\CareerChange::count())->toBe(6)
         // A month and more of clocking, with corrections waiting for the sales manager.
         ->and(App\Models\AttendanceRecord::count())->toBeGreaterThan(400)
-        ->and(App\Models\AttendanceCorrection::pending()->count())->toBe(2);
+        ->and(App\Models\AttendanceCorrection::pending()->count())->toBe(2)
+        // Last year closed, this year in progress with two recommendations for HR.
+        ->and(App\Models\ReviewCampaign::count())->toBe(2)
+        ->and(App\Models\Review::where('recommendation_status', 'pending')->count())->toBe(2)
+        // Three offers on the careers page, candidates at every stage.
+        ->and(App\Models\JobOffer::open()->count())->toBe(3)
+        ->and(App\Models\Candidate::distinct()->count('stage'))->toBe(6);
 
     // Sara was promoted: her salary before the promotion is still known (payroll cost).
     $sara = User::with(['contracts', 'careerChanges'])->where('email', 'employe@'.DemoSeeder::DOMAIN)->sole();

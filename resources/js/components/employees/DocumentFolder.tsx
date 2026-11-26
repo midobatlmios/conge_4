@@ -123,7 +123,7 @@ export default function DocumentFolder({ documents, upload }: DocumentFolderProp
                                             {document.title || document.category_label}
                                         </a>
                                         <p className="text-muted-foreground truncate text-xs">
-                                            {document.title ? `${document.category_label} · ` : ''}
+                                            {document.title ? `${t(document.category_label)} · ` : ''}
                                             {document.original_name} · {formatSize(document.size)} {t('· ajouté le')}{' '}
                                             {formatDate(document.created_at)}
                                             {document.uploaded_by ? ` par ${document.uploaded_by}` : ''}

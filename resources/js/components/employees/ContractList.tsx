@@ -37,8 +37,8 @@ export default function ContractList({ contracts, onEdit, onDelete }: ContractLi
                 <li key={contract.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
                     <div className="space-y-1 text-sm">
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-medium">{contract.type_label}</span>
-                            {contract.category_label && <span className="text-muted-foreground">· {contract.category_label}</span>}
+                            <span className="font-medium">{t(contract.type_label)}</span>
+                            {contract.category_label && <span className="text-muted-foreground">· {t(contract.category_label)}</span>}
                             <Badge variant={contract.status === 'ended' ? 'secondary' : 'outline'} className={statusClass[contract.status]}>
                                 {STATUS_LABELS[contract.status]}
                             </Badge>

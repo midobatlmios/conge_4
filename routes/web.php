@@ -8,6 +8,7 @@ use App\Http\Controllers\AttestationController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CalendarFeedController;
 use App\Http\Controllers\CareerChangeController;
+use App\Http\Controllers\CareersController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DelegationController;
@@ -27,12 +28,21 @@ use App\Http\Controllers\OverviewController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\PayrollRunController;
 use App\Http\Controllers\PrivacyController;
+use App\Http\Controllers\RecruitmentController;
+use App\Http\Controllers\ReviewCampaignController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\SiteController;
 use App\Http\Controllers\TeamController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // The company logo, shown on the sign-in pages too (not sensitive).
 Route::get('/brand/logo', [CompanyController::class, 'logo'])->name('brand.logo');
+
+// Public careers page: published offers and applications (rate-limited).
+Route::get('/carrieres', [CareersController::class, 'index'])->name('careers.index');
+Route::get('/carrieres/{slug}', [CareersController::class, 'show'])->name('careers.show');
+Route::post('/carrieres/{slug}', [CareersController::class, 'apply'])->middleware('throttle:5,10')->name('careers.apply');
 
 // Interface language (also on the sign-in pages: kept in the session until signed in).
 Route::put('/locale', [LocaleController::class, 'update'])->name('locale.update');
@@ -100,6 +110,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/pointage/corrections/{correction}/approve', [AttendanceCorrectionController::class, 'approve'])->name('attendance.corrections.approve');
     Route::put('/pointage/corrections/{correction}/refuse', [AttendanceCorrectionController::class, 'refuse'])->name('attendance.corrections.refuse');
 
+    // Annual reviews: self-evaluation, manager evaluation, employee comment, HR closing.
+    Route::get('/evaluations', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::get('/evaluations/{review}', [ReviewController::class, 'show'])->name('reviews.show');
+    Route::put('/evaluations/{review}/self', [ReviewController::class, 'submitSelf'])->name('reviews.self');
+    Route::put('/evaluations/{review}/manager', [ReviewController::class, 'submitManager'])->name('reviews.manager');
+    Route::put('/evaluations/{review}/comment', [ReviewController::class, 'submitComment'])->name('reviews.comment');
+    Route::put('/evaluations/{review}/close', [ReviewController::class, 'close'])->name('reviews.close');
+
+    // Recruitment: HR, and hiring managers for their offers (checked in the controller).
+    Route::get('/recrutement', [RecruitmentController::class, 'index'])->name('recruitment.index');
+    Route::get('/recrutement/offres/nouvelle', [RecruitmentController::class, 'createOffer'])->name('recruitment.offers.create');
+    Route::post('/recrutement/offres', [RecruitmentController::class, 'storeOffer'])->name('recruitment.offers.store');
+    Route::get('/recrutement/offres/{offer}', [RecruitmentController::class, 'showOffer'])->name('recruitment.offers.show');
+    Route::get('/recrutement/offres/{offer}/modifier', [RecruitmentController::class, 'editOffer'])->name('recruitment.offers.edit');
+    Route::put('/recrutement/offres/{offer}', [RecruitmentController::class, 'updateOffer'])->name('recruitment.offers.update');
+    Route::put('/recrutement/offres/{offer}/statut', [RecruitmentController::class, 'setStatus'])->name('recruitment.offers.status');
+    Route::post('/recrutement/offres/{offer}/candidats', [RecruitmentController::class, 'storeCandidate'])->name('recruitment.candidates.store');
+    Route::get('/recrutement/candidats/{candidate}', [RecruitmentController::class, 'showCandidate'])->name('recruitment.candidates.show');
+    Route::get('/recrutement/candidats/{candidate}/cv', [RecruitmentController::class, 'cv'])->name('recruitment.candidates.cv');
+    Route::put('/recrutement/candidats/{candidate}/etape', [RecruitmentController::class, 'moveStage'])->name('recruitment.candidates.stage');
+    Route::post('/recrutement/candidats/{candidate}/entretiens', [RecruitmentController::class, 'storeInterview'])->name('recruitment.interviews.store');
+    Route::put('/recrutement/entretiens/{interview}', [RecruitmentController::class, 'evaluateInterview'])->name('recruitment.interviews.evaluate');
+    Route::post('/recrutement/candidats/{candidate}/embaucher', [RecruitmentController::class, 'hire'])->name('recruitment.candidates.hire');
+
     // A payslip PDF: HR / Paie / Admin, or its employee once the month is validated.
     Route::get('/bulletins/{payslip}/pdf', [PayrollRunController::class, 'pdf'])->name('payslips.pdf');
 
@@ -140,6 +174,9 @@ Route::middleware(['auth', 'verified', 'role:admin,rh,paie'])->prefix('admin')->
     Route::put('/payroll-runs/{run}/lock', [PayrollRunController::class, 'lock'])->name('payroll-runs.lock');
     Route::put('/payslips/{payslip}/inputs', [PayrollRunController::class, 'updateInputs'])->name('payslips.inputs');
     Route::get('/payroll-runs/{run}/journal', [PayrollRunController::class, 'journal'])->name('payroll-runs.journal');
+
+    // Annual review campaigns (progress, recommendations).
+    Route::get('/reviews', [ReviewCampaignController::class, 'index'])->name('reviews.index');
 
     // Attendance report per month (Excel export).
     Route::get('/attendance', [AttendanceReportController::class, 'index'])->name('attendance.index');
@@ -202,6 +239,11 @@ Route::middleware(['auth', 'verified', 'role:admin,rh'])->prefix('admin')->name(
     Route::post('/company/logo', [CompanyController::class, 'uploadLogo'])->name('company.logo.store');
     Route::delete('/company/logo', [CompanyController::class, 'deleteLogo'])->name('company.logo.destroy');
 
+    // Opening / closing review campaigns, declining a recommendation.
+    Route::post('/reviews', [ReviewCampaignController::class, 'store'])->name('reviews.store');
+    Route::put('/review-campaigns/{campaign}/close', [ReviewCampaignController::class, 'closeCampaign'])->name('review-campaigns.close');
+    Route::put('/reviews/{review}/decline', [ReviewCampaignController::class, 'declineRecommendation'])->name('reviews.decline');
+
     // Company schedule and the day attendance tracking starts.
     Route::put('/attendance/schedule', [AttendanceReportController::class, 'updateSchedule'])->name('attendance.schedule');
 
@@ -210,6 +252,12 @@ Route::middleware(['auth', 'verified', 'role:admin,rh'])->prefix('admin')->name(
     Route::post('/holidays', [HolidayController::class, 'store'])->name('holidays.store');
     Route::put('/holidays/{holiday}', [HolidayController::class, 'update'])->name('holidays.update');
     Route::delete('/holidays/{holiday}', [HolidayController::class, 'destroy'])->name('holidays.destroy');
+
+    // Sites (head office, warehouse…): employees and local holidays.
+    Route::get('/sites', [SiteController::class, 'index'])->name('sites.index');
+    Route::post('/sites', [SiteController::class, 'store'])->name('sites.store');
+    Route::put('/sites/{site}', [SiteController::class, 'update'])->name('sites.update');
+    Route::delete('/sites/{site}', [SiteController::class, 'destroy'])->name('sites.destroy');
 
     // Departments employees are attached to.
     Route::get('/departments', [DepartmentController::class, 'index'])->name('departments.index');

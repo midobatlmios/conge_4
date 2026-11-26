@@ -24,9 +24,9 @@ export default function AttestationList({ attestations }: { attestations: Attest
                 <li key={attestation.id} className="flex flex-col gap-2 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-medium">{attestation.type_label}</span>
+                            <span className="font-medium">{t(attestation.type_label)}</span>
                             <Badge variant="outline" className={STATUS_CLASS[attestation.status]}>
-                                {attestation.status_label}
+                                {t(attestation.status_label)}
                             </Badge>
                             {attestation.number && <span className="text-muted-foreground text-xs">n° {attestation.number}</span>}
                         </div>

@@ -94,6 +94,8 @@ return [
         'medical_certificates_years' => 2,
         'personal_data_years' => 5,
         'anonymize_after_years' => 10,
+        // Applications not hired (CV and details), as told on the careers page.
+        'candidates_years' => 2,
     ],
 
     // Contracts: a CDD (ANAPEC, stage) or a trial period ending within this many

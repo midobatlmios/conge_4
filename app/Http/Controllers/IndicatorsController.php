@@ -26,17 +26,19 @@ class IndicatorsController extends Controller
         [$year, $department] = $this->filters($request);
 
         return Inertia::render('Admin/Indicators', [
-            ...$this->indicators->compute($year, $department?->id),
+            ...$this->indicators->compute($year, $department?->id, $request->integer('site') ?: null),
             'years' => $this->years(),
             'departmentId' => $department?->id,
             'departmentOptions' => Department::orderBy('name')->get(['id', 'name']),
+            'siteId' => $request->integer('site') ?: null,
+            'siteOptions' => \App\Models\Site::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
     public function export(Request $request, HrIndicatorsReport $report): BinaryFileResponse
     {
         [$year, $department] = $this->filters($request);
-        $data = $this->indicators->compute($year, $department?->id);
+        $data = $this->indicators->compute($year, $department?->id, $request->integer('site') ?: null);
 
         return response()
             ->download(
@@ -50,7 +52,7 @@ class IndicatorsController extends Controller
     {
         [$year, $department] = $this->filters($request);
 
-        return $report->toPdf($this->indicators->compute($year, $department?->id), $department?->name)
+        return $report->toPdf($this->indicators->compute($year, $department?->id, $request->integer('site') ?: null), $department?->name)
             ->download(HrIndicatorsReport::fileName($year, $department?->name, 'pdf'));
     }
 

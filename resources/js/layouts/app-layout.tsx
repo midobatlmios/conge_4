@@ -12,6 +12,7 @@ import { usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
 import {
+    Briefcase,
     Building2,
     CalendarDays,
     CalendarRange,
@@ -27,6 +28,7 @@ import {
     Landmark,
     LayoutDashboard,
     Menu,
+    MessagesSquare,
     Network,
     Settings,
     ShieldCheck,
@@ -105,7 +107,7 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
             {/* Sidebar */}
             <aside
                 className={`fixed inset-y-0 start-0 z-40 w-64 transform transition-transform duration-200 ease-in-out lg:static lg:inset-auto lg:translate-x-0 ${
-                    sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                    sidebarOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full lg:rtl:translate-x-0'
                 } bg-background flex h-screen flex-col justify-between border-e`}
             >
                 <div>
@@ -157,6 +159,18 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                                     <Clock className="h-4 w-4" /> {t('Mes pointages')}
                                 </NavLink>
                             </li>
+                            <li>
+                                <NavLink href="/evaluations" onNavigate={() => setSidebarOpen(false)}>
+                                    <MessagesSquare className="h-4 w-4" /> {t('Entretiens annuels')}
+                                </NavLink>
+                            </li>
+                            {can.recruitment && (
+                                <li>
+                                    <NavLink href="/recrutement" onNavigate={() => setSidebarOpen(false)}>
+                                        <Briefcase className="h-4 w-4" /> {t('Recrutement')}
+                                    </NavLink>
+                                </li>
+                            )}
                             {user.is_manager && (
                                 <li>
                                     <NavLink href="/equipe" onNavigate={() => setSidebarOpen(false)}>
@@ -195,6 +209,13 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                                             </NavLink>
                                         </li>
                                     )}
+                                    {can.manage_hr && (
+                                        <li>
+                                            <NavLink href="/admin/sites" onNavigate={() => setSidebarOpen(false)}>
+                                                <Building2 className="h-4 w-4" /> {t('Sites')}
+                                            </NavLink>
+                                        </li>
+                                    )}
                                     <li>
                                         <NavLink href="/admin/attestations" onNavigate={() => setSidebarOpen(false)}>
                                             <FileBadge className="h-4 w-4" /> {t('Attestations')}
@@ -210,6 +231,11 @@ export default function AppLayout({ children, breadcrumbs }: AppLayoutProps) {
                                     <li>
                                         <NavLink href="/admin/indicators" onNavigate={() => setSidebarOpen(false)}>
                                             <ChartColumn className="h-4 w-4" /> {t('Indicateurs RH')}
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink href="/admin/reviews" onNavigate={() => setSidebarOpen(false)}>
+                                            <MessagesSquare className="h-4 w-4" /> {t('Campagnes d’entretiens')}
                                         </NavLink>
                                     </li>
                                     <li>

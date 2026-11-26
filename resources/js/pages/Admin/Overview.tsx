@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { intlLocale, t } from '@/lib/i18n';
 import { formatDays, LeaveStatus, parseISODate, STATUS_LABELS, TYPE_CONGE_LABELS, TypeConge } from '@/lib/leave';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link } from '@inertiajs/react';
@@ -72,7 +73,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: "Vue d'ensemble", href: '/admin/overview' },
 ];
 
-const shortDate = (iso: string) => parseISODate(iso)?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) ?? iso;
+const shortDate = (iso: string) => parseISODate(iso)?.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'short' }) ?? iso;
 const range = (start: string, end: string) => (start === end ? shortDate(start) : `${shortDate(start)} → ${shortDate(end)}`);
 
 function Stat({ label, value, hint, tone }: { label: string; value: number; hint?: ReactNode; tone?: 'warn' }) {
@@ -122,32 +123,32 @@ export default function Overview({
     birthdays,
     attendance,
 }: OverviewProps) {
-    const todayLabel = parseISODate(today)?.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const todayLabel = parseISODate(today)?.toLocaleDateString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long' });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Vue d'ensemble" />
+            <Head title={t("Vue d'ensemble")} />
             <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-10">
                 <div>
-                    <h1 className="text-2xl font-bold">Vue d'ensemble</h1>
+                    <h1 className="text-2xl font-bold">{t("Vue d'ensemble")}</h1>
                     <p className="text-muted-foreground mt-1 text-sm first-letter:uppercase">{todayLabel}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <Stat label="Absents aujourd'hui" value={counts.offToday} hint={`sur ${counts.employees} employés actifs`} />
-                    <Stat label="Demandes à traiter" value={counts.pending} tone="warn" />
-                    <Stat label="Annulations demandées" value={counts.cancellations} tone="warn" />
+                    <Stat label={t("Absents aujourd'hui")} value={counts.offToday} hint={t('sur :p0 employés actifs', { p0: counts.employees })} />
+                    <Stat label={t('Demandes à traiter')} value={counts.pending} tone="warn" />
+                    <Stat label={t('Annulations demandées')} value={counts.cancellations} tone="warn" />
                     <Stat
-                        label="Dossiers incomplets"
+                        label={t('Dossiers incomplets')}
                         value={counts.missingHireDate}
                         tone="warn"
                         hint={
                             counts.missingHireDate > 0 ? (
                                 <Link href="/admin/users" className="underline">
-                                    Date d'embauche manquante
+                                    {t("Date d'embauche manquante")}
                                 </Link>
                             ) : (
-                                "Dates d'embauche renseignées"
+                                t("Dates d'embauche renseignées")
                             )
                         }
                     />
@@ -157,14 +158,19 @@ export default function Overview({
                     <Card className="gap-2 py-4">
                         <CardContent className="flex flex-col gap-2 px-4 text-sm sm:flex-row sm:items-center sm:justify-between">
                             <p>
-                                <span className="font-semibold">Pointage du jour :</span> {attendance.present} présent
-                                {attendance.present > 1 ? 's' : ''} sur {attendance.expected} attendus
-                                {attendance.late > 0 && <span className="text-orange-700 dark:text-orange-400"> · {attendance.late} en retard</span>}
+                                <span className="font-semibold">{t('Pointage du jour :')}</span> {attendance.present} {t('présent')}
+                                {attendance.present > 1 ? 's' : ''} {t('sur')} {attendance.expected} {t('attendus')}
+                                {attendance.late > 0 && (
+                                    <span className="text-orange-700 dark:text-orange-400">
+                                        {' '}
+                                        · {attendance.late} {t('en retard')}
+                                    </span>
+                                )}
                                 {attendance.not_yet.length > 0 &&
-                                    ` · ${attendance.not_yet.length} pas encore pointé${attendance.not_yet.length > 1 ? 's' : ''}`}
+                                    t(' · :p0 pas encore pointé:p1', { p0: attendance.not_yet.length, p1: attendance.not_yet.length > 1 ? 's' : '' })}
                             </p>
                             <Link href="/admin/attendance" className="text-sm underline">
-                                Voir le pointage
+                                {t('Voir le pointage')}
                             </Link>
                         </CardContent>
                     </Card>
@@ -174,11 +180,12 @@ export default function Overview({
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4 text-orange-700 dark:text-orange-400" /> Dossiers CNSS à déposer
+                                <AlertTriangle className="h-4 w-4 text-orange-700 dark:text-orange-400" /> {t('Dossiers CNSS à déposer')}
                             </CardTitle>
                             <CardDescription>
-                                Arrêts maladie de 4 jours ou plus : la CNSS indemnise à partir du 4ᵉ jour, dossier à déposer dans les 30 jours.
-                                Marquez le dépôt depuis « Gérer les demandes ».
+                                {t(
+                                    'Arrêts maladie de 4 jours ou plus : la CNSS indemnise à partir du 4ᵉ jour, dossier à déposer dans les 30 jours. Marquez le dépôt depuis « Gérer les demandes ».',
+                                )}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -194,7 +201,7 @@ export default function Overview({
                                             </span>
                                         </span>
                                         <span className={leave.overdue ? 'text-red-700 dark:text-red-400' : 'text-orange-700 dark:text-orange-400'}>
-                                            {leave.overdue ? 'Délai dépassé depuis le' : 'À déposer avant le'} {shortDate(leave.deadline)}
+                                            {leave.overdue ? t('Délai dépassé depuis le') : t('À déposer avant le')} {shortDate(leave.deadline)}
                                         </span>
                                     </li>
                                 ))}
@@ -207,9 +214,11 @@ export default function Overview({
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4 text-orange-700 dark:text-orange-400" /> Contrats à suivre
+                                <AlertTriangle className="h-4 w-4 text-orange-700 dark:text-orange-400" /> {t('Contrats à suivre')}
                             </CardTitle>
-                            <CardDescription>CDD, contrats ANAPEC, stages et périodes d'essai qui se terminent dans les 30 jours.</CardDescription>
+                            <CardDescription>
+                                {t("CDD, contrats ANAPEC, stages et périodes d'essai qui se terminent dans les 30 jours.")}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ul className="divide-y">
@@ -239,9 +248,11 @@ export default function Overview({
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <AlertTriangle className="h-4 w-4 text-orange-700 dark:text-orange-400" /> Documents à renouveler
+                                <AlertTriangle className="h-4 w-4 text-orange-700 dark:text-orange-400" /> {t('Documents à renouveler')}
                             </CardTitle>
-                            <CardDescription>Expirés ou expirant dans les 30 jours (CIN, carte de séjour, aptitude médicale…).</CardDescription>
+                            <CardDescription>
+                                {t('Expirés ou expirant dans les 30 jours (CIN, carte de séjour, aptitude médicale…).')}
+                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ul className="divide-y">
@@ -265,32 +276,32 @@ export default function Overview({
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                Absents aujourd'hui <Badge variant="secondary">{offToday.length}</Badge>
+                                {t("Absents aujourd'hui")} <Badge variant="secondary">{offToday.length}</Badge>
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <AbsenceList items={offToday} empty="Personne n'est absent aujourd'hui." />
+                            <AbsenceList items={offToday} empty={t("Personne n'est absent aujourd'hui.")} />
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Dans les 7 prochains jours</CardTitle>
-                            <CardDescription>Départs en congé à venir.</CardDescription>
+                            <CardTitle>{t('Dans les 7 prochains jours')}</CardTitle>
+                            <CardDescription>{t('Départs en congé à venir.')}</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <AbsenceList items={upcoming} empty="Aucun départ prévu." />
+                            <AbsenceList items={upcoming} empty={t('Aucun départ prévu.')} />
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>En attente de décision</CardTitle>
-                            <CardDescription>Les plus proches en premier.</CardDescription>
+                            <CardTitle>{t('En attente de décision')}</CardTitle>
+                            <CardDescription>{t('Les plus proches en premier.')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {waiting.length === 0 ? (
-                                <p className="text-muted-foreground text-sm">Rien à traiter.</p>
+                                <p className="text-muted-foreground text-sm">{t('Rien à traiter.')}</p>
                             ) : (
                                 <ul className="divide-y">
                                     {waiting.map((item) => (
@@ -316,7 +327,7 @@ export default function Overview({
                                 </ul>
                             )}
                             <Button asChild variant="outline" size="sm" className="w-full">
-                                <Link href="/demandes">Gérer les demandes</Link>
+                                <Link href="/demandes">{t('Gérer les demandes')}</Link>
                             </Button>
                         </CardContent>
                     </Card>
@@ -326,9 +337,9 @@ export default function Overview({
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                <Cake className="h-4 w-4" /> Anniversaires
+                                <Cake className="h-4 w-4" /> {t('Anniversaires')}
                             </CardTitle>
-                            <CardDescription>Aujourd'hui et dans les 30 prochains jours.</CardDescription>
+                            <CardDescription>{t("Aujourd'hui et dans les 30 prochains jours.")}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ul className="grid gap-x-8 sm:grid-cols-2">
@@ -343,7 +354,7 @@ export default function Overview({
                                             </div>
                                         </div>
                                         {birthday.date === today ? (
-                                            <Badge>Aujourd'hui</Badge>
+                                            <Badge>{t("Aujourd'hui")}</Badge>
                                         ) : (
                                             <span className="text-muted-foreground shrink-0 text-xs">{shortDate(birthday.date)}</span>
                                         )}
@@ -356,28 +367,31 @@ export default function Overview({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Congés pris en {year} par département</CardTitle>
+                        <CardTitle>
+                            {t('Congés pris en')} {year} {t('par département')}
+                        </CardTitle>
                         <CardDescription>
-                            Jours décomptés du solde (congé annuel, part déduite des mariages et décès) et jours sans solde, congés acceptés
-                            uniquement, employés actifs.
+                            {t(
+                                'Jours décomptés du solde (congé annuel, part déduite des mariages et décès) et jours sans solde, congés acceptés uniquement, employés actifs.',
+                            )}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Département</TableHead>
-                                    <TableHead className="text-end">Employés</TableHead>
-                                    <TableHead className="text-end">Jours décomptés</TableHead>
-                                    <TableHead className="text-end">Moyenne / employé</TableHead>
-                                    <TableHead className="text-end">Sans solde</TableHead>
+                                    <TableHead>{t('Département')}</TableHead>
+                                    <TableHead className="text-end">{t('Employés')}</TableHead>
+                                    <TableHead className="text-end">{t('Jours décomptés')}</TableHead>
+                                    <TableHead className="text-end">{t('Moyenne / employé')}</TableHead>
+                                    <TableHead className="text-end">{t('Sans solde')}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {departments.map((row) => (
                                     <TableRow key={row.name ?? 'none'}>
                                         <TableCell className={row.name ? 'font-medium' : 'text-muted-foreground italic'}>
-                                            {row.name ?? 'Sans département'}
+                                            {row.name ?? t('Sans département')}
                                         </TableCell>
                                         <TableCell className="text-end tabular-nums">{row.employees}</TableCell>
                                         <TableCell className="text-end tabular-nums">{formatDays(row.usedDays)}</TableCell>

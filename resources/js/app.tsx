@@ -1,6 +1,6 @@
 import '../css/app.css';
 
-import { createInertiaApp, router } from '@inertiajs/react';
+import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
@@ -13,11 +13,17 @@ createInertiaApp({
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
     setup({ el, App, props }) {
         const root = createRoot(el);
-        // Language and direction (Arabic: right to left), kept up to date on every visit.
-        applyLocale(props.initialPage.props.locale as Locale);
-        router.on('navigate', (event) => applyLocale(event.detail.page.props.locale as Locale));
 
-        root.render(<App {...props} />);
+        root.render(
+            <App {...props}>
+                {({ Component, props: pageProps, key }) => {
+                    // Language and direction (Arabic: right to left) set before the page renders,
+                    // so every t() of the page uses the new language right after a switch.
+                    applyLocale(pageProps.locale as Locale);
+                    return <Component key={key} {...pageProps} />;
+                }}
+            </App>,
+        );
     },
     progress: {
         color: '#4B5563',

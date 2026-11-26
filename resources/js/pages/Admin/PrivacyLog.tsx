@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { intlLocale, t } from '@/lib/i18n';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { History } from 'lucide-react';
@@ -44,23 +45,25 @@ export default function PrivacyLog({ entries, actions, people, filters }: Privac
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Journal des accès" />
+            <Head title={t('Journal des accès')} />
             <div className="container mx-auto max-w-6xl space-y-6 px-4 py-10">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Journal des accès aux données personnelles</h1>
+                        <h1 className="text-2xl font-bold">{t('Journal des accès aux données personnelles')}</h1>
                         <p className="text-muted-foreground mt-1 text-sm">
-                            {entries.total} entrée{entries.total > 1 ? 's' : ''}. Les consultations de ses propres données ne sont pas enregistrées.
+                            {entries.total} {t('entrée')}
+                            {entries.total > 1 ? 's' : ''}
+                            {t('. Les consultations de ses propres données ne sont pas enregistrées.')}
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <select
-                            aria-label="Personne"
+                            aria-label={t('Personne')}
                             className={selectClass}
                             value={filters.person ?? ''}
                             onChange={(e) => filter({ person: e.target.value ? Number(e.target.value) : null })}
                         >
-                            <option value="">Toutes les personnes</option>
+                            <option value="">{t('Toutes les personnes')}</option>
                             {people.map((p) => (
                                 <option key={p.id} value={p.id}>
                                     {p.name}
@@ -68,12 +71,12 @@ export default function PrivacyLog({ entries, actions, people, filters }: Privac
                             ))}
                         </select>
                         <select
-                            aria-label="Action"
+                            aria-label={t('Action')}
                             className={selectClass}
                             value={filters.action ?? ''}
                             onChange={(e) => filter({ action: e.target.value || null })}
                         >
-                            <option value="">Toutes les actions</option>
+                            <option value="">{t('Toutes les actions')}</option>
                             {Object.entries(actions).map(([value, label]) => (
                                 <option key={value} value={value}>
                                     {label}
@@ -88,27 +91,27 @@ export default function PrivacyLog({ entries, actions, people, filters }: Privac
                         {entries.data.length === 0 ? (
                             <EmptyState
                                 icon={History}
-                                title="Aucun accès enregistré"
-                                description="Chaque consultation ou modification des données d'une autre personne apparaîtra ici."
+                                title={t('Aucun accès enregistré')}
+                                description={t("Chaque consultation ou modification des données d'une autre personne apparaîtra ici.")}
                                 className="border-0"
                             />
                         ) : (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Par</TableHead>
-                                        <TableHead>Données de</TableHead>
-                                        <TableHead>Action</TableHead>
-                                        <TableHead>Détail</TableHead>
-                                        <TableHead>Adresse IP</TableHead>
+                                        <TableHead>{t('Date')}</TableHead>
+                                        <TableHead>{t('Par')}</TableHead>
+                                        <TableHead>{t('Données de')}</TableHead>
+                                        <TableHead>{t('Action')}</TableHead>
+                                        <TableHead>{t('Détail')}</TableHead>
+                                        <TableHead>{t('Adresse IP')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {entries.data.map((entry) => (
                                         <TableRow key={entry.id}>
                                             <TableCell className="whitespace-nowrap tabular-nums">
-                                                {new Date(entry.at).toLocaleString('fr-FR')}
+                                                {new Date(entry.at).toLocaleString(intlLocale())}
                                             </TableCell>
                                             <TableCell>{entry.actor}</TableCell>
                                             <TableCell>
@@ -134,7 +137,7 @@ export default function PrivacyLog({ entries, actions, people, filters }: Privac
                 </Card>
 
                 {entries.links.length > 3 && (
-                    <nav className="flex flex-wrap justify-center gap-1" aria-label="Pages">
+                    <nav className="flex flex-wrap justify-center gap-1" aria-label={t('Pages')}>
                         {entries.links.map((link, index) => (
                             <Button
                                 key={index}

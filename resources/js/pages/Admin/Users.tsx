@@ -8,6 +8,7 @@ import { columns, User } from '@/components/users/columns';
 import { DataTable } from '@/components/users/data-table';
 import { Option } from '@/components/users/EmployeeRecordFields';
 import AppLayout from '@/layouts/app-layout';
+import { t } from '@/lib/i18n';
 import { RoleOption, usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -64,13 +65,18 @@ const Users = ({ users: initialUsers, departments, managers, roles }: UsersProps
         const ok = await confirmAction(
             deactivating
                 ? {
-                      title: `Désactiver le compte de ${user.name} ?`,
-                      description:
+                      title: t('Désactiver le compte de :p0 ?', { p0: user.name }),
+                      description: t(
                           'Il ne pourra plus se connecter. Son historique de congés est conservé et le compte peut être réactivé à tout moment.',
-                      confirmLabel: 'Désactiver',
+                      ),
+                      confirmLabel: t('Désactiver'),
                       destructive: true,
                   }
-                : { title: `Réactiver le compte de ${user.name} ?`, description: 'Il pourra de nouveau se connecter.', confirmLabel: 'Réactiver' },
+                : {
+                      title: t('Réactiver le compte de :p0 ?', { p0: user.name }),
+                      description: t('Il pourra de nouveau se connecter.'),
+                      confirmLabel: t('Réactiver'),
+                  },
         );
         if (!ok) return;
 
@@ -80,34 +86,34 @@ const Users = ({ users: initialUsers, departments, managers, roles }: UsersProps
     /** Welcome e-mail with a link to choose a password (valid 7 days). */
     const handleInvite = async (user: User) => {
         const ok = await confirmAction({
-            title: `Envoyer une invitation à ${user.name} ?`,
-            description: `Un e-mail est envoyé à ${user.email} avec un lien pour choisir son mot de passe (valable 7 jours).`,
-            confirmLabel: 'Envoyer',
+            title: t('Envoyer une invitation à :p0 ?', { p0: user.name }),
+            description: t('Un e-mail est envoyé à :p0 avec un lien pour choisir son mot de passe (valable 7 jours).', { p0: user.email }),
+            confirmLabel: t('Envoyer'),
         });
         if (ok) router.post('/admin/users/invite', { ids: [user.id] }, { preserveScroll: true, onError: toastErrors });
     };
 
     if (!users) {
-        return <div>Chargement...</div>;
+        return <div>{t('Chargement...')}</div>;
     }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Gestion des employés" />
+            <Head title={t('Gestion des employés')} />
             <div className="container mx-auto py-10">
                 <div className="mb-6 flex items-center justify-between">
-                    <h1 className="text-2xl font-bold">Gestion des employés</h1>
+                    <h1 className="text-2xl font-bold">{t('Gestion des employés')}</h1>
                     {can.manage_hr && (
                         <div className="flex flex-wrap gap-2">
                             <Button variant="outline" asChild>
                                 <Link href="/admin/import">
                                     <FileSpreadsheet className="me-2 h-4 w-4" />
-                                    Importer depuis Excel
+                                    {t('Importer depuis Excel')}
                                 </Link>
                             </Button>
                             <Button onClick={() => setAddModalOpen(true)} className="bg-green-700 text-white hover:bg-green-800">
                                 <Plus className="me-2 h-4 w-4" />
-                                Ajouter un employé
+                                {t('Ajouter un employé')}
                             </Button>
                         </div>
                     )}

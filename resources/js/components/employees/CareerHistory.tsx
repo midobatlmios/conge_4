@@ -47,7 +47,7 @@ export default function CareerHistory({ changes, hireDate, onDelete }: CareerHis
                         <div className="space-y-1 text-sm">
                             <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-medium">{formatDate(change.effective_date)}</span>
-                                <Badge variant="outline">{change.kind_label}</Badge>
+                                <Badge variant="outline">{t(change.kind_label)}</Badge>
                                 {raise && <span className="text-xs text-green-700 dark:text-green-400">{raise}</span>}
                             </div>
                             {change.job_title && <Line label={t('Poste')} step={change.job_title} />}

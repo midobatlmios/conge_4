@@ -176,7 +176,7 @@ class OverviewController extends Controller
             ->whereDate('date_fin', '>=', Carbon::create($year, 1, 1))
             ->get()
             ->groupBy('user_id')
-            ->map(fn ($leaves) => $leaves->sum(fn (Demande $leave) => $this->calculator->leaveDays(
+            ->map(fn ($leaves) => $leaves->sum(fn (Demande $leave) => $this->calculator->forUser($leave->user_id)->leaveDays(
                 $leave->date_debut,
                 $leave->date_fin,
                 $leave->start_half,

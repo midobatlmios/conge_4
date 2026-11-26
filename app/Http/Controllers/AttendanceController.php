@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\AttendanceRecord;
 use App\Models\User;
+use App\Notifications\AppNotice;
 use App\Services\AttendanceCalculator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -84,6 +86,13 @@ class AttendanceController extends Controller
 
         $user->attendanceCorrections()->create($validated);
 
+        // Whoever decides: the manager (or today's delegate), else HR.
+        $manager = $user->approvingManager();
+        $deciders = $manager ? collect([$manager->approvalRecipient($user)]) : AppNotice::hr($user);
+        Notification::send($deciders, new AppNotice(':name demande une correction de pointage pour le :date.', [
+            'name' => $user->name, 'date' => Carbon::parse($validated['date'])->format('d/m/Y'),
+        ], '/pointage/corrections'));
+
         return back()->with('success', 'Correction envoyée : votre responsable ou le service RH va la valider.');
     }
 
@@ -98,7 +107,7 @@ class AttendanceController extends Controller
 
         return [
             'tracking' => $calculator->isTracking(),
-            'working_day' => app(\App\Services\LeaveCalculator::class)->isWorkingDay(today()),
+            'working_day' => app(\App\Services\LeaveCalculator::class)->forUser($user)->isWorkingDay(today()),
             'clock_in' => $record?->clock_in,
             'clock_out' => $record?->clock_out,
         ];

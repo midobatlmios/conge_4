@@ -68,6 +68,7 @@ class PrivacyController extends Controller
                 ])->values(),
                 'personal' => $due['personal']->map(fn (User $user) => ['name' => $user->name, 'left' => $user->deactivated_at->toDateString()])->values(),
                 'anonymize' => $due['anonymize']->map(fn (User $user) => ['name' => $user->name, 'left' => $user->deactivated_at->toDateString()])->values(),
+                'candidates' => $due['candidates']->count(),
             ],
         ]);
     }
@@ -111,7 +112,7 @@ class PrivacyController extends Controller
 
         return back()->with('success', $total === 0
             ? 'Rien à supprimer pour le moment.'
-            : "Conservation appliquée : {$done['certificates']} certificat(s) médical(aux), {$done['personal']} dossier(s) d'anciens employés, {$done['anonymize']} anonymisation(s).");
+            : "Conservation appliquée : {$done['certificates']} certificat(s) médical(aux), {$done['personal']} dossier(s) d'anciens employés, {$done['anonymize']} anonymisation(s), {$done['candidates']} candidature(s) expirée(s).");
     }
 
     /**

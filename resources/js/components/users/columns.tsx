@@ -13,6 +13,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { intlLocale, t } from '@/lib/i18n';
 import { canManageAccount, Permissions, Role, ROLE_LABELS } from '@/lib/roles';
 import { Link } from '@inertiajs/react';
 import { ColumnDef } from '@tanstack/react-table';
@@ -30,6 +31,8 @@ export type User = {
     invited_at?: string | null;
     matricule: string | null;
     department_id: number | null;
+    site_id?: number | null;
+    site?: { id: number; name: string } | null;
     job_title: string | null;
     hire_date: string | null; // YYYY-MM-DD
     manager_id: number | null;
@@ -93,14 +96,14 @@ export const columns = (
             if (!contract) return <span className="text-muted-foreground">—</span>;
             return (
                 <div>
-                    <div>{contract.type_label}</div>
+                    <div>{t(contract.type_label)}</div>
                     <div className="text-muted-foreground text-xs">
                         {contract.status === 'upcoming'
-                            ? `à partir du ${formatDate(contract.start_date)}`
+                            ? t('à partir du :p0', { p0: formatDate(contract.start_date) })
                             : contract.end_date
                               ? `${contract.status === 'ended' ? 'terminé le' : "jusqu'au"} ${formatDate(contract.end_date)}`
                               : contract.in_trial
-                                ? "en période d'essai"
+                                ? t("en période d'essai")
                                 : ''}
                     </div>
                 </div>
@@ -114,10 +117,10 @@ export const columns = (
             const hireDate = row.original.hire_date;
             // Accounts created before employee records existed have no hire date yet.
             return hireDate ? (
-                new Date(`${hireDate}T00:00:00`).toLocaleDateString('fr-FR')
+                new Date(`${hireDate}T00:00:00`).toLocaleDateString(intlLocale())
             ) : (
                 <Badge variant="outline" className="border-orange-500 text-orange-700 dark:text-orange-400">
-                    À compléter
+                    {t('À compléter')}
                 </Badge>
             );
         },
@@ -139,14 +142,14 @@ export const columns = (
             if (!deactivatedAt) {
                 return (
                     <Badge variant="outline" className="border-green-600 text-green-700 dark:text-green-400">
-                        Actif
+                        {t('Actif')}
                     </Badge>
                 );
             }
 
             return (
-                <Badge variant="secondary" title={`Désactivé le ${new Date(deactivatedAt).toLocaleDateString('fr-FR')}`}>
-                    Désactivé
+                <Badge variant="secondary" title={t('Désactivé le :p0', { p0: new Date(deactivatedAt).toLocaleDateString(intlLocale()) })}>
+                    {t('Désactivé')}
                 </Badge>
             );
         },
@@ -156,7 +159,7 @@ export const columns = (
         header: 'Vérifié',
         cell: ({ row }) => {
             const verified = row.getValue('email_verified_at');
-            return <div>{verified ? 'Oui' : 'Non'}</div>;
+            return <div>{verified ? t('Oui') : t('Non')}</div>;
         },
     },
     {
@@ -168,16 +171,16 @@ export const columns = (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Ouvrir le menu</span>
+                            <span className="sr-only">{t('Ouvrir le menu')}</span>
                             <MoreHorizontal className="h-4 w-4" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t('Actions')}</DropdownMenuLabel>
                         <DropdownMenuItem asChild>
-                            <Link href={`/admin/users/${user.id}`}>Voir la fiche</Link>
+                            <Link href={`/admin/users/${user.id}`}>{t('Voir la fiche')}</Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id.toString())}>Copier l'ID</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigator.clipboard.writeText(user.id.toString())}>{t("Copier l'ID")}</DropdownMenuItem>
                         {canManageAccount(can, user.role) && (
                             <>
                                 <DropdownMenuItem
@@ -186,14 +189,14 @@ export const columns = (
                                         setEditModelOpen(true);
                                     }}
                                 >
-                                    Modifier l'utilisateur
+                                    {t("Modifier l'utilisateur")}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleResetPassword(user)} className="text-yellow-700 dark:text-yellow-400">
-                                    Réinitialiser le mot de passe
+                                    {t('Réinitialiser le mot de passe')}
                                 </DropdownMenuItem>
                                 {user.id !== currentUserId && !user.deactivated_at && (
                                     <DropdownMenuItem onClick={() => handleInvite(user)}>
-                                        {user.invited_at ? "Renvoyer l'invitation" : 'Envoyer une invitation'}
+                                        {user.invited_at ? t("Renvoyer l'invitation") : t('Envoyer une invitation')}
                                     </DropdownMenuItem>
                                 )}
                                 {user.id !== currentUserId && (
@@ -201,11 +204,11 @@ export const columns = (
                                         <DropdownMenuSeparator />
                                         {user.deactivated_at ? (
                                             <DropdownMenuItem onClick={() => handleToggleActive(user)} className="text-green-700 dark:text-green-400">
-                                                Réactiver le compte
+                                                {t('Réactiver le compte')}
                                             </DropdownMenuItem>
                                         ) : (
                                             <DropdownMenuItem onClick={() => handleToggleActive(user)} className="text-red-700 dark:text-red-400">
-                                                Désactiver le compte
+                                                {t('Désactiver le compte')}
                                             </DropdownMenuItem>
                                         )}
                                     </>

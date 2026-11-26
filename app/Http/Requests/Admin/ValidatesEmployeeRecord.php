@@ -18,6 +18,7 @@ trait ValidatesEmployeeRecord
         return [
             'matricule' => ['nullable', 'string', 'max:50', Rule::unique('users', 'matricule')->ignore($target?->id)],
             'department_id' => ['nullable', 'integer', Rule::exists('departments', 'id')],
+            'site_id' => ['nullable', 'integer', Rule::exists('sites', 'id')],
             'job_title' => ['nullable', 'string', 'max:100'],
             'hire_date' => ['required', 'date_format:Y-m-d'],
             'manager_id' => [
@@ -38,6 +39,7 @@ trait ValidatesEmployeeRecord
     {
         return [
             'department_id' => 'département',
+            'site_id' => 'site',
             'job_title' => 'poste',
             'hire_date' => "date d'embauche",
             'manager_id' => 'responsable',
@@ -83,6 +85,6 @@ trait ValidatesEmployeeRecord
      */
     public function employeeRecord(): array
     {
-        return $this->safe()->only(['matricule', 'department_id', 'job_title', 'hire_date', 'manager_id']);
+        return $this->safe()->only(['matricule', 'department_id', 'site_id', 'job_title', 'hire_date', 'manager_id']);
     }
 }

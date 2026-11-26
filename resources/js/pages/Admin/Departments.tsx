@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
+import { t } from '@/lib/i18n';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import { Building2, Pencil, Plus, Trash2 } from 'lucide-react';
@@ -57,7 +58,11 @@ const Departments = ({ departments }: { departments: Department[] }) => {
     };
 
     const remove = async (department: Department) => {
-        const ok = await confirmAction({ title: `Supprimer le département « ${department.name} » ?`, confirmLabel: 'Supprimer', destructive: true });
+        const ok = await confirmAction({
+            title: t('Supprimer le département « :p0 » ?', { p0: department.name }),
+            confirmLabel: t('Supprimer'),
+            destructive: true,
+        });
         if (!ok) return;
         router.delete(`/admin/departments/${department.id}`, {
             preserveScroll: true,
@@ -70,30 +75,30 @@ const Departments = ({ departments }: { departments: Department[] }) => {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Départements" />
+            <Head title={t('Départements')} />
             <div className="container mx-auto max-w-3xl space-y-6 px-4 py-10">
                 <div>
-                    <h1 className="text-2xl font-bold">Départements</h1>
+                    <h1 className="text-2xl font-bold">{t('Départements')}</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        Les départements proposés dans le dossier de chaque employé (page « Gestion des employés »).
+                        {t('Les départements proposés dans le dossier de chaque employé (page « Gestion des employés »).')}
                     </p>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{editing ? `Renommer « ${editing.name} »` : 'Ajouter un département'}</CardTitle>
+                        <CardTitle>{editing ? `Renommer « ${editing.name} »` : t('Ajouter un département')}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row sm:items-start">
                             <div className="grid flex-1 gap-2">
                                 <Label htmlFor="name" className="sr-only">
-                                    Nom
+                                    {t('Nom')}
                                 </Label>
                                 <Input
                                     id="name"
                                     value={form.data.name}
                                     onChange={(e) => form.setData('name', e.target.value)}
-                                    placeholder="Ex. : Comptabilité"
+                                    placeholder={t('Ex. : Comptabilité')}
                                     required
                                 />
                                 <InputError message={form.errors.name} />
@@ -101,15 +106,15 @@ const Departments = ({ departments }: { departments: Department[] }) => {
                             <div className="flex gap-2">
                                 {editing && (
                                     <Button type="button" variant="outline" onClick={resetForm}>
-                                        Annuler
+                                        {t('Annuler')}
                                     </Button>
                                 )}
                                 <Button type="submit" disabled={form.processing} className="bg-green-700 text-white hover:bg-green-800">
                                     {editing ? (
-                                        'Enregistrer'
+                                        t('Enregistrer')
                                     ) : (
                                         <>
-                                            <Plus className="me-1 h-4 w-4" /> Ajouter
+                                            <Plus className="me-1 h-4 w-4" /> {t('Ajouter')}
                                         </>
                                     )}
                                 </Button>
@@ -121,9 +126,9 @@ const Departments = ({ departments }: { departments: Department[] }) => {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            Liste <Badge variant="secondary">{departments.length}</Badge>
+                            {t('Liste')} <Badge variant="secondary">{departments.length}</Badge>
                         </CardTitle>
-                        <CardDescription>Un département ne peut être supprimé que s'il n'a plus d'employés.</CardDescription>
+                        <CardDescription>{t("Un département ne peut être supprimé que s'il n'a plus d'employés.")}</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {departments.length ? (
@@ -133,7 +138,8 @@ const Departments = ({ departments }: { departments: Department[] }) => {
                                         <div className="min-w-0 flex-1">
                                             <div className="truncate font-medium">{department.name}</div>
                                             <div className="text-muted-foreground text-sm">
-                                                {department.users_count} employé{department.users_count > 1 ? 's' : ''}
+                                                {department.users_count} {t('employé')}
+                                                {department.users_count > 1 ? 's' : ''}
                                             </div>
                                         </div>
                                         <Button
@@ -159,8 +165,8 @@ const Departments = ({ departments }: { departments: Department[] }) => {
                         ) : (
                             <EmptyState
                                 icon={Building2}
-                                title="Aucun département pour l'instant"
-                                description="Ajoutez-en un ci-dessus ; ils servent au dossier des employés, au calendrier et aux indicateurs."
+                                title={t("Aucun département pour l'instant")}
+                                description={t('Ajoutez-en un ci-dessus ; ils servent au dossier des employés, au calendrier et aux indicateurs.')}
                             />
                         )}
                     </CardContent>

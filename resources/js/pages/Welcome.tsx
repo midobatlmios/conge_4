@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n';
 import { type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 
@@ -6,7 +7,7 @@ export default function Welcome() {
 
     return (
         <>
-            <Head title="Accueil">
+            <Head title={t('Accueil')}>
                 <link rel="preconnect" href="https://fonts.bunny.net" />
                 <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600" rel="stylesheet" />
             </Head>
@@ -26,14 +27,14 @@ export default function Welcome() {
                                 href={route('dashboard')}
                                 className="inline-block rounded-sm border border-[#19140035] px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#1915014a] dark:border-[#3E3E3A] dark:text-[#EDEDEC] dark:hover:border-[#62605b]"
                             >
-                                Dashboard
+                                {t('Dashboard')}
                             </Link>
                         ) : (
                             <Link
                                 href={route('login')}
                                 className="inline-block rounded-sm border border-[#19140035] bg-white px-5 py-1.5 text-sm leading-normal text-[#1b1b18] hover:border-[#19140035] dark:border-transparent dark:bg-transparent dark:text-[#EDEDEC] dark:hover:border-[#3E3E3A]"
                             >
-                                Se connecter
+                                {t('Se connecter')}
                             </Link>
                         )}
                     </nav>
@@ -41,7 +42,7 @@ export default function Welcome() {
                 <div className="flex w-full items-center justify-center opacity-100 transition-opacity duration-750 lg:grow starting:opacity-0">
                     <main className="flex w-full max-w-[335px] flex-col-reverse lg:max-w-4xl lg:flex-row">
                         <div className="flex-1 rounded-ee-lg rounded-es-lg bg-white p-6 pb-12 text-[13px] leading-[20px] shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:rounded-ss-lg lg:rounded-ee-none lg:p-20 dark:bg-[#161615] dark:text-[#EDEDEC] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]">
-                            <h1 className="mb-1 font-medium">Allons-y</h1>
+                            <h1 className="mb-1 font-medium">{t('Allons-y')}</h1>
                             <p className="mb-2 text-[#706f6c] dark:text-[#A1A09A]">
                                 <br />
                             </p>
@@ -52,7 +53,7 @@ export default function Welcome() {
                                             <span className="h-1.5 w-1.5 rounded-full bg-[#dbdbd7] dark:bg-[#3E3E3A]" />
                                         </span>
                                     </span>
-                                    <span>Plateforme de congés par Xerus Media</span>
+                                    <span>{t('Plateforme de congés par Xerus Media')}</span>
                                 </li>
                                 <li className="relative flex items-center gap-4 py-2 before:absolute before:start-[0.4rem] before:top-1/2 before:bottom-0 before:border-s before:border-[#e3e3e0] dark:before:border-[#3E3E3A]">
                                     <span className="relative bg-white py-1 dark:bg-[#161615]">
@@ -60,7 +61,7 @@ export default function Welcome() {
                                             <span className="h-1.5 w-1.5 rounded-full bg-[#dbdbd7] dark:bg-[#3E3E3A]" />
                                         </span>
                                     </span>
-                                    <span>Pour une gestion simplifiée et efficace de vos absences.</span>
+                                    <span>{t('Pour une gestion simplifiée et efficace de vos absences.')}</span>
                                 </li>
                             </ul>
                         </div>
@@ -70,7 +71,7 @@ export default function Welcome() {
                         >
                             <img
                                 src="/images/bg12.png"
-                                alt="Welcome illustration"
+                                alt={t('Welcome illustration')}
                                 className="h-full max-h-[360px] w-full rounded-xl bg-white object-contain p-4 shadow-lg dark:bg-[#161615]"
                                 style={{ boxShadow: '0 4px 24px 0 rgba(0,0,0)' }}
                             />

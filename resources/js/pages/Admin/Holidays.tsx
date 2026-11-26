@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
+import { intlLocale, t } from '@/lib/i18n';
 import { parseISODate, todayISO } from '@/lib/leave';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
@@ -18,10 +19,13 @@ interface Holiday {
     name: string;
     date: string; // YYYY-MM-DD; for a repeating holiday only month and day matter
     recurring: boolean;
+    site_id: number | null;
+    site: { id: number; name: string } | null;
 }
 
 interface HolidaysProps {
     holidays: Holiday[];
+    sites: { id: number; name: string }[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -29,14 +33,14 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Jours fériés', href: '/admin/holidays' },
 ];
 
-const formatDayMonth = (iso: string) => parseISODate(iso)?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) ?? iso;
+const formatDayMonth = (iso: string) => parseISODate(iso)?.toLocaleDateString(intlLocale(), { day: 'numeric', month: 'long' }) ?? iso;
 
 const formatFullDate = (iso: string) =>
-    parseISODate(iso)?.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) ?? iso;
+    parseISODate(iso)?.toLocaleDateString(intlLocale(), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) ?? iso;
 
-const Holidays = ({ holidays }: HolidaysProps) => {
+const Holidays = ({ holidays, sites }: HolidaysProps) => {
     const [editing, setEditing] = useState<Holiday | null>(null);
-    const form = useForm<{ name: string; date: string; recurring: boolean }>({ name: '', date: '', recurring: false });
+    const form = useForm<{ name: string; date: string; recurring: boolean; site_id: string }>({ name: '', date: '', recurring: false, site_id: '' });
 
     const recurring = holidays.filter((h) => h.recurring);
     const today = todayISO();
@@ -68,6 +72,7 @@ const Holidays = ({ holidays }: HolidaysProps) => {
             // A repeating holiday is stored in year 2000; show it in the current year.
             date: holiday.recurring ? `${currentYear}${holiday.date.slice(4)}` : holiday.date,
             recurring: holiday.recurring,
+            site_id: holiday.site_id ? String(holiday.site_id) : '',
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -90,9 +95,9 @@ const Holidays = ({ holidays }: HolidaysProps) => {
 
     const remove = async (holiday: Holiday) => {
         const ok = await confirmAction({
-            title: `Supprimer le jour férié « ${holiday.name} » ?`,
-            description: 'Les jours de congé seront recalculés en conséquence.',
-            confirmLabel: 'Supprimer',
+            title: t('Supprimer le jour férié « :p0 » ?', { p0: holiday.name }),
+            description: t('Les jours de congé seront recalculés en conséquence.'),
+            confirmLabel: t('Supprimer'),
             destructive: true,
         });
         if (!ok) return;
@@ -108,7 +113,10 @@ const Holidays = ({ holidays }: HolidaysProps) => {
         <li key={holiday.id} className={`flex items-center gap-3 py-2.5 ${past ? 'text-muted-foreground' : ''}`}>
             <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{holiday.name}</div>
-                <div className="text-muted-foreground text-sm first-letter:uppercase">{label}</div>
+                <div className="text-muted-foreground text-sm first-letter:uppercase">
+                    {label}
+                    {holiday.site && ` · ${t('Seulement :site', { site: holiday.site.name })}`}
+                </div>
             </div>
             <Button variant="ghost" size="icon" aria-label={`Modifier ${holiday.name}`} onClick={() => startEdit(holiday)}>
                 <Pencil className="h-4 w-4" />
@@ -127,39 +135,42 @@ const Holidays = ({ holidays }: HolidaysProps) => {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Jours fériés" />
+            <Head title={t('Jours fériés')} />
             <div className="container mx-auto max-w-4xl space-y-6 px-4 py-10">
                 <div>
-                    <h1 className="text-2xl font-bold">Jours fériés</h1>
+                    <h1 className="text-2xl font-bold">{t('Jours fériés')}</h1>
                     <p className="text-muted-foreground mt-1 text-sm">
-                        Ces jours ne sont pas décomptés des congés. Toute modification s'applique immédiatement au calcul des jours et des soldes.
+                        {t(
+                            "Ces jours ne sont pas décomptés des congés. Toute modification s'applique immédiatement au calcul des jours et des soldes.",
+                        )}
                     </p>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>{editing ? `Modifier « ${editing.name} »` : 'Ajouter un jour férié'}</CardTitle>
+                        <CardTitle>{editing ? `Modifier « ${editing.name} »` : t('Ajouter un jour férié')}</CardTitle>
                         <CardDescription>
-                            Les fêtes religieuses (Aïd al-Fitr, Aïd al-Adha, 1er Moharram, Aïd al-Mawlid) changent de date chaque année : ajoutez-les
-                            dès que les dates officielles sont annoncées, sans cocher « chaque année ».
+                            {t(
+                                'Les fêtes religieuses (Aïd al-Fitr, Aïd al-Adha, 1er Moharram, Aïd al-Mawlid) changent de date chaque année : ajoutez-les dès que les dates officielles sont annoncées, sans cocher « chaque année ».',
+                            )}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={submit} className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="name">Nom</Label>
+                                    <Label htmlFor="name">{t('Nom')}</Label>
                                     <Input
                                         id="name"
                                         value={form.data.name}
                                         onChange={(e) => form.setData('name', e.target.value)}
-                                        placeholder="Ex. : Aïd al-Fitr"
+                                        placeholder={t('Ex. : Aïd al-Fitr')}
                                         required
                                     />
                                     <InputError message={form.errors.name} />
                                 </div>
                                 <div className="grid gap-2">
-                                    <Label htmlFor="date">Date</Label>
+                                    <Label htmlFor="date">{t('Date')}</Label>
                                     <Input
                                         id="date"
                                         type="date"
@@ -176,22 +187,41 @@ const Holidays = ({ holidays }: HolidaysProps) => {
                                         onCheckedChange={(checked) => form.setData('recurring', checked === true)}
                                     />
                                     <Label htmlFor="recurring" className="font-normal">
-                                        Se répète chaque année à la même date (fête nationale)
+                                        {t('Se répète chaque année à la même date (fête nationale)')}
                                     </Label>
                                 </div>
+                                {sites.length > 0 && (
+                                    <div className="space-y-1 sm:col-span-2">
+                                        <Label htmlFor="holiday-site">{t('Concerne')}</Label>
+                                        <select
+                                            id="holiday-site"
+                                            className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+                                            value={form.data.site_id}
+                                            onChange={(e) => form.setData('site_id', e.target.value)}
+                                        >
+                                            <option value="">{t('Tous les sites (jour férié national)')}</option>
+                                            {sites.map((s) => (
+                                                <option key={s.id} value={s.id}>
+                                                    {t('Seulement :site (fête locale)', { site: s.name })}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <InputError message={form.errors.site_id} />
+                                    </div>
+                                )}
                             </div>
                             <div className="flex gap-2">
                                 {editing && (
                                     <Button type="button" variant="outline" onClick={resetForm}>
-                                        Annuler
+                                        {t('Annuler')}
                                     </Button>
                                 )}
                                 <Button type="submit" disabled={form.processing} className="bg-green-700 text-white hover:bg-green-800">
                                     {editing ? (
-                                        'Enregistrer'
+                                        t('Enregistrer')
                                     ) : (
                                         <>
-                                            <Plus className="me-1 h-4 w-4" /> Ajouter
+                                            <Plus className="me-1 h-4 w-4" /> {t('Ajouter')}
                                         </>
                                     )}
                                 </Button>
@@ -204,28 +234,28 @@ const Holidays = ({ holidays }: HolidaysProps) => {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
-                                Chaque année <Badge variant="secondary">{recurring.length}</Badge>
+                                {t('Chaque année')} <Badge variant="secondary">{recurring.length}</Badge>
                             </CardTitle>
-                            <CardDescription>Fêtes nationales à date fixe.</CardDescription>
+                            <CardDescription>{t('Fêtes nationales à date fixe.')}</CardDescription>
                         </CardHeader>
                         <CardContent>
                             {recurring.length ? (
                                 <ul className="divide-y">{recurring.map((h) => row(h, formatDayMonth(h.date)))}</ul>
                             ) : (
-                                <p className="text-muted-foreground text-sm">Aucun jour férié fixe.</p>
+                                <p className="text-muted-foreground text-sm">{t('Aucun jour férié fixe.')}</p>
                             )}
                         </CardContent>
                     </Card>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Dates variables</CardTitle>
-                            <CardDescription>Fêtes religieuses et jours exceptionnels, à saisir chaque année.</CardDescription>
+                            <CardTitle>{t('Dates variables')}</CardTitle>
+                            <CardDescription>{t('Fêtes religieuses et jours exceptionnels, à saisir chaque année.')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {!byYear.some(([year]) => year >= currentYear) && (
                                 <p className="rounded-md border border-orange-200 bg-orange-50 px-3 py-2 text-sm text-orange-800 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300">
-                                    Aucune fête religieuse n'est encore saisie pour {currentYear}.
+                                    {t("Aucune fête religieuse n'est encore saisie pour")} {currentYear}.
                                 </p>
                             )}
                             {byYear.map(([year, items]) => (

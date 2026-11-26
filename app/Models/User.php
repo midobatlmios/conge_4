@@ -19,7 +19,7 @@ use Illuminate\Notifications\Notifiable;
  * @property \Illuminate\Support\Carbon|null $hire_date
  * @property int|null $manager_id
  */
-class User extends Authenticatable
+class User extends Authenticatable implements \Illuminate\Contracts\Translation\HasLocalePreference
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
@@ -36,6 +36,7 @@ class User extends Authenticatable
         'role',
         'matricule',
         'department_id',
+        'site_id',
         'job_title',
         'hire_date',
         'manager_id',
@@ -65,6 +66,12 @@ class User extends Authenticatable
         'anonymized_at' => 'datetime',
         'hire_date' => 'date:Y-m-d',
     ];
+
+    /** E-mails (password reset…) in the recipient's language, not the sender's. */
+    public function preferredLocale(): string
+    {
+        return in_array($this->locale, ['fr', 'ar', 'en'], true) ? $this->locale : 'fr';
+    }
 
     public function demandes(): HasMany
     {
@@ -147,6 +154,12 @@ class User extends Authenticatable
     public function attestations(): HasMany
     {
         return $this->hasMany(Attestation::class);
+    }
+
+    /** The site whose local holidays apply (null: national holidays only). */
+    public function site(): BelongsTo
+    {
+        return $this->belongsTo(Site::class);
     }
 
     public function department(): BelongsTo
@@ -261,6 +274,8 @@ class User extends Authenticatable
             'view_hr' => $this->canViewHr(),
             'manage_hr' => $this->isHr(),
             'manage_roles' => $this->isAdmin(),
+            // Recruitment: HR, and anyone named hiring manager on an offer.
+            'recruitment' => $this->isHr() || JobOffer::where('hiring_manager_id', $this->id)->exists(),
         ];
     }
 

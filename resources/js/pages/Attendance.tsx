@@ -262,7 +262,7 @@ export default function Attendance({ month, today, days, totals, schedule, corre
                                             )}
                                         </span>
                                         <Badge variant={c.status === 'pending' ? 'outline' : 'secondary'}>
-                                            {c.status_label}
+                                            {t(c.status_label)}
                                             {c.decided_by ? ` · ${c.decided_by}` : ''}
                                         </Badge>
                                     </li>

@@ -6,6 +6,7 @@ use App\Models\PayrollRun;
 use App\Models\Payslip;
 use App\Models\PersonalDataAccess;
 use App\Models\User;
+use App\Notifications\AppNotice;
 use App\Services\PayrollJournal;
 use App\Services\PayslipCalculator;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -150,6 +151,9 @@ class PayrollRunController extends Controller
     {
         abort_unless($run->status === 'draft', 403);
         $run->update(['status' => 'ready', 'prepared_by' => $request->user()->id, 'prepared_at' => now()]);
+        \Illuminate\Support\Facades\Notification::send(AppNotice::hr($request->user()), new AppNotice('La paie de :month est prête à être validée.', [
+            'month' => $run->month->format('m/Y'),
+        ], '/admin/payslips?month='.$run->month->format('Y-m')));
 
         return back()->with('success', 'Paie envoyée pour validation à RH.');
     }
@@ -174,6 +178,9 @@ class PayrollRunController extends Controller
         }
 
         $run->update(['status' => 'locked', 'locked_by' => $user->id, 'locked_at' => now()]);
+        foreach ($run->payslips()->with('user')->get() as $payslip) {
+            $payslip->user?->notify(new AppNotice('Votre bulletin de paie de :month est disponible.', ['month' => $run->month->format('m/Y')], '/settings/payslips'));
+        }
 
         return back()->with('success', 'Paie validée : les employés peuvent consulter leur bulletin.');
     }

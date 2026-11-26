@@ -25,3 +25,17 @@ test('on the sign-in page the choice is kept in the session; unknown languages a
 
     $this->put('/locale', ['locale' => 'de'])->assertSessionHasErrors('locale');
 });
+
+test('server messages follow the account language: validation errors and notices', function () {
+    $user = User::factory()->create(['locale' => 'ar']);
+
+    $this->actingAs($user)->patch('/settings/profile', ['name' => '', 'email' => $user->email])
+        ->assertSessionHasErrors(['name' => 'حقل الاسم إلزامي.']);
+
+    $this->actingAs($user)->withSession(['success' => 'Données personnelles enregistrées.'])->get('/dashboard')
+        ->assertInertia(fn (Assert $page) => $page->where('flash.success', 'حُفظت المعطيات الشخصية.'));
+
+    // French by default, and e-mails go out in the recipient's language.
+    expect(User::factory()->create()->preferredLocale())->toBe('fr')
+        ->and($user->preferredLocale())->toBe('ar');
+});

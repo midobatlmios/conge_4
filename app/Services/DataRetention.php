@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\LeaveType;
+use App\Models\Candidate;
 use App\Models\Demande;
 use App\Models\DemandeDocument;
 use App\Models\DemandeEvent;
@@ -24,7 +25,7 @@ use Illuminate\Support\Str;
  */
 class DataRetention
 {
-    /** @return array{certificates: Collection, personal: Collection, anonymize: Collection} */
+    /** @return array{certificates: Collection, personal: Collection, anonymize: Collection, candidates: Collection} */
     public function due(): array
     {
         $years = config('conge.retention');
@@ -46,10 +47,14 @@ class DataRetention
                 ->whereNull('anonymized_at')
                 ->where('deactivated_at', '<', now()->subYears($years['anonymize_after_years']))
                 ->get(['id', 'name', 'deactivated_at']),
+            'candidates' => Candidate::query()
+                ->where('stage', '!=', 'hired')
+                ->where('created_at', '<', now()->subYears($years['candidates_years'] ?? 2))
+                ->get(['id', 'name', 'created_at', 'cv_path']),
         ];
     }
 
-    /** @return array{certificates: int, personal: int, anonymize: int} How many of each were handled. */
+    /** @return array{certificates: int, personal: int, anonymize: int, candidates: int} How many of each were handled. */
     public function apply(?User $by): array
     {
         $due = $this->due();
@@ -64,6 +69,9 @@ class DataRetention
             $this->erasePersonalData($person);
             PersonalDataAccess::record($by, $person, 'retention', 'Données personnelles, dossier et attestations supprimés');
         }
+
+        // The CV file goes with each application.
+        $due['candidates']->each->delete();
 
         foreach ($due['anonymize'] as $person) {
             $this->anonymize($person);

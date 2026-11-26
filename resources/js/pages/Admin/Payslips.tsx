@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { intlLocale, t } from '@/lib/i18n';
 import { usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
@@ -62,12 +63,12 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Tableau de bord', href: '/dashboard' },
     { title: 'Bulletins de paie', href: '/admin/payslips' },
 ];
-const dh = (v: number) => v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const monthLabel = (ym: string) => new Date(`${ym}-01T00:00:00`).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+const dh = (v: number) => v.toLocaleString(intlLocale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const monthLabel = (ym: string) => new Date(`${ym}-01T00:00:00`).toLocaleDateString(intlLocale(), { month: 'long', year: 'numeric' });
 /** "de juin 2026", "d’octobre 2026". */
 const ofMonth = (ym: string) => {
     const label = monthLabel(ym);
-    return /^[aeiouy]/i.test(label) ? `d’${label}` : `de ${label}`;
+    return /^[aeiouy]/i.test(label) ? `d’${label}` : t('de :p0', { p0: label });
 };
 const statusClass: Record<Run['status'], string> = {
     draft: 'border-blue-500 text-blue-700 dark:text-blue-400',
@@ -86,27 +87,32 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
 
     const lock = async () => {
         const ok = await confirmAction({
-            title: `Valider la paie ${ofMonth(month)} ?`,
-            description: `${payslips.length} bulletins, net total ${dh(total('net'))} DH. Les bulletins deviennent définitifs et visibles par les employés.`,
-            confirmLabel: 'Valider la paie',
+            title: t('Valider la paie :p0 ?', { p0: ofMonth(month) }),
+            description: t(':p0 bulletins, net total :p1 DH. Les bulletins deviennent définitifs et visibles par les employés.', {
+                p0: payslips.length,
+                p1: dh(total('net')),
+            }),
+            confirmLabel: t('Valider la paie'),
         });
         if (ok) put(`/admin/payroll-runs/${run!.id}/lock`);
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Bulletins de paie" />
+            <Head title={t('Bulletins de paie')} />
             <div className="container mx-auto max-w-6xl space-y-6 px-4 py-10">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Bulletins de paie</h1>
+                        <h1 className="text-2xl font-bold">{t('Bulletins de paie')}</h1>
                         <p className="text-muted-foreground mt-1 text-sm">
-                            Paie prépare le mois, RH ou l'administrateur le valide. Taux CNSS, AMO et IR 2025 : à faire vérifier par votre comptable.
+                            {t(
+                                "Paie prépare le mois, RH ou l'administrateur le valide. Taux CNSS, AMO et IR 2025 : à faire vérifier par votre comptable.",
+                            )}
                         </p>
                     </div>
                     <Input
                         type="month"
-                        aria-label="Mois"
+                        aria-label={t('Mois')}
                         className="w-auto"
                         value={month}
                         onChange={(e) => e.target.value && router.get('/admin/payslips', { month: e.target.value })}
@@ -121,7 +127,7 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
                                 href={`/admin/payslips?month=${r.month}`}
                                 className={`rounded-md border px-2 py-1 ${r.month === month ? 'bg-muted font-medium' : ''}`}
                             >
-                                <span className="first-letter:uppercase">{monthLabel(r.month)}</span> · {r.status_label}
+                                <span className="first-letter:uppercase">{monthLabel(r.month)}</span> · {t(r.status_label)}
                             </Link>
                         ))}
                     </div>
@@ -132,12 +138,14 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
                         <CardContent className="py-6">
                             <EmptyState
                                 icon={Wallet}
-                                title={`Paie ${ofMonth(month)} non préparée`}
-                                description="Un bulletin est créé pour chaque employé ayant un salaire sur son contrat, avec la prime d'ancienneté et les heures supplémentaires du pointage."
+                                title={t('Paie :p0 non préparée', { p0: ofMonth(month) })}
+                                description={t(
+                                    "Un bulletin est créé pour chaque employé ayant un salaire sur son contrat, avec la prime d'ancienneté et les heures supplémentaires du pointage.",
+                                )}
                             />
                             <div className="mt-4 flex justify-center">
                                 <Button onClick={() => router.post('/admin/payslips/prepare', { month }, { onError: toastErrors })}>
-                                    Préparer la paie {ofMonth(month)}
+                                    {t('Préparer la paie')} {ofMonth(month)}
                                 </Button>
                             </div>
                         </CardContent>
@@ -148,45 +156,48 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
                             <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div className="space-y-1 text-sm">
                                     <Badge variant="outline" className={statusClass[run.status]}>
-                                        {run.status_label}
+                                        {t(run.status_label)}
                                     </Badge>
                                     <p className="text-muted-foreground">
-                                        {run.prepared_by && `Préparée par ${run.prepared_by}`}
+                                        {run.prepared_by && t('Préparée par :p0', { p0: run.prepared_by })}
                                         {run.locked_by &&
-                                            ` · validée par ${run.locked_by} le ${new Date(run.locked_at!).toLocaleDateString('fr-FR')}`}
+                                            t(' · validée par :p0 le :p1', {
+                                                p0: run.locked_by,
+                                                p1: new Date(run.locked_at!).toLocaleDateString(intlLocale()),
+                                            })}
                                     </p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
                                     {draft && (
                                         <>
                                             <Button variant="outline" onClick={() => put(`/admin/payroll-runs/${run.id}/recalculate`)}>
-                                                <RefreshCw className="me-2 h-4 w-4" /> Recalculer
+                                                <RefreshCw className="me-2 h-4 w-4" /> {t('Recalculer')}
                                             </Button>
                                             <Button onClick={() => put(`/admin/payroll-runs/${run.id}/submit`)}>
-                                                <Send className="me-2 h-4 w-4" /> Envoyer pour validation
+                                                <Send className="me-2 h-4 w-4" /> {t('Envoyer pour validation')}
                                             </Button>
                                         </>
                                     )}
                                     {run.status === 'ready' && (
                                         <>
                                             <Button variant="outline" onClick={() => put(`/admin/payroll-runs/${run.id}/reopen`)}>
-                                                <Undo2 className="me-2 h-4 w-4" /> Rouvrir
+                                                <Undo2 className="me-2 h-4 w-4" /> {t('Rouvrir')}
                                             </Button>
                                             {can.manage_hr && run.prepared_by_id !== auth.user.id && (
                                                 <Button onClick={lock}>
-                                                    <Lock className="me-2 h-4 w-4" /> Valider la paie
+                                                    <Lock className="me-2 h-4 w-4" /> {t('Valider la paie')}
                                                 </Button>
                                             )}
                                         </>
                                     )}
                                     <Button variant="outline" asChild>
                                         <a href={`/admin/payroll-runs/${run.id}/journal`}>
-                                            <FileSpreadsheet className="me-2 h-4 w-4" /> Journal + CNSS (Excel)
+                                            <FileSpreadsheet className="me-2 h-4 w-4" /> {t('Journal + CNSS (Excel)')}
                                         </a>
                                     </Button>
                                     {run.status === 'locked' && (
                                         <span className="flex items-center gap-1 text-sm text-green-700 dark:text-green-400">
-                                            <CheckCircle2 className="h-4 w-4" /> Bulletins définitifs, visibles par les employés
+                                            <CheckCircle2 className="h-4 w-4" /> {t('Bulletins définitifs, visibles par les employés')}
                                         </span>
                                     )}
                                 </div>
@@ -195,11 +206,11 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
 
                         {run.status === 'ready' && can.manage_hr && run.prepared_by_id === auth.user.id && (
                             <p className="text-muted-foreground text-sm">
-                                Vous avez préparé cette paie : une autre personne RH ou l'administrateur doit la valider.
+                                {t("Vous avez préparé cette paie : une autre personne RH ou l'administrateur doit la valider.")}
                             </p>
                         )}
                         {run.status === 'ready' && !can.manage_hr && (
-                            <p className="text-muted-foreground text-sm">En attente de validation par RH ou l'administrateur.</p>
+                            <p className="text-muted-foreground text-sm">{t("En attente de validation par RH ou l'administrateur.")}</p>
                         )}
 
                         {missing.length > 0 && (
@@ -209,7 +220,7 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
                             >
                                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                                 <p>
-                                    Sans salaire sur leur contrat, donc sans bulletin :{' '}
+                                    {t('Sans salaire sur leur contrat, donc sans bulletin :')}{' '}
                                     {missing.map((m, i) => (
                                         <span key={m.id}>
                                             {i > 0 && ', '}
@@ -218,7 +229,7 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
                                             </Link>
                                         </span>
                                     ))}
-                                    . Complétez le contrat puis « Recalculer ».
+                                    {t('. Complétez le contrat puis « Recalculer ».')}
                                 </p>
                             </div>
                         )}
@@ -226,30 +237,34 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
                         <Card>
                             <CardHeader>
                                 <CardTitle>
-                                    {payslips.length} bulletin{payslips.length > 1 ? 's' : ''}
+                                    {payslips.length} {t('bulletin')}
+                                    {payslips.length > 1 ? 's' : ''}
                                 </CardTitle>
                                 <CardDescription>
-                                    Net total {dh(total('net'))} DH · brut {dh(total('gross'))} DH · coût employeur {dh(total('cost'))} DH.
+                                    {t('Net total')} {dh(total('net'))} {t('DH · brut')} {dh(total('gross'))} {t('DH · coût employeur')}{' '}
+                                    {dh(total('cost'))} {t('DH.')}
                                     {draft &&
-                                        ' Jours non payés et heures supplémentaires repris des congés et du pointage ; ajustez chaque bulletin avec le crayon (primes, avances…).'}
+                                        t(
+                                            ' Jours non payés et heures supplémentaires repris des congés et du pointage ; ajustez chaque bulletin avec le crayon (primes, avances…).',
+                                        )}
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Employé</TableHead>
-                                            <TableHead className="text-end">Base</TableHead>
-                                            <TableHead className="text-end">Absences</TableHead>
-                                            <TableHead className="text-end">Ancienneté</TableHead>
-                                            <TableHead className="text-end">H. sup.</TableHead>
-                                            <TableHead className="text-end">Primes</TableHead>
-                                            <TableHead className="text-end">Brut</TableHead>
-                                            <TableHead className="text-end">CNSS + AMO</TableHead>
-                                            <TableHead className="text-end">IR</TableHead>
-                                            <TableHead className="text-end">Avances</TableHead>
-                                            <TableHead className="text-end">Net</TableHead>
-                                            <TableHead className="sr-only">PDF</TableHead>
+                                            <TableHead>{t('Employé')}</TableHead>
+                                            <TableHead className="text-end">{t('Base')}</TableHead>
+                                            <TableHead className="text-end">{t('Absences')}</TableHead>
+                                            <TableHead className="text-end">{t('Ancienneté')}</TableHead>
+                                            <TableHead className="text-end">{t('H. sup.')}</TableHead>
+                                            <TableHead className="text-end">{t('Primes')}</TableHead>
+                                            <TableHead className="text-end">{t('Brut')}</TableHead>
+                                            <TableHead className="text-end">{t('CNSS + AMO')}</TableHead>
+                                            <TableHead className="text-end">{t('IR')}</TableHead>
+                                            <TableHead className="text-end">{t('Avances')}</TableHead>
+                                            <TableHead className="text-end">{t('Net')}</TableHead>
+                                            <TableHead className="sr-only">{t('PDF')}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -261,7 +276,7 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
                                                     </Link>
                                                     {row.employed_days < row.month_days && (
                                                         <span className="text-muted-foreground block text-xs">
-                                                            {row.employed_days} / {row.month_days} jours
+                                                            {row.employed_days} / {row.month_days} {t('jours')}
                                                         </span>
                                                     )}
                                                 </TableCell>
@@ -277,8 +292,8 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
                                                 <TableCell className="text-end tabular-nums">
                                                     {row.overtime ? dh(row.overtime) : '—'}
                                                     {row.adjusted.length > 0 && (
-                                                        <Badge variant="outline" className="ms-1" title="Modifié à la main">
-                                                            modifié
+                                                        <Badge variant="outline" className="ms-1" title={t('Modifié à la main')}>
+                                                            {t('modifié')}
                                                         </Badge>
                                                     )}
                                                 </TableCell>
@@ -298,13 +313,16 @@ export default function Payslips({ month, run, payslips, missing, runs, bonusPre
                                                             variant="ghost"
                                                             size="sm"
                                                             onClick={() => setEditing(row)}
-                                                            aria-label={`Ajuster le bulletin de ${row.name}`}
+                                                            aria-label={t('Ajuster le bulletin de :p0', { p0: row.name })}
                                                         >
                                                             <Pencil className="h-4 w-4" />
                                                         </Button>
                                                     )}
                                                     <Button variant="ghost" size="sm" asChild>
-                                                        <a href={`/bulletins/${row.id}/pdf`} aria-label={`Bulletin de ${row.name} (PDF)`}>
+                                                        <a
+                                                            href={`/bulletins/${row.id}/pdf`}
+                                                            aria-label={t('Bulletin de :p0 (PDF)', { p0: row.name })}
+                                                        >
                                                             <Download className="h-4 w-4" />
                                                         </a>
                                                     </Button>

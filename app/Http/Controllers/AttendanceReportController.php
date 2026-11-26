@@ -32,6 +32,8 @@ class AttendanceReportController extends Controller
             'month' => $month->format('Y-m'),
             'departmentId' => $department?->id,
             'departmentOptions' => Department::orderBy('name')->get(['id', 'name']),
+            'siteId' => $request->integer('site') ?: null,
+            'siteOptions' => \App\Models\Site::orderBy('name')->get(['id', 'name']),
             'schedule' => AttendanceController::scheduleProps($this->calculator),
             'rows' => $this->rows($month, $department),
             'today' => self::today($this->calculator),
@@ -111,6 +113,7 @@ class AttendanceReportController extends Controller
 
         $people = User::with('department:id,name')
             ->when($department, fn ($query) => $query->where('department_id', $department->id))
+            ->when(request()->integer('site'), fn ($query, $site) => $query->where('site_id', $site))
             ->where(fn ($query) => $query->whereNull('deactivated_at')->orWhere('deactivated_at', '>=', $month))
             ->orderBy('name')
             ->get();

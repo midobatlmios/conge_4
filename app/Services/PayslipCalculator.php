@@ -60,8 +60,9 @@ class PayslipCalculator
             return null;
         }
 
-        $monthDays = $this->leaves->workingDays($start, $end);
-        $employedDays = $this->leaves->workingDays($first, $last);
+        $leaves = $this->leaves->forUser($user);
+        $monthDays = $leaves->workingDays($start, $end);
+        $employedDays = $leaves->workingDays($first, $last);
         // Cadres are not paid overtime from clocking (Paie may still enter hours).
         $executive = $user->currentContract()?->category === StaffCategory::Executive;
         $overtime = $executive ? ['25' => 0.0, '50' => 0.0, '100' => 0.0] : $this->overtimeHours($user, $start, $last);
@@ -239,7 +240,7 @@ class PayslipCalculator
             ->whereDate('date_debut', '<=', $to)
             ->whereDate('date_fin', '>=', $from)
             ->get()
-            ->sum(fn (Demande $leave) => $this->leaves->leaveDays($leave->date_debut, $leave->date_fin, (bool) $leave->start_half, (bool) $leave->end_half, $from, $to));
+            ->sum(fn (Demande $leave) => $this->leaves->forUser($user)->leaveDays($leave->date_debut, $leave->date_fin, (bool) $leave->start_half, (bool) $leave->end_half, $from, $to));
     }
 
     /** Unjustified absences from attendance between two days (0 when attendance is not tracked). */

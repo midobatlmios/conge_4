@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
+import { t } from '@/lib/i18n';
 import { usePermissions } from '@/lib/roles';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
@@ -19,6 +20,8 @@ interface AttendanceProps {
     month: string;
     departmentId: number | null;
     departmentOptions: { id: number; name: string }[];
+    siteId: number | null;
+    siteOptions: { id: number; name: string }[];
     schedule: Schedule;
     rows: Row[];
     /** Null while tracking has not started. */
@@ -65,11 +68,12 @@ function ScheduleForm({ schedule }: { schedule: Schedule }) {
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-muted-foreground text-xs">
-                    Jours travaillés : du lundi au vendredi, hors jours fériés. Les absences ne sont comptées qu'à partir de la date de début du
-                    pointage ; sans date, le pointage est désactivé.
+                    {t(
+                        "Jours travaillés : du lundi au vendredi, hors jours fériés. Les absences ne sont comptées qu'à partir de la date de début du pointage ; sans date, le pointage est désactivé.",
+                    )}
                 </p>
                 <Button type="submit" disabled={form.processing}>
-                    Enregistrer
+                    {t('Enregistrer')}
                 </Button>
             </div>
         </form>
@@ -77,51 +81,71 @@ function ScheduleForm({ schedule }: { schedule: Schedule }) {
 }
 
 /** HR attendance: today, the month per employee, Excel export and the schedule. */
-export default function Attendance({ month, departmentId, departmentOptions, schedule, rows, today }: AttendanceProps) {
+export default function Attendance({ month, departmentId, departmentOptions, siteId, siteOptions, schedule, rows, today }: AttendanceProps) {
     const can = usePermissions();
-    const filter = (params: { month?: string; department?: number | null }) => {
+    const filter = (params: { month?: string; department?: number | null; site?: number | null }) => {
+        const site = params.site === undefined ? siteId : params.site;
         const department = params.department === undefined ? departmentId : params.department;
-        router.get('/admin/attendance', { month: params.month ?? month, ...(department ? { department } : {}) }, { preserveScroll: true });
+        router.get(
+            '/admin/attendance',
+            { month: params.month ?? month, ...(department ? { department } : {}), ...(site ? { site } : {}) },
+            { preserveScroll: true },
+        );
     };
-    const exportUrl = `/admin/attendance/export?month=${month}${departmentId ? `&department=${departmentId}` : ''}`;
+    const exportUrl = `/admin/attendance/export?month=${month}${departmentId ? `&department=${departmentId}` : ''}${siteId ? `&site=${siteId}` : ''}`;
     const sum = (key: keyof Totals) => rows.reduce((total, row) => total + row[key], 0);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Pointage" />
+            <Head title={t('Pointage')} />
             <div className="container mx-auto max-w-6xl space-y-6 px-4 py-10">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold">Pointage</h1>
+                        <h1 className="text-2xl font-bold">{t('Pointage')}</h1>
                         <p className="text-muted-foreground mt-1 text-sm">
-                            Horaires : {schedule.start}–{schedule.lunch_start} et {schedule.lunch_end}–{schedule.end}, retard après{' '}
-                            {schedule.tolerance} min. Heures supplémentaires à titre indicatif (taux du Code du travail).
+                            {t('Horaires :')} {schedule.start}–{schedule.lunch_start} {t('et')} {schedule.lunch_end}–{schedule.end}
+                            {t(', retard après')} {schedule.tolerance} {t('min. Heures supplémentaires à titre indicatif (taux du Code du travail).')}
                         </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <Input
                             type="month"
-                            aria-label="Mois"
+                            aria-label={t('Mois')}
                             className="w-auto"
                             value={month}
                             onChange={(e) => e.target.value && filter({ month: e.target.value })}
                         />
                         <select
-                            aria-label="Département"
+                            aria-label={t('Département')}
                             className={selectClass}
                             value={departmentId ?? ''}
                             onChange={(e) => filter({ department: e.target.value ? Number(e.target.value) : null })}
                         >
-                            <option value="">Tous les départements</option>
+                            <option value="">{t('Tous les départements')}</option>
                             {departmentOptions.map((d) => (
                                 <option key={d.id} value={d.id}>
                                     {d.name}
                                 </option>
                             ))}
                         </select>
+                        {siteOptions.length > 0 && (
+                            <select
+                                aria-label={t('Site')}
+                                className={selectClass}
+                                value={siteId ?? ''}
+                                onChange={(e) => filter({ site: e.target.value ? Number(e.target.value) : null })}
+                            >
+                                <option value="">{t('Tous les sites')}</option>
+                                {siteOptions.map((s) => (
+                                    <option key={s.id} value={s.id}>
+                                        {s.name}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                         <Button variant="outline" asChild>
                             <a href={exportUrl}>
-                                <Download className="me-2 h-4 w-4" /> Excel
+                                <Download className="me-2 h-4 w-4" /> {t('Excel')}
                             </a>
                         </Button>
                     </div>
@@ -129,35 +153,47 @@ export default function Attendance({ month, departmentId, departmentOptions, sch
 
                 {today === null ? (
                     <p className="rounded-md border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-300">
-                        Le pointage n'est pas activé : choisissez la date à partir de laquelle il compte, dans « Horaires » ci-dessous. Les employés
-                        verront alors le bouton « Pointer l'arrivée » sur leur espace.
+                        {t(
+                            "Le pointage n'est pas activé : choisissez la date à partir de laquelle il compte, dans « Horaires » ci-dessous. Les employés verront alors le bouton « Pointer l'arrivée » sur leur espace.",
+                        )}
                     </p>
                 ) : (
                     <div className="grid gap-4 lg:grid-cols-3">
                         <Card className="gap-1 py-4">
                             <CardContent className="px-4">
-                                <p className="text-muted-foreground text-sm">Présents aujourd'hui</p>
+                                <p className="text-muted-foreground text-sm">{t("Présents aujourd'hui")}</p>
                                 <p className="mt-1 text-2xl font-bold tabular-nums">
-                                    {today.present} <span className="text-muted-foreground text-base font-normal">/ {today.expected} attendus</span>
+                                    {today.present}{' '}
+                                    <span className="text-muted-foreground text-base font-normal">
+                                        / {today.expected} {t('attendus')}
+                                    </span>
                                 </p>
-                                <p className="text-muted-foreground mt-1 text-xs">{today.on_leave} en congé</p>
+                                <p className="text-muted-foreground mt-1 text-xs">
+                                    {today.on_leave} {t('en congé')}
+                                </p>
                             </CardContent>
                         </Card>
                         <Card className="gap-1 py-4">
                             <CardContent className="px-4">
-                                <p className="text-muted-foreground text-sm">En retard aujourd'hui ({today.late})</p>
+                                <p className="text-muted-foreground text-sm">
+                                    {t("En retard aujourd'hui (")}
+                                    {today.late})
+                                </p>
                                 <p className="mt-1 text-sm">
                                     {today.late_list.length === 0
-                                        ? 'Personne'
+                                        ? t('Personne')
                                         : today.late_list.map((p) => `${p.name} (${p.clock_in}, +${p.late} min)`).join(', ')}
                                 </p>
                             </CardContent>
                         </Card>
                         <Card className="gap-1 py-4">
                             <CardContent className="px-4">
-                                <p className="text-muted-foreground text-sm">Pas encore pointé ({today.not_yet.length})</p>
+                                <p className="text-muted-foreground text-sm">
+                                    {t('Pas encore pointé (')}
+                                    {today.not_yet.length})
+                                </p>
                                 <p className="mt-1 text-sm">
-                                    {today.not_yet.length === 0 ? 'Tout le monde a pointé.' : today.not_yet.map((p) => p.name).join(', ')}
+                                    {today.not_yet.length === 0 ? t('Tout le monde a pointé.') : today.not_yet.map((p) => p.name).join(', ')}
                                 </p>
                             </CardContent>
                         </Card>
@@ -166,25 +202,25 @@ export default function Attendance({ month, departmentId, departmentOptions, sch
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Récapitulatif du mois</CardTitle>
+                        <CardTitle>{t('Récapitulatif du mois')}</CardTitle>
                         <CardDescription>
-                            Heures prévues et travaillées, retards, absences non justifiées et heures supplémentaires par taux.
+                            {t('Heures prévues et travaillées, retards, absences non justifiées et heures supplémentaires par taux.')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
                         {rows.length === 0 ? (
-                            <p className="text-muted-foreground text-sm">Aucun pointage à afficher pour ce mois.</p>
+                            <p className="text-muted-foreground text-sm">{t('Aucun pointage à afficher pour ce mois.')}</p>
                         ) : (
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Employé</TableHead>
-                                        <TableHead className="text-end">Prévu</TableHead>
-                                        <TableHead className="text-end">Travaillé</TableHead>
-                                        <TableHead className="text-end">Absences</TableHead>
-                                        <TableHead className="text-end">Retards</TableHead>
-                                        <TableHead className="text-end">Départs non pointés</TableHead>
-                                        <TableHead className="text-end">H. sup. +25 %</TableHead>
+                                        <TableHead>{t('Employé')}</TableHead>
+                                        <TableHead className="text-end">{t('Prévu')}</TableHead>
+                                        <TableHead className="text-end">{t('Travaillé')}</TableHead>
+                                        <TableHead className="text-end">{t('Absences')}</TableHead>
+                                        <TableHead className="text-end">{t('Retards')}</TableHead>
+                                        <TableHead className="text-end">{t('Départs non pointés')}</TableHead>
+                                        <TableHead className="text-end">{t('H. sup. +25 %')}</TableHead>
                                         <TableHead className="text-end">+50 %</TableHead>
                                         <TableHead className="text-end">+100 %</TableHead>
                                     </TableRow>
@@ -213,7 +249,7 @@ export default function Attendance({ month, departmentId, departmentOptions, sch
                                         </TableRow>
                                     ))}
                                     <TableRow className="font-semibold">
-                                        <TableCell>Total</TableCell>
+                                        <TableCell>{t('Total')}</TableCell>
                                         <TableCell className="text-end tabular-nums">{hours(sum('expected'))}</TableCell>
                                         <TableCell className="text-end tabular-nums">{hours(sum('worked'))}</TableCell>
                                         <TableCell className="text-end tabular-nums">{sum('absent_days')} j</TableCell>
@@ -238,9 +274,9 @@ export default function Attendance({ month, departmentId, departmentOptions, sch
                 {can.manage_hr && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Horaires</CardTitle>
+                            <CardTitle>{t('Horaires')}</CardTitle>
                             <CardDescription>
-                                Un horaire pour toute l'entreprise : il sert à compter les retards et les heures supplémentaires.
+                                {t("Un horaire pour toute l'entreprise : il sert à compter les retards et les heures supplémentaires.")}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>

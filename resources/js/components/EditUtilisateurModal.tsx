@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Input } from '@/components/ui/input';
 import { User } from '@/components/users/columns';
 import EmployeeRecordFields, { Option } from '@/components/users/EmployeeRecordFields';
+import { t } from '@/lib/i18n';
 import { RoleOption } from '@/lib/roles';
 import { useForm } from '@inertiajs/react';
 import { useState } from 'react';
@@ -26,6 +27,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
         password_confirmation: '',
         matricule: user.matricule ?? '',
         department_id: user.department_id ? String(user.department_id) : '',
+        site_id: user.site_id ? String(user.site_id) : '',
         job_title: user.job_title ?? '',
         hire_date: user.hire_date ?? '',
         manager_id: user.manager_id ? String(user.manager_id) : '',
@@ -65,16 +67,16 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent aria-describedby="edit-user-description" className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
                 <DialogHeader>
-                    <DialogTitle>Modifier l'utilisateur</DialogTitle>
+                    <DialogTitle>{t("Modifier l'utilisateur")}</DialogTitle>
                 </DialogHeader>
                 <div id="edit-user-description" className="sr-only">
-                    Formulaire de modification des informations de l'utilisateur
+                    {t("Formulaire de modification des informations de l'utilisateur")}
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    {hasErrors && <div className="rounded bg-red-200 p-2 text-red-800">Veuillez corriger les champs indiqués ci-dessous.</div>}
+                    {hasErrors && <div className="rounded bg-red-200 p-2 text-red-800">{t('Veuillez corriger les champs indiqués ci-dessous.')}</div>}
 
                     <div className="flex flex-col space-y-1">
-                        <label htmlFor="name">Nom</label>
+                        <label htmlFor="name">{t('Nom')}</label>
                         <Input
                             id="name"
                             type="text"
@@ -88,7 +90,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                     </div>
 
                     <div className="flex flex-col space-y-1">
-                        <label htmlFor="email">Adresse e-mail</label>
+                        <label htmlFor="email">{t('Adresse e-mail')}</label>
                         <Input
                             id="email"
                             type="email"
@@ -102,9 +104,9 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                     </div>
 
                     <div className="space-y-4 border-t pt-4">
-                        <h3 className="font-medium">Changer le mot de passe</h3>
+                        <h3 className="font-medium">{t('Changer le mot de passe')}</h3>
                         <div className="flex flex-col space-y-1">
-                            <label htmlFor="password">Nouveau mot de passe</label>
+                            <label htmlFor="password">{t('Nouveau mot de passe')}</label>
                             <div className="relative">
                                 <Input
                                     id="password"
@@ -122,14 +124,14 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                                     className="absolute end-2 top-1/2 -translate-y-1/2"
                                     onClick={() => setShowPassword(!showPassword)}
                                 >
-                                    {showPassword ? 'Masquer' : 'Afficher'}
+                                    {showPassword ? t('Masquer') : t('Afficher')}
                                 </Button>
                             </div>
                             {errors.password && <p className="text-sm text-red-700 dark:text-red-400">{errors.password}</p>}
                         </div>
 
                         <div className="flex flex-col space-y-1">
-                            <label htmlFor="password_confirmation">Confirmer le mot de passe</label>
+                            <label htmlFor="password_confirmation">{t('Confirmer le mot de passe')}</label>
                             <Input
                                 id="password_confirmation"
                                 type={showPassword ? 'text' : 'password'}
@@ -144,7 +146,7 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
                     </div>
 
                     <div className="flex flex-col space-y-1">
-                        <label htmlFor="role">Rôle</label>
+                        <label htmlFor="role">{t('Rôle')}</label>
                         <select
                             id="role"
                             name="role"
@@ -177,10 +179,10 @@ const EditUtilisateurModal: React.FC<EditUtilisateurModalProps> = ({ isOpen, onC
 
                     <DialogFooter>
                         <Button variant="outline" type="button" onClick={onClose} disabled={processing}>
-                            Annuler
+                            {t('Annuler')}
                         </Button>
                         <Button type="submit" disabled={processing}>
-                            {processing ? 'Mise à jour...' : 'Modifier utilisateur'}
+                            {processing ? t('Mise à jour...') : t('Modifier utilisateur')}
                         </Button>
                     </DialogFooter>
                 </form>

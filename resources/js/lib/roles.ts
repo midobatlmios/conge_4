@@ -26,9 +26,11 @@ export type Permissions = {
     manage_hr: boolean;
     /** Admin: gives and removes the Admin, RH and Paie roles. */
     manage_roles: boolean;
+    /** HR, or hiring manager on an offer. */
+    recruitment: boolean;
 };
 
-const NONE: Permissions = { view_hr: false, manage_hr: false, manage_roles: false };
+const NONE: Permissions = { view_hr: false, manage_hr: false, manage_roles: false, recruitment: false };
 
 export function usePermissions(): Permissions {
     return usePage<SharedData>().props.auth?.user?.can ?? NONE;
