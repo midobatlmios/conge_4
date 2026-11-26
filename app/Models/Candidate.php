@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class Candidate extends Model
 {
-    public const DISK = 'local';
+    public const DISK = 'uploads';
 
     public const STAGES = [
         'new' => 'Nouvelle',

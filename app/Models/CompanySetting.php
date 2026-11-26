@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
  */
 class CompanySetting extends Model
 {
-    public const DISK = 'local';
+    public const DISK = 'uploads';
 
     /** The accent color when HR has not chosen one. */
     public const DEFAULT_COLOR = '#C71618';

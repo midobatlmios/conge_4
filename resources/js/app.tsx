@@ -8,6 +8,15 @@ import { applyLocale, Locale } from './lib/i18n';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Gestion des Congés';
 
+// Installable app (PWA). Only in the built app: in `npm run dev` it would get in the way of hot reload.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {
+            // Not installable on this browser; the site works the same.
+        });
+    });
+}
+
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),

@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class DemandeDocument extends Model
 {
-    public const DISK = 'local';
+    public const DISK = 'uploads';
 
     protected $fillable = ['demande_id', 'uploaded_by', 'original_name', 'path', 'mime_type', 'size'];
 

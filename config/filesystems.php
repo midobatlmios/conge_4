@@ -38,6 +38,18 @@ return [
             'report' => false,
         ],
 
+        // Uploaded files (employee and leave documents, CVs, company logo,
+        // pending Excel imports). Same folder as "local" on your machine; on
+        // Laravel Cloud, attach a bucket with the disk name "uploads" and the
+        // platform replaces this entry with the bucket (S3-compatible), so the
+        // files survive deploys and are shared by every instance.
+        'uploads' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

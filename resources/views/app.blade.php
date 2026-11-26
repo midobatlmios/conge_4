@@ -6,6 +6,16 @@
         <link rel="icon" type="image/x-icon" href="/favicon.ico">
         <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        {{-- Installable app (PWA): manifest, phone icons, browser bar color. See public/sw.js. --}}
+        <link rel="manifest" href="/manifest.json">
+        <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+        <meta name="theme-color" content="#C71618">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-title" content="Congés">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
         <meta name="user-id" content="{{ auth()->id() }}">
          <meta name="csrf-token" content="{{ csrf_token()}}">
 

@@ -29,7 +29,7 @@ test('a clocking correction notifies the manager, and its decision the employee'
 });
 
 test('a new application notifies HR and the hiring manager, with a link to the candidate', function () {
-    Storage::fake('local');
+    Storage::fake('uploads');
     $rh = User::factory()->create(['role' => Role::Hr]);
     $manager = User::factory()->create(['role' => Role::User]);
     $bystander = User::factory()->create(['role' => Role::User]);

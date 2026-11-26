@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Storage;
  */
 class EmployeeDocument extends Model
 {
-    public const DISK = 'local';
+    public const DISK = 'uploads';
 
     protected $fillable = ['user_id', 'uploaded_by', 'category', 'title', 'expires_on', 'original_name', 'path', 'mime_type', 'size'];
 

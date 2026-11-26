@@ -16,7 +16,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
-beforeEach(fn () => Storage::fake('local'));
+beforeEach(fn () => Storage::fake('uploads'));
 
 function openOffer(array $attributes = []): JobOffer
 {
@@ -41,7 +41,7 @@ test('the careers page lists open offers only; anyone can apply with a CV and co
 
     $candidate = Candidate::sole();
     expect($candidate->stage)->toBe('new')->and($candidate->source)->toBe('careers_page')->and($candidate->consent_at)->not->toBeNull();
-    Storage::disk('local')->assertExists($candidate->cv_path);
+    Storage::disk('uploads')->assertExists($candidate->cv_path);
 });
 
 test('robots filling the hidden field are ignored; drafts and closed offers take no application', function () {
@@ -107,5 +107,5 @@ test('applications not hired are deleted with their CV after 2 years', function 
     app(DataRetention::class)->apply(null);
 
     expect(Candidate::count())->toBe(0);
-    Storage::disk('local')->assertMissing($old->cv_path);
+    Storage::disk('uploads')->assertMissing($old->cv_path);
 });

@@ -20,12 +20,16 @@ use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
  * upload a file and see the check, then import it (all or nothing), then
  * invite the new employees to choose their password.
  *
- * The uploaded file waits on the private disk under a random name (the
- * "token") between the check and the import, and is deleted after.
+ * The uploaded file waits on the "uploads" disk under a random name (the
+ * "token") between the check and the import, and is deleted after. That disk
+ * can be a cloud bucket (Laravel Cloud), so the file is read through a
+ * temporary local copy, and any instance can serve the next step.
  */
 class EmployeeImportController extends Controller
 {
     private const DIRECTORY = 'imports';
+
+    private const DISK = 'uploads';
 
     public function __construct(private readonly EmployeeImport $import) {}
 
@@ -35,7 +39,7 @@ class EmployeeImportController extends Controller
 
         return Inertia::render('Admin/Import', [
             'token' => $token,
-            'check' => $token ? $this->import->check($this->path($token), $request->user()) : null,
+            'check' => $token ? $this->withFile($token, fn (string $path) => $this->import->check($path, $request->user())) : null,
             'columns' => collect(EmployeeImport::COLUMNS)->map(fn (array $c) => ['heading' => $c[0], 'required' => $c[1], 'hint' => $c[2]])->values(),
             // Set after an import: the new accounts to invite.
             'imported' => session('imported'),
@@ -57,7 +61,7 @@ class EmployeeImportController extends Controller
         $this->deleteOldFiles();
         $file = $request->file('file');
         $token = Str::uuid().'.'.strtolower($file->getClientOriginalExtension());
-        $file->storeAs(self::DIRECTORY, $token, 'local');
+        $file->storeAs(self::DIRECTORY, $token, self::DISK);
 
         return to_route('admin.import.index', ['fichier' => $token]);
     }
@@ -67,15 +71,15 @@ class EmployeeImportController extends Controller
         $token = $this->token($token) ?? abort(404);
 
         return response()
-            ->download($this->import->report($this->import->check($this->path($token), $request->user())), 'erreurs-import.xlsx')
+            ->download($this->import->report($this->withFile($token, fn (string $path) => $this->import->check($path, $request->user()))), 'erreurs-import.xlsx')
             ->deleteFileAfterSend();
     }
 
     public function confirm(Request $request, string $token): RedirectResponse
     {
         $token = $this->token($token) ?? abort(404);
-        $result = $this->import->import($this->path($token), $request->user());
-        Storage::disk('local')->delete(self::DIRECTORY.'/'.$token);
+        $result = $this->withFile($token, fn (string $path) => $this->import->import($path, $request->user()));
+        Storage::disk(self::DISK)->delete(self::DIRECTORY.'/'.$token);
 
         return to_route('admin.import.index')
             ->with('imported', [
@@ -120,20 +124,36 @@ class EmployeeImportController extends Controller
     {
         return is_string($token)
             && preg_match('/^[0-9a-f-]{36}\.(xlsx|xls|csv)$/', $token)
-            && Storage::disk('local')->exists(self::DIRECTORY.'/'.$token) ? $token : null;
+            && Storage::disk(self::DISK)->exists(self::DIRECTORY.'/'.$token) ? $token : null;
     }
 
-    private function path(string $token): string
+    /**
+     * Runs $callback with a local copy of the uploaded file (PhpSpreadsheet
+     * needs a real path), then deletes the copy.
+     *
+     * @template T
+     *
+     * @param  callable(string): T  $callback
+     * @return T
+     */
+    private function withFile(string $token, callable $callback): mixed
     {
-        return Storage::disk('local')->path(self::DIRECTORY.'/'.$token);
+        $path = sys_get_temp_dir().DIRECTORY_SEPARATOR.'import-'.$token;
+        file_put_contents($path, Storage::disk(self::DISK)->get(self::DIRECTORY.'/'.$token));
+
+        try {
+            return $callback($path);
+        } finally {
+            @unlink($path);
+        }
     }
 
     /** Files left from imports never confirmed. */
     private function deleteOldFiles(): void
     {
-        foreach (Storage::disk('local')->files(self::DIRECTORY) as $file) {
-            if (Storage::disk('local')->lastModified($file) < now()->subDay()->timestamp) {
-                Storage::disk('local')->delete($file);
+        foreach (Storage::disk(self::DISK)->files(self::DIRECTORY) as $file) {
+            if (Storage::disk(self::DISK)->lastModified($file) < now()->subDay()->timestamp) {
+                Storage::disk(self::DISK)->delete($file);
             }
         }
     }

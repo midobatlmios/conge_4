@@ -15,7 +15,7 @@ use Inertia\Testing\AssertableInertia as Assert;
 
 uses(RefreshDatabase::class);
 
-beforeEach(fn () => Storage::fake('local'));
+beforeEach(fn () => Storage::fake('uploads'));
 
 function withRoleDp(Role $role, array $attributes = []): User
 {
@@ -67,7 +67,7 @@ test('HR viewing a file, changing data or opening documents is logged; one\'s ow
 test('opening someone\'s medical certificate is logged', function () {
     $employee = withRoleDp(Role::User);
     $leave = Demande::create(['user_id' => $employee->id, 'type_conge' => 'maladie', 'date_debut' => '2026-01-05', 'date_fin' => '2026-01-07', 'date_demande' => '2026-01-05', 'etat' => 'acceptée']);
-    Storage::disk('local')->put('documents/x.pdf', '%PDF');
+    Storage::disk('uploads')->put('documents/x.pdf', '%PDF');
     $certificate = $leave->documents()->create(['original_name' => 'certificat.pdf', 'path' => 'documents/x.pdf', 'mime_type' => 'application/pdf', 'size' => 4]);
 
     $this->actingAs(withRoleDp(Role::Payroll))->get("/documents/{$certificate->id}")->assertOk();
@@ -94,7 +94,7 @@ test('an employee downloads everything held about them; HR can export it too (lo
     $employee = withRoleDp(Role::User, ['name' => 'Sara Bennani']);
     EmployeeProfile::factory()->for($employee)->create(['cin' => 'AB654321']);
     $employee->contracts()->create(['type' => 'cdi', 'start_date' => '2024-01-01', 'gross_salary' => '12000']);
-    Storage::disk('local')->put('employee-documents/1/a.pdf', '%PDF-contrat');
+    Storage::disk('uploads')->put('employee-documents/1/a.pdf', '%PDF-contrat');
     $employee->documents()->create(['category' => 'contrat', 'original_name' => 'contrat.pdf', 'path' => 'employee-documents/1/a.pdf', 'mime_type' => 'application/pdf', 'size' => 12]);
 
     $response = $this->actingAs($employee)->get('/protection-des-donnees/export')->assertOk();
@@ -121,7 +121,7 @@ test('medical certificates are deleted 2 years after the leave', function () {
     $old = Demande::create(['user_id' => $employee->id, 'type_conge' => 'maladie', 'date_debut' => now()->subYears(3)->toDateString(), 'date_fin' => now()->subYears(3)->toDateString(), 'date_demande' => now()->subYears(3)->toDateString(), 'etat' => 'acceptée']);
     $recent = Demande::create(['user_id' => $employee->id, 'type_conge' => 'maladie', 'date_debut' => now()->subMonth()->toDateString(), 'date_fin' => now()->subMonth()->toDateString(), 'date_demande' => now()->subMonth()->toDateString(), 'etat' => 'acceptée']);
     foreach ([$old, $recent] as $leave) {
-        Storage::disk('local')->put("documents/{$leave->id}.pdf", '%PDF');
+        Storage::disk('uploads')->put("documents/{$leave->id}.pdf", '%PDF');
         $leave->documents()->create(['original_name' => 'c.pdf', 'path' => "documents/{$leave->id}.pdf", 'mime_type' => 'application/pdf', 'size' => 4]);
     }
 
@@ -130,7 +130,7 @@ test('medical certificates are deleted 2 years after the leave', function () {
     expect($done['certificates'])->toBe(1)
         ->and($old->documents()->count())->toBe(0)
         ->and($recent->documents()->count())->toBe(1);
-    Storage::disk('local')->assertMissing("documents/{$old->id}.pdf");
+    Storage::disk('uploads')->assertMissing("documents/{$old->id}.pdf");
 });
 
 test('5 years after departure personal data goes; 10 years after, the person is anonymized but the leave history stays', function () {

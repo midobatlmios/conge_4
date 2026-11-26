@@ -22,7 +22,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 uses(RefreshDatabase::class);
 
-beforeEach(fn () => Storage::fake('local'));
+beforeEach(fn () => Storage::fake('uploads'));
 
 /**
  * An .xlsx with the given headings and rows (every cell written as text, as
@@ -116,7 +116,7 @@ test('a clean file is checked, then imported with record, personal data, contrac
         ->and($sara->contracts()->sole()->type)->toBe(ContractType::FixedTerm)
         ->and($sara->contracts()->sole()->gross_salary)->toBe('12500.50')
         ->and($sara->privacy_acknowledged_at)->toBeNull();
-    Storage::disk('local')->assertMissing("imports/{$token}");
+    Storage::disk('uploads')->assertMissing("imports/{$token}");
 });
 
 test('an existing employee is updated: filled cells overwrite, empty ones change nothing', function () {

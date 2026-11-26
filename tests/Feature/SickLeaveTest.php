@@ -67,7 +67,7 @@ test('an employee declares sick leave up to 2 days back; older ones go through H
 });
 
 test('HR accepts sick leave only once the medical certificate is attached; it does not use the allowance', function () {
-    Storage::fake('local');
+    Storage::fake('uploads');
     $rh = sickUser(Role::Hr);
     $employee = sickUser();
     declareSick($employee);

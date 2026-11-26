@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
-    Storage::fake('local');
+    Storage::fake('uploads');
     $this->seed(DemoSeeder::class);
 });
 
